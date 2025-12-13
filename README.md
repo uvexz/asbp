@@ -1,3 +1,5 @@
+![ASBP](https://raw.githubusercontent.com/uvexz/asbp/refs/heads/main/public/asbp.png)
+
 # ASBP — A Simple Blogging Platform
 
 一个简单的博客平台，带有管理后台，用于内容管理。

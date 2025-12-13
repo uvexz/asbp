@@ -11,7 +11,7 @@ export async function BlogFooter({ siteTitle }: BlogFooterProps) {
     const t = await getTranslations('blog');
     
     return (
-        <footer className="px-4 sm:px-10 py-8">
+        <footer className="sm:px-10 py-8">
             <div className="flex items-center justify-center gap-3">
                 <p className="text-neutral-500 text-sm">© {currentYear} {siteTitle}. {t('allRightsReserved')}</p>
                 <div className="flex items-center gap-2 text-neutral-500">

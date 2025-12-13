@@ -48,7 +48,7 @@ export default async function MemoPage({ searchParams }: MemoPageProps) {
             <div className="space-y-6">
                 {memos.map((memo) => (
                     <article key={memo.id} className="border-b border-neutral-200 pb-6 group">
-                        <div className="prose prose-neutral max-w-none prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline">
+                        <div className="prose prose-neutral max-w-none prose-a:text-blue-600 prose-a:no-underline">
                             <MemoContent content={memo.content} />
                         </div>
                         <div className="flex items-center justify-between mt-4">

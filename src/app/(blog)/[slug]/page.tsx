@@ -51,8 +51,8 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
     } : null;
 
     return (
-        <div className="space-y-16 py-6 md:py-16">
-            <article className="space-y-8">
+        <div className="space-y-16 py-6 md:py-16 w-full overflow-x-hidden">
+            <article className="space-y-8 overflow-hidden">
                 <header className="space-y-4">
                     <h1 className="text-black text-2xl md:text-3xl font-black leading-tight tracking-[-0.033em]">{post.title}</h1>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -75,7 +75,7 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
                         )}
                     </div>
                 </header>
-                <div className="prose prose-neutral prose-lg max-w-none prose-headings:font-bold prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:w-full prose-img:border-1 prose-pre:bg-neutral-900 prose-pre:text-neutral-100">
+                <div className="prose prose-neutral prose-lg max-w-none prose-headings:font-bold prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-lg prose-img:max-w-full prose-img:border-1 prose-pre:bg-neutral-900 prose-pre:text-neutral-100 prose-pre:overflow-x-auto prose-table:overflow-x-auto [&_pre]:max-w-full [&_table]:block [&_table]:overflow-x-auto">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
                 </div>
             </article>

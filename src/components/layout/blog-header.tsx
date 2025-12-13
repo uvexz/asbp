@@ -21,7 +21,7 @@ export async function BlogHeader({ siteTitle, navItems = [] }: BlogHeaderProps) 
     };
     
     return (
-        <header className="flex items-center justify-between whitespace-nowrap mt-20 px-4 sm:px-10 py-4">
+        <header className="flex items-center justify-between whitespace-nowrap mt-20 sm:px-10 py-4">
             <div className="flex items-center gap-4 text-black">
                 <h2 className="text-black text-lg font-bold leading-tight tracking-[-0.015em]">{siteTitle}</h2>
             </div>
