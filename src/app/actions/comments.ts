@@ -58,15 +58,18 @@ export async function deleteComment(id: string) {
 }
 
 
-export async function createComment(postId: string, formData: FormData): Promise<CommentActionResult> {
+export async function createComment(postId: string, formData: FormData, parentId?: string): Promise<CommentActionResult> {
     const content = formData.get('content') as string;
     const guestName = formData.get('guestName') as string;
     const guestEmail = formData.get('guestEmail') as string;
+    const guestWebsite = formData.get('guestWebsite') as string;
 
     // Check if user is logged in
     const session = await auth.api.getSession({
         headers: await headers()
     });
+
+    let newCommentId: string | undefined;
 
     if (session?.user) {
         // Logged in user - skip guest validation, auto-approve
@@ -74,15 +77,17 @@ export async function createComment(postId: string, formData: FormData): Promise
             return { success: false, error: 'Comment content is required' };
         }
 
-        await db.insert(comments).values({
+        const result = await db.insert(comments).values({
             content: content.trim(),
             postId,
             userId: session.user.id,
+            parentId: parentId || null,
             status: 'approved', // Auto-approve for logged in users
-        });
+        }).returning({ id: comments.id });
+        newCommentId = result[0]?.id;
     } else {
         // Guest user - validate guest fields
-        const validationResult = commentSchema.safeParse({ content, guestName, guestEmail });
+        const validationResult = commentSchema.safeParse({ content, guestName, guestEmail, guestWebsite });
         
         if (!validationResult.success) {
             const errorMessages = validationResult.error.issues
@@ -91,18 +96,91 @@ export async function createComment(postId: string, formData: FormData): Promise
             return { success: false, error: errorMessages };
         }
 
-        await db.insert(comments).values({
+        const result = await db.insert(comments).values({
             content: validationResult.data.content,
             postId,
             guestName: validationResult.data.guestName,
             guestEmail: validationResult.data.guestEmail,
+            guestWebsite: validationResult.data.guestWebsite || null,
+            parentId: parentId || null,
             status: 'pending', // Pending for guests
-        });
+        }).returning({ id: comments.id });
+        newCommentId = result[0]?.id;
+    }
+
+    // Send email notification if this is a reply
+    if (parentId && newCommentId) {
+        sendReplyNotification(parentId, newCommentId, postId).catch(console.error);
     }
 
     revalidatePath('/admin/comments');
     
     return { success: true };
+}
+
+async function sendReplyNotification(parentCommentId: string, newCommentId: string, postId: string) {
+    const { getResendClient } = await import('@/lib/resend');
+    const { getSettings } = await import('@/app/actions/settings');
+    
+    const [resend, settings] = await Promise.all([
+        getResendClient(),
+        getSettings()
+    ]);
+
+    if (!resend || !settings.resendFromEmail) {
+        return; // Email not configured
+    }
+
+    // Get parent comment to find recipient email
+    const parentComment = await db.query.comments.findFirst({
+        where: eq(comments.id, parentCommentId),
+        with: { user: true }
+    });
+
+    if (!parentComment) return;
+
+    const recipientEmail = parentComment.user?.email || parentComment.guestEmail;
+    if (!recipientEmail) return;
+
+    // Get new comment details
+    const newComment = await db.query.comments.findFirst({
+        where: eq(comments.id, newCommentId),
+        with: { user: true }
+    });
+
+    if (!newComment) return;
+
+    // Get post details
+    const post = await db.query.posts.findFirst({
+        where: eq(posts.id, postId)
+    });
+
+    if (!post) return;
+
+    const replierName = newComment.user?.name || newComment.guestName || '匿名用户';
+    const siteTitle = settings.siteTitle || 'Blog';
+
+    try {
+        await resend.emails.send({
+            from: settings.resendFromEmail,
+            to: recipientEmail,
+            subject: `${replierName} 回复了你的评论 - ${siteTitle}`,
+            html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">你的评论收到了新回复</h2>
+                    <p style="color: #666;">在文章《${post.title}》中，${replierName} 回复了你的评论：</p>
+                    <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                        <p style="color: #333; margin: 0;">${newComment.content}</p>
+                    </div>
+                    <p style="color: #999; font-size: 14px;">
+                        此邮件由 ${siteTitle} 自动发送，请勿直接回复。
+                    </p>
+                </div>
+            `
+        });
+    } catch (error) {
+        console.error('Failed to send reply notification:', error);
+    }
 }
 
 export async function getPostComments(postId: string) {

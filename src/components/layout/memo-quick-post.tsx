@@ -4,6 +4,12 @@ import { useState, useRef } from 'react';
 import { Plus, X, Loader2, Eye, Edit, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { createQuickMemo } from '@/app/actions/posts';
 import { uploadMedia } from '@/app/actions/media';
 import ReactMarkdown from 'react-markdown';
@@ -78,14 +84,22 @@ export function MemoQuickPost({ className, hasS3 = false }: MemoQuickPostProps) 
 
   return (
     <div className={className}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-neutral-200 hover:bg-neutral-300 transition-colors"
-        title={t('quickMemo')}
-      >
-        <Plus className="h-3 w-3 text-neutral-600" />
-      </button>
+      <TooltipProvider delayDuration={100}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setIsOpen(true)}
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-neutral-200 hover:bg-neutral-300 transition-colors"
+            >
+              <Plus className="h-3 w-3 text-neutral-600" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{t('quickMemo')}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       {isOpen && (
         <>

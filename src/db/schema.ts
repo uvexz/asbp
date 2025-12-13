@@ -101,8 +101,10 @@ export const comments = pgTable('comment', {
   content: text('content').notNull(),
   postId: uuid('postId').notNull().references(() => posts.id),
   userId: text('userId').references(() => users.id),
+  parentId: uuid('parentId'), // For reply notifications
   guestName: text('guestName'),
   guestEmail: text('guestEmail'),
+  guestWebsite: text('guestWebsite'),
   status: text('status').default('pending'), // approved, rejected, pending
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
@@ -166,8 +168,10 @@ export const settings = pgTable('settings', {
   s3AccessKey: text('s3AccessKey'),
   s3SecretKey: text('s3SecretKey'),
   s3Endpoint: text('s3Endpoint'),
+  s3CdnUrl: text('s3CdnUrl'), // Optional CDN URL for media files
   // Resend
   resendApiKey: text('resendApiKey'),
+  resendFromEmail: text('resendFromEmail'), // Sender email for notifications
 });
 
 // Navigation items for the blog header

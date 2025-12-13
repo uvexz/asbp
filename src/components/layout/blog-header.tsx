@@ -1,18 +1,17 @@
 import Link from 'next/link';
-import { MemoQuickPost } from './memo-quick-post';
 import { MobileNav, type NavItemData } from './mobile-nav';
+import { NavIconLink } from './nav-icon-link';
 import { getTranslations } from 'next-intl/server';
+import { Home, StickyNote } from 'lucide-react';
 
 export type { NavItemData };
 
 interface BlogHeaderProps {
     siteTitle: string;
     navItems?: NavItemData[];
-    isAdmin?: boolean;
-    hasS3?: boolean;
 }
 
-export async function BlogHeader({ siteTitle, navItems = [], isAdmin = false, hasS3 = false }: BlogHeaderProps) {
+export async function BlogHeader({ siteTitle, navItems = [] }: BlogHeaderProps) {
     const t = await getTranslations('blog');
     
     const mobileTranslations = {
@@ -29,22 +28,13 @@ export async function BlogHeader({ siteTitle, navItems = [], isAdmin = false, ha
             
             {/* Desktop Navigation */}
             <div className="hidden sm:flex flex-1 justify-end gap-8">
-                <nav className="flex items-center gap-9">
-                    <Link
-                        href="/"
-                        className="text-neutral-500 text-sm font-medium leading-normal hover:text-black transition-colors"
-                    >
-                        {t('home')}
-                    </Link>
-                    <span className="flex items-center gap-1">
-                        <Link
-                            href="/memo"
-                            className="text-neutral-500 text-sm font-medium leading-normal hover:text-black transition-colors"
-                        >
-                            {t('memos')}
-                        </Link>
-                        {isAdmin && <MemoQuickPost hasS3={hasS3} />}
-                    </span>
+                <nav className="flex items-center gap-4">
+                    <NavIconLink href="/" label={t('home')}>
+                        <Home className="h-4 w-4" />
+                    </NavIconLink>
+                    <NavIconLink href="/memo" label={t('memos')}>
+                        <StickyNote className="h-4 w-4" />
+                    </NavIconLink>
                     {navItems.map((item) => (
                         <Link
                             key={item.id}
@@ -62,8 +52,6 @@ export async function BlogHeader({ siteTitle, navItems = [], isAdmin = false, ha
             {/* Mobile Navigation */}
             <MobileNav 
                 navItems={navItems} 
-                isAdmin={isAdmin} 
-                hasS3={hasS3} 
                 translations={mobileTranslations}
             />
         </header>

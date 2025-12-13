@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Upload, AlertTriangle, Trash2, Image as ImageIcon, FileText, Loader2 } from "lucide-react";
+import { Upload, AlertTriangle, Trash2, Image as ImageIcon, FileText, Loader2, Copy, Check, X } from "lucide-react";
 import { getMedia, uploadMedia, deleteMedia, type Media } from "@/app/actions/media";
 import { getSettings } from "@/app/actions/settings";
 import Link from 'next/link';
@@ -25,9 +25,21 @@ export default function AdminMediaPage() {
     const [isPending, startTransition] = useTransition();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [mediaToDelete, setMediaToDelete] = useState<Media | null>(null);
+    const [previewMedia, setPreviewMedia] = useState<Media | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const t = useTranslations('admin');
     const tCommon = useTranslations('common');
+
+    async function copyToClipboard(media: Media) {
+        try {
+            await navigator.clipboard.writeText(media.url);
+            setCopiedId(media.id);
+            setTimeout(() => setCopiedId(null), 2000);
+        } catch {
+            setError('Failed to copy link');
+        }
+    }
 
     // Load settings and media on mount
     useEffect(() => {
@@ -231,18 +243,36 @@ export default function AdminMediaPage() {
                             
                             {/* Overlay with info and actions */}
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-                                <div className="flex justify-end">
+                                <div className="flex justify-end gap-1">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-white hover:text-blue-400 hover:bg-blue-500/20"
+                                        onClick={() => copyToClipboard(media)}
+                                        disabled={isPending}
+                                        title={t('copyLink')}
+                                    >
+                                        {copiedId === media.id ? (
+                                            <Check className="h-5 w-5 text-green-400" />
+                                        ) : (
+                                            <Copy className="h-5 w-5" />
+                                        )}
+                                    </Button>
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         className="text-white hover:text-red-400 hover:bg-red-500/20"
                                         onClick={() => openDeleteDialog(media)}
                                         disabled={isPending}
+                                        title={tCommon('delete')}
                                     >
                                         <Trash2 className="h-5 w-5" />
                                     </Button>
                                 </div>
-                                <div className="text-white">
+                                <div 
+                                    className="text-white cursor-pointer"
+                                    onClick={() => isImageFile(media.mimeType) && setPreviewMedia(media)}
+                                >
                                     <p className="text-sm font-medium truncate">{media.filename}</p>
                                     <p className="text-xs text-gray-300">{formatFileSize(media.size)}</p>
                                 </div>
@@ -251,6 +281,50 @@ export default function AdminMediaPage() {
                     ))}
                 </div>
             )}
+
+            {/* Image Preview Dialog */}
+            <Dialog open={!!previewMedia} onOpenChange={() => setPreviewMedia(null)}>
+                <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden [&>button]:hidden">
+                    <DialogHeader className="p-4 pb-0">
+                        <DialogTitle className="truncate pr-8">{previewMedia?.filename}</DialogTitle>
+                    </DialogHeader>
+                    <div className="p-4 pt-2 flex flex-col gap-3">
+                        {previewMedia && (
+                            <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={previewMedia.url}
+                                    alt={previewMedia.filename}
+                                    className="max-h-[60vh] w-auto mx-auto object-contain rounded-lg"
+                                />
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={previewMedia.url}
+                                        className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => copyToClipboard(previewMedia)}
+                                    >
+                                        {copiedId === previewMedia.id ? (
+                                            <Check className="h-4 w-4 mr-1 text-green-500" />
+                                        ) : (
+                                            <Copy className="h-4 w-4 mr-1" />
+                                        )}
+                                        {t('copyLink')}
+                                    </Button>
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    {formatFileSize(previewMedia.size)} · {previewMedia.mimeType}
+                                </p>
+                            </>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

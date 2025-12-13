@@ -29,6 +29,7 @@ export const commentSchema = z.object({
   content: z.string().min(1, '评论内容不能为空').max(2000, '评论内容不能超过2000个字符'),
   guestName: z.string().min(1, '姓名不能为空').max(100, '姓名不能超过100个字符'),
   guestEmail: z.string().email('请输入有效的邮箱地址'),
+  guestWebsite: z.string().url('请输入有效的链接').max(200, '链接不能超过200个字符').optional().or(z.literal('')),
 });
 
 /**

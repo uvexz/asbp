@@ -9,6 +9,7 @@ import { headers } from 'next/headers';
 import { getS3Client } from '@/lib/s3';
 import { getSettings } from './settings';
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { ulid } from 'ulid';
 
 export type ActionResult<T = void> = 
   | { success: true; data?: T }
@@ -73,10 +74,12 @@ export async function uploadMedia(formData: FormData): Promise<ActionResult<{ ur
   }
 
   try {
-    // Generate unique filename
-    const timestamp = Date.now();
-    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const key = `uploads/${timestamp}-${sanitizedFilename}`;
+    // Generate unique filename with year/month structure using ULID
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const ext = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')) : '';
+    const key = `uploads/${year}/${month}/${ulid()}${ext}`;
 
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer();
@@ -90,8 +93,9 @@ export async function uploadMedia(formData: FormData): Promise<ActionResult<{ ur
       ContentType: file.type || 'application/octet-stream',
     }));
 
-    // Construct the URL
-    const url = `${settings.s3Endpoint}/${settings.s3Bucket}/${key}`;
+    // Construct the URL - use CDN URL if configured, otherwise use S3 endpoint
+    const baseUrl = settings.s3CdnUrl || `${settings.s3Endpoint}/${settings.s3Bucket}`;
+    const url = `${baseUrl}/${key}`;
 
     // Save to database
     const [newMedia] = await db.insert(media).values({

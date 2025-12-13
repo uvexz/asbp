@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/ui/pagination';
 import { formatDate } from '@/lib/date-utils';
 import { getTranslations } from 'next-intl/server';
+import { Calendar, Tag } from 'lucide-react';
 
 interface HomePageProps {
     searchParams: Promise<{ page?: string }>;
@@ -24,16 +25,21 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     <div key={post.id} className="flex flex-col gap-2 border-b border-neutral-200 pb-6">
                         <Link href={`/${post.slug}`} className="text-black text-xl font-bold leading-normal hover:text-neutral-700 transition-colors">{post.title}</Link>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                            <p className="text-neutral-500 text-sm font-normal leading-none">{formatDate(post.publishedAt || post.createdAt)}</p>
-                            <div className="flex items-center gap-2 flex-wrap">
-                                {post.tags.map((postTag) => (
-                                    <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
-                                        <Badge variant="secondary" className="hover:bg-neutral-200 transition-colors leading-none">
-                                            {postTag.tag.name}
-                                        </Badge>
-                                    </Link>
-                                ))}
-                            </div>
+                            <p className="text-neutral-500 text-sm font-normal leading-none flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(post.publishedAt || post.createdAt)}
+                            </p>
+                            {post.tags.length > 0 && (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {post.tags.map((postTag) => (
+                                        <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
+                                            <Badge variant="secondary" className="hover:bg-neutral-200 transition-colors leading-none">
+                                                <Tag className="h-3 w-3 text-neutral-500" /> {postTag.tag.name}
+                                            </Badge>
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}

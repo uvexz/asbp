@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ADD COLUMN "s3CdnUrl" text;

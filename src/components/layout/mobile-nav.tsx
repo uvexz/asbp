@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Menu } from 'lucide-react';
+import { Menu, Home, StickyNote } from 'lucide-react';
 import {
     Sheet,
     SheetContent,
@@ -11,7 +11,6 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { MemoQuickPost } from './memo-quick-post';
 
 export type NavItemData = {
     id: string;
@@ -23,8 +22,6 @@ export type NavItemData = {
 
 interface MobileNavProps {
     navItems?: NavItemData[];
-    isAdmin?: boolean;
-    hasS3?: boolean;
     translations: {
         home: string;
         memos: string;
@@ -32,7 +29,7 @@ interface MobileNavProps {
     };
 }
 
-export function MobileNav({ navItems = [], isAdmin = false, hasS3 = false, translations }: MobileNavProps) {
+export function MobileNav({ navItems = [], translations }: MobileNavProps) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -51,20 +48,19 @@ export function MobileNav({ navItems = [], isAdmin = false, hasS3 = false, trans
                     <Link
                         href="/"
                         onClick={() => setOpen(false)}
-                        className="text-neutral-700 text-base font-medium py-2 px-3 rounded-md hover:text-black hover:bg-neutral-100 transition-colors"
+                        className="flex items-center gap-2 text-neutral-700 text-base font-medium py-2 px-3 rounded-md hover:text-black hover:bg-neutral-100 transition-colors"
                     >
+                        <Home className="h-4 w-4" />
                         {translations.home}
                     </Link>
-                    <span className="flex items-center gap-2">
-                        <Link
-                            href="/memo"
-                            onClick={() => setOpen(false)}
-                            className="text-neutral-700 text-base font-medium py-2 px-3 rounded-md hover:text-black hover:bg-neutral-100 transition-colors"
-                        >
-                            {translations.memos}
-                        </Link>
-                        {isAdmin && <MemoQuickPost hasS3={hasS3} />}
-                    </span>
+                    <Link
+                        href="/memo"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 text-neutral-700 text-base font-medium py-2 px-3 rounded-md hover:text-black hover:bg-neutral-100 transition-colors"
+                    >
+                        <StickyNote className="h-4 w-4" />
+                        {translations.memos}
+                    </Link>
                     {navItems.map((item) => (
                         <Link
                             key={item.id}

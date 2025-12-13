@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ImageLightbox } from './image-lightbox';
@@ -8,34 +9,47 @@ interface MemoContentProps {
   content: string;
 }
 
+// Extract image URLs from markdown content
+function extractImages(content: string): string[] {
+  const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  const images: string[] = [];
+  let match;
+  while ((match = imageRegex.exec(content)) !== null) {
+    images.push(match[2]);
+  }
+  return images;
+}
+
+// Remove image markdown from content
+function removeImages(content: string): string {
+  return content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '').trim();
+}
+
 export function MemoContent({ content }: MemoContentProps) {
+  const { textContent, images } = useMemo(() => ({
+    textContent: removeImages(content),
+    images: extractImages(content),
+  }), [content]);
+
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        img: ({ src, alt }) => (
-          <ImageLightbox
-            src={typeof src === 'string' ? src : ''}
-            alt={alt || ''}
-            className="w-24 h-24 object-cover rounded-lg border mt-2"
-          />
-        ),
-        p: ({ children, ...props }) => {
-          // Check if children contains only images
-          const hasOnlyImages = Array.isArray(children) 
-            ? children.every(child => 
-                typeof child === 'object' && child !== null && 'type' in child && child.type === 'img'
-              )
-            : false;
-          
-          if (hasOnlyImages) {
-            return <div className="flex flex-wrap gap-2" {...props}>{children}</div>;
-          }
-          return <p {...props}>{children}</p>;
-        },
-      }}
-    >
-      {content}
-    </ReactMarkdown>
+    <div>
+      {textContent && (
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {textContent}
+        </ReactMarkdown>
+      )}
+      {images.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-1">
+          {images.map((src, index) => (
+            <ImageLightbox
+              key={index}
+              src={src}
+              alt={`Image ${index + 1}`}
+              className="w-24 h-24 object-cover rounded-lg border not-prose"
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

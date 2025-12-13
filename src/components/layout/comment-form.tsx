@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { createComment, type CommentActionResult } from '@/app/actions/comments'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { md5 } from '@/lib/hash';
 
 interface CommentFormProps {
     postId: string;
@@ -25,11 +26,24 @@ function getInitials(name: string): string {
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
+function getGravatarUrl(email: string): string {
+    const hash = md5(email.trim().toLowerCase());
+    return `https://use.sevencdn.com/avatar/${hash}?d=mp`;
+}
+
 export function CommentForm({ postId, user }: CommentFormProps) {
     const [isPending, startTransition] = useTransition();
     const [result, setResult] = useState<CommentActionResult | null>(null);
+    const [guestEmail, setGuestEmail] = useState('');
     const t = useTranslations('blog');
     const tAuth = useTranslations('auth');
+
+    const gravatarUrl = useMemo(() => {
+        if (guestEmail && guestEmail.includes('@')) {
+            return getGravatarUrl(guestEmail);
+        }
+        return null;
+    }, [guestEmail]);
 
     async function handleSubmit(formData: FormData) {
         startTransition(async () => {
@@ -87,21 +101,38 @@ export function CommentForm({ postId, user }: CommentFormProps) {
                 />
                 
                 {!user && (
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-4">
+                            <Avatar className="h-12 w-12 flex-shrink-0">
+                                <AvatarImage src={gravatarUrl || undefined} />
+                                <AvatarFallback>?</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 flex flex-col sm:flex-row gap-4">
+                                <Input 
+                                    name="guestName" 
+                                    className="flex-1 rounded border-neutral-300 focus:ring-black focus:border-black transition" 
+                                    placeholder={t('commentName')} 
+                                    type="text" 
+                                    required 
+                                    disabled={isPending}
+                                />
+                                <Input 
+                                    name="guestEmail" 
+                                    className="flex-1 rounded border-neutral-300 focus:ring-black focus:border-black transition" 
+                                    placeholder={t('commentEmail')} 
+                                    type="email" 
+                                    required 
+                                    disabled={isPending}
+                                    value={guestEmail}
+                                    onChange={(e) => setGuestEmail(e.target.value)}
+                                />
+                            </div>
+                        </div>
                         <Input 
-                            name="guestName" 
-                            className="flex-1 rounded border-neutral-300 focus:ring-black focus:border-black transition" 
-                            placeholder={t('commentName')} 
-                            type="text" 
-                            required 
-                            disabled={isPending}
-                        />
-                        <Input 
-                            name="guestEmail" 
-                            className="flex-1 rounded border-neutral-300 focus:ring-black focus:border-black transition" 
-                            placeholder={t('commentEmail')} 
-                            type="email" 
-                            required 
+                            name="guestWebsite" 
+                            className="rounded border-neutral-300 focus:ring-black focus:border-black transition" 
+                            placeholder={t('commentWebsite')} 
+                            type="url" 
                             disabled={isPending}
                         />
                     </div>

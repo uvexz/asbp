@@ -17,9 +17,10 @@ function Checkbox({ id, name, defaultChecked, ...props }: React.InputHTMLAttribu
     );
 }
 
-export default async function AdminSettingsPage() {
+export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
     const settings = await getSettings();
     const t = await getTranslations('admin');
+    const { saved } = await searchParams;
 
     return (
         <div className="flex flex-col h-full">
@@ -28,6 +29,11 @@ export default async function AdminSettingsPage() {
                 <p className="text-gray-500 text-base font-normal leading-normal mt-2">{t('blogSettingsDesc')}</p>
             </header>
             <main className="flex-1 px-4 pb-6 sm:px-6 overflow-auto">
+            {saved && (
+                <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-md">
+                    {t('settingsSaved')}
+                </div>
+            )}
             <form action={updateSettings} className="space-y-8">
                 <section className="space-y-4">
                     <h2 className="text-xl font-bold border-b pb-2">{t('generalSettings')}</h2>
@@ -77,14 +83,24 @@ export default async function AdminSettingsPage() {
                             <Label htmlFor="s3SecretKey">{t('secretKey')}</Label>
                             <Input type="password" id="s3SecretKey" name="s3SecretKey" defaultValue={settings.s3SecretKey || ''} />
                         </div>
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="s3CdnUrl">{t('cdnUrl')}</Label>
+                            <Input type="text" id="s3CdnUrl" name="s3CdnUrl" placeholder={t('cdnUrlDesc')} defaultValue={settings.s3CdnUrl || ''} />
+                        </div>
                     </div>
                 </section>
 
                 <section className="space-y-4">
                     <h2 className="text-xl font-bold border-b pb-2">{t('emailService')}</h2>
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                        <Label htmlFor="resendApiKey">{t('resendApiKey')}</Label>
-                        <Input type="password" id="resendApiKey" name="resendApiKey" placeholder="re_..." defaultValue={settings.resendApiKey || ''} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="resendApiKey">{t('resendApiKey')}</Label>
+                            <Input type="password" id="resendApiKey" name="resendApiKey" placeholder="re_..." defaultValue={settings.resendApiKey || ''} />
+                        </div>
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="resendFromEmail">{t('resendFromEmail')}</Label>
+                            <Input type="email" id="resendFromEmail" name="resendFromEmail" placeholder={t('resendFromEmailDesc')} defaultValue={settings.resendFromEmail || ''} />
+                        </div>
                     </div>
                 </section>
 

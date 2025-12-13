@@ -12,6 +12,7 @@ import { headers } from 'next/headers';
 import { getInitials } from '@/lib/user-utils';
 import { formatDate } from '@/lib/date-utils';
 import { getTranslations } from 'next-intl/server';
+import { getGravatarUrl } from '@/lib/gravatar';
 
 export default async function ArticleDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
@@ -66,9 +67,11 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
                     {comments.map((comment) => {
                         const isUserComment = comment.user;
                         const authorName = isUserComment ? comment.user!.name : (comment.guestName || t('anonymous'));
-                        const authorImage = isUserComment ? comment.user!.image : null;
+                        const authorImage = isUserComment 
+                            ? comment.user!.image 
+                            : (comment.guestEmail ? getGravatarUrl(comment.guestEmail) : null);
                         const authorBio = isUserComment ? comment.user!.bio : null;
-                        const authorWebsite = isUserComment ? comment.user!.website : null;
+                        const authorWebsite = isUserComment ? comment.user!.website : comment.guestWebsite;
                         
                         return (
                             <div key={comment.id} className="border-b border-neutral-100 pb-4 last:border-0">

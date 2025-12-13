@@ -300,3 +300,70 @@ export async function createQuickMemo(content: string): Promise<ActionResult> {
     revalidatePath('/admin/posts');
     return { success: true };
 }
+
+/**
+ * Update a memo from the frontend
+ * Requires admin role
+ */
+export async function updateMemo(id: string, content: string): Promise<ActionResult> {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session || session.user.role !== 'admin') {
+        return { success: false, error: '需要管理员权限' };
+    }
+
+    if (!content.trim()) {
+        return { success: false, error: '内容不能为空' };
+    }
+
+    // Verify the memo exists and is a memo type
+    const memo = await db.query.posts.findFirst({
+        where: and(eq(posts.id, id), eq(posts.postType, 'memo')),
+    });
+
+    if (!memo) {
+        return { success: false, error: '随笔不存在' };
+    }
+
+    await db.update(posts)
+        .set({ 
+            content: content.trim(),
+            updatedAt: new Date() 
+        })
+        .where(eq(posts.id, id));
+
+    revalidatePath('/memo');
+    revalidatePath('/admin/posts');
+    return { success: true };
+}
+
+/**
+ * Delete a memo from the frontend
+ * Requires admin role
+ */
+export async function deleteMemo(id: string): Promise<ActionResult> {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session || session.user.role !== 'admin') {
+        return { success: false, error: '需要管理员权限' };
+    }
+
+    // Verify the memo exists and is a memo type
+    const memo = await db.query.posts.findFirst({
+        where: and(eq(posts.id, id), eq(posts.postType, 'memo')),
+    });
+
+    if (!memo) {
+        return { success: false, error: '随笔不存在' };
+    }
+
+    await db.delete(posts).where(eq(posts.id, id));
+
+    revalidatePath('/memo');
+    revalidatePath('/admin/posts');
+    return { success: true };
+}

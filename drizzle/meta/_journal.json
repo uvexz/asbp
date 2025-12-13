@@ -50,6 +50,20 @@
       "when": 1765467452471,
       "tag": "0006_parallel_guardian",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1765592038261,
+      "tag": "0007_good_shard",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1765595528366,
+      "tag": "0008_simple_maestro",
+      "breakpoints": true
     }
   ]
 }
