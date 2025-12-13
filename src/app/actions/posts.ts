@@ -13,9 +13,33 @@ export type ActionResult<T = void> =
   | { success: true; data?: T }
   | { success: false; error: string };
 
-export async function getPosts() {
+export async function getPosts(page: number = 1, pageSize: number = 20, search?: string) {
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(100, pageSize));
+    const offset = (validPage - 1) * validPageSize;
+
+    // Build where condition for search
+    const { ilike, or } = await import('drizzle-orm');
+    const searchCondition = search?.trim() 
+        ? or(
+            ilike(posts.title, `%${search.trim()}%`),
+            ilike(posts.content, `%${search.trim()}%`)
+          )
+        : undefined;
+
+    const [totalResult] = await db
+        .select({ count: count() })
+        .from(posts)
+        .where(searchCondition);
+    
+    const total = totalResult?.count ?? 0;
+    const totalPages = Math.ceil(total / validPageSize);
+
     const data = await db.query.posts.findMany({
+        where: searchCondition,
         orderBy: [desc(posts.createdAt)],
+        limit: validPageSize,
+        offset: offset,
         with: {
             author: true,
             tags: {
@@ -25,7 +49,13 @@ export async function getPosts() {
             },
         }
     });
-    return data;
+    
+    return {
+        posts: data,
+        total,
+        totalPages,
+        currentPage: validPage,
+    };
 }
 
 /**
@@ -151,14 +181,21 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
         throw new Error('Unauthorized');
     }
 
-    const title = formData.get('title') as string;
-    const slug = formData.get('slug') as string;
+    let title = formData.get('title') as string;
+    let slug = formData.get('slug') as string;
     const content = formData.get('content') as string;
     const published = formData.get('published') === 'on';
     const postType = (formData.get('postType') as 'post' | 'page' | 'memo') || 'post';
     const tagIds = formData.getAll('tagIds') as string[];
     const publishedAtStr = formData.get('publishedAt') as string;
     const publishedAt = publishedAtStr ? new Date(publishedAtStr) : (published ? new Date() : null);
+
+    // Auto-generate title/slug for memos if empty
+    if (postType === 'memo' && (!title || !slug)) {
+        const timestamp = Date.now();
+        title = title || `memo-${timestamp}`;
+        slug = slug || `memo-${timestamp}`;
+    }
 
     // Validate input using postSchema
     const validationResult = postSchema.safeParse({ title, slug, content, published, publishedAt });
@@ -261,8 +298,16 @@ export async function deletePost(id: string) {
         throw new Error('Unauthorized');
     }
 
+    // 级联删除关联数据
+    const { postsTags, comments } = await import('@/db/schema');
+    await db.delete(postsTags).where(eq(postsTags.postId, id));
+    await db.delete(comments).where(eq(comments.postId, id));
+    
+    // 删除文章
     await db.delete(posts).where(eq(posts.id, id));
+    
     revalidatePath('/admin/posts');
+    revalidatePath('/admin/comments');
 }
 
 /**

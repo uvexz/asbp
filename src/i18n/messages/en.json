@@ -252,7 +252,8 @@
     "openSource": "Open Source",
     "backToBlog": "Back to Blog",
     "contentGroup": "Content",
-    "systemGroup": "System"
+    "systemGroup": "System",
+    "searchPlaceholder": "Search title or content..."
   },
   "pagination": {
     "previousPage": "Previous page",

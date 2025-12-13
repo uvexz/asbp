@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/date-utils';
 import { getTranslations } from 'next-intl/server';
 import { getSettings } from '@/app/actions/settings';
 import type { Metadata } from 'next';
+import { Calendar, Tag } from 'lucide-react';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
@@ -51,16 +52,14 @@ export default async function TagPage({ params }: { params: Promise<{ slug: stri
                             {post.title}
                         </Link>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                            <p className="text-neutral-500 text-sm font-normal leading-normal">
-                                {formatDate(post.createdAt)}
+                            <p className="text-neutral-500 text-sm font-normal leading-none flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(post.publishedAt || post.createdAt)}
                             </p>
-                            <div className="flex gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                                 {post.tags.map((postTag) => (
                                     <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
-                                        <Badge 
-                                            variant={postTag.tag.slug === slug ? "default" : "secondary"} 
-                                            className="hover:bg-neutral-200 transition-colors"
-                                        >
+                                        <Badge  variant="secondary" className="hover:bg-neutral-200 transition-colors leading-none">
                                             {postTag.tag.name}
                                         </Badge>
                                     </Link>

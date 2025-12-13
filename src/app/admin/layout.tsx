@@ -18,6 +18,11 @@ export default async function AdminLayout({
         redirect("/sign-in");
     }
 
+    // 验证管理员角色
+    if (session.user.role !== 'admin') {
+        redirect("/");
+    }
+
     const settings = await getSettings();
 
     // Extract user info from session for the sidebar
@@ -30,10 +35,10 @@ export default async function AdminLayout({
     };
 
     return (
-        <div className="flex flex-col lg:flex-row h-screen w-full bg-[#f6f8f6] dark:bg-[#152111] font-sans overflow-hidden">
+        <div className="fixed inset-0 flex flex-col lg:flex-row bg-[#f6f8f6] dark:bg-[#152111] font-sans">
             <AdminMobileHeader settings={settings} user={user} />
             <AdminSidebar settings={settings} user={user} />
-            <main className="flex-1 overflow-auto">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden">
                 {children}
             </main>
         </div>

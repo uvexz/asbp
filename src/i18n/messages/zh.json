@@ -253,7 +253,8 @@
     "openSource": "开源项目",
     "backToBlog": "返回博客",
     "contentGroup": "内容管理",
-    "systemGroup": "系统设置"
+    "systemGroup": "系统设置",
+    "searchPlaceholder": "搜索标题或内容..."
   },
   "pagination": {
     "previousPage": "上一页",

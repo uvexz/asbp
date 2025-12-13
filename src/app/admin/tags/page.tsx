@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Check, X } from 'lucide-react';
+import { DeleteButton } from '@/components/ui/delete-button';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,7 +14,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { getTags, createTag, deleteTag } from '@/app/actions/tags';
+import { getTags, createTag, deleteTag, updateTag } from '@/app/actions/tags';
 import { useTranslations } from 'next-intl';
 
 type Tag = {
@@ -26,6 +28,8 @@ export default function AdminTagsPage() {
     const [newTagName, setNewTagName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingName, setEditingName] = useState('');
     const t = useTranslations('admin');
     const tCommon = useTranslations('common');
 
@@ -59,18 +63,47 @@ export default function AdminTagsPage() {
             const result = await createTag(formData);
             if (result.success) {
                 setNewTagName('');
+                toast.success('标签创建成功');
                 await refreshTags();
             } else {
                 setError(result.error);
+                toast.error(result.error);
             }
         });
     }
 
     async function handleDeleteTag(id: string) {
+        const result = await deleteTag(id);
+        if (result.success) {
+            await refreshTags();
+        }
+    }
+
+    function startEditing(tag: Tag) {
+        setEditingId(tag.id);
+        setEditingName(tag.name);
+    }
+
+    function cancelEditing() {
+        setEditingId(null);
+        setEditingName('');
+    }
+
+    async function handleUpdateTag(id: string) {
+        if (!editingName.trim()) {
+            toast.error(t('tagNameRequired'));
+            return;
+        }
+
         startTransition(async () => {
-            const result = await deleteTag(id);
+            const result = await updateTag(id, editingName.trim());
             if (result.success) {
+                toast.success('标签更新成功');
+                setEditingId(null);
+                setEditingName('');
                 await refreshTags();
+            } else {
+                toast.error(result.error);
             }
         });
     }
@@ -120,18 +153,64 @@ export default function AdminTagsPage() {
                         <TableBody>
                             {tags.map((tag) => (
                                 <TableRow key={tag.id}>
-                                    <TableCell className="font-medium">{tag.name}</TableCell>
+                                    <TableCell className="font-medium">
+                                        {editingId === tag.id ? (
+                                            <Input
+                                                value={editingName}
+                                                onChange={(e) => setEditingName(e.target.value)}
+                                                className="h-8 w-40"
+                                                autoFocus
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleUpdateTag(tag.id);
+                                                    if (e.key === 'Escape') cancelEditing();
+                                                }}
+                                            />
+                                        ) : (
+                                            tag.name
+                                        )}
+                                    </TableCell>
                                     <TableCell className="text-gray-500">{tag.slug}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="text-red-500 hover:text-red-600 hover:bg-red-100"
-                                            onClick={() => handleDeleteTag(tag.id)}
-                                            disabled={isPending}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        <div className="flex items-center justify-end gap-1">
+                                            {editingId === tag.id ? (
+                                                <>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-green-600 hover:bg-green-50"
+                                                        onClick={() => handleUpdateTag(tag.id)}
+                                                        disabled={isPending}
+                                                    >
+                                                        <Check className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-gray-500 hover:bg-gray-100"
+                                                        onClick={cancelEditing}
+                                                        disabled={isPending}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-gray-500 hover:bg-gray-100"
+                                                        onClick={() => startEditing(tag)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <DeleteButton
+                                                        onDelete={() => handleDeleteTag(tag.id)}
+                                                        title="删除标签"
+                                                        description={`确定要删除标签「${tag.name}」吗？关联的文章将取消此标签。`}
+                                                    />
+                                                </>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}

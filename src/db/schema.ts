@@ -183,3 +183,11 @@ export const navItems = pgTable('nav_item', {
   sortOrder: integer('sortOrder').notNull().default(0),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
+
+// Rate limiting table for better-auth
+export const rateLimit = pgTable('rateLimit', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull(),
+  count: integer('count').notNull(),
+  lastRequest: timestamp('lastRequest').notNull(),
+});

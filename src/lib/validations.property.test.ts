@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { postSchema, commentSchema, tagSchema, settingsSchema } from './validations';
+import { postSchema, commentSchema, tagSchema } from './validations';
 
 /**
  * **Feature: project-audit, Property 12: Input Validation**

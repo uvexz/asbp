@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Upload, AlertTriangle, Trash2, Image as ImageIcon, FileText, Loader2, Copy, Check, X } from "lucide-react";
+import { Upload, AlertTriangle, Trash2, Image as ImageIcon, FileText, Loader2, Copy, Check } from "lucide-react";
 import { getMedia, uploadMedia, deleteMedia, type Media } from "@/app/actions/media";
 import { getSettings } from "@/app/actions/settings";
 import Link from 'next/link';

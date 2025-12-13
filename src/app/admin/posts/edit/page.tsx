@@ -98,7 +98,7 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                             
                             {/* Title - hidden for memo, but still required for DB */}
                             {isMemo ? (
-                                <input type="hidden" name="title" value={post?.title || `memo-${Date.now()}`} />
+                                <input type="hidden" name="title" value={post?.title || ''} />
                             ) : (
                                 <div className="space-y-2">
                                     <Label htmlFor="title">{t('postTitle')}</Label>
@@ -115,7 +115,7 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                             
                             {/* Slug - auto-generated for memo */}
                             {isMemo ? (
-                                <input type="hidden" name="slug" value={post?.slug || `memo-${Date.now()}`} />
+                                <input type="hidden" name="slug" value={post?.slug || ''} />
                             ) : (
                                 <div className="space-y-2">
                                     <Label htmlFor="slug">{t('postSlug')}</Label>

@@ -15,6 +15,7 @@ export const auth = betterAuth({
             account: schema.accounts,
             verification: schema.verification,
             passkey: schema.passkeys,
+            rateLimit: schema.rateLimit,
         },
     }),
     emailAndPassword: {
@@ -27,6 +28,22 @@ export const auth = betterAuth({
                 defaultValue: 'user'
             }
         }
+    },
+    rateLimit: {
+        enabled: true,
+        window: 60, // 60 seconds
+        max: 100, // 100 requests per window
+        storage: "database",
+        customRules: {
+            "/sign-in/email": {
+                window: 60,
+                max: 5, // Stricter limit for login attempts
+            },
+            "/sign-up/email": {
+                window: 60,
+                max: 3, // Stricter limit for registration
+            },
+        },
     },
     plugins: [
         passkey(),

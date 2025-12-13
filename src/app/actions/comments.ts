@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { comments, posts } from '@/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, count } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -25,14 +25,19 @@ async function requireAdmin() {
     return session;
 }
 
-export async function getComments() {
-    // Join with posts to get post title if possible, or just fetch comments
-    // Drizzle query builder with relations is cleaner but currently we used raw schema without explicit relations.
-    // We'll manual join or just fetch generic for now.
+export async function getComments(page: number = 1, pageSize: number = 20) {
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(100, pageSize));
+    const offset = (validPage - 1) * validPageSize;
+
+    // Get total count
+    const [totalResult] = await db.select({ count: count() }).from(comments);
+    const total = totalResult?.count ?? 0;
+    const totalPages = Math.ceil(total / validPageSize);
+
     const data = await db.select({
         id: comments.id,
         content: comments.content,
-        // For guest comments
         author: comments.guestName,
         status: comments.status,
         createdAt: comments.createdAt,
@@ -40,9 +45,16 @@ export async function getComments() {
     })
         .from(comments)
         .leftJoin(posts, eq(comments.postId, posts.id))
-        .orderBy(desc(comments.createdAt));
+        .orderBy(desc(comments.createdAt))
+        .limit(validPageSize)
+        .offset(offset);
 
-    return data;
+    return {
+        comments: data,
+        total,
+        totalPages,
+        currentPage: validPage,
+    };
 }
 
 export async function approveComment(id: string) {

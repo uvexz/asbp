@@ -54,7 +54,7 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
         <div className="space-y-16 py-6 md:py-16 w-full overflow-x-hidden">
             <article className="space-y-8 overflow-hidden">
                 <header className="space-y-4">
-                    <h1 className="text-black text-2xl md:text-3xl font-black leading-tight tracking-[-0.033em]">{post.title}</h1>
+                    <h1 className="text-black dark:text-white text-2xl md:text-3xl font-black leading-tight tracking-[-0.033em]">{post.title}</h1>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <p className="text-neutral-500 text-sm font-normal leading-none flex items-center gap-1">
                             {t('by')} {post.author.name} 

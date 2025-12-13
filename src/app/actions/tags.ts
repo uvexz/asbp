@@ -124,6 +124,44 @@ export async function createTagInline(name: string): Promise<CreateTagResult> {
 }
 
 /**
+ * Update an existing tag
+ */
+export async function updateTag(id: string, name: string): Promise<TagActionResult> {
+  await requireAdmin();
+
+  // Validate input using tagSchema
+  const validationResult = tagSchema.safeParse({ name });
+  
+  if (!validationResult.success) {
+    const errorMessages = validationResult.error.issues
+      .map(issue => issue.message)
+      .join(', ');
+    return { success: false, error: errorMessages };
+  }
+
+  const slug = generateSlug(validationResult.data.name);
+
+  if (!slug) {
+    return { success: false, error: '无法生成有效的slug，请使用包含字母或数字的标签名' };
+  }
+
+  try {
+    await db.update(tags)
+      .set({ name: validationResult.data.name, slug })
+      .where(eq(tags.id, id));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('unique')) {
+      return { success: false, error: '标签名或slug已存在' };
+    }
+    throw error;
+  }
+
+  revalidatePath('/admin/tags');
+  revalidatePath('/');
+  return { success: true };
+}
+
+/**
  * Delete a tag and cascade delete all post-tag associations
  * Requirements: 8.3
  */
@@ -194,9 +232,6 @@ export async function getTagBySlug(slug: string) {
  * Requirements: 11.3
  */
 export async function getPostsByTag(tagSlug: string) {
-  const { posts } = await import('@/db/schema');
-  const { desc, eq: drizzleEq, and } = await import('drizzle-orm');
-  
   // First get the tag
   const tag = await db.query.tags.findFirst({
     where: eq(tags.slug, tagSlug),

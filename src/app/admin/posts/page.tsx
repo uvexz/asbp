@@ -1,38 +1,20 @@
 import Link from 'next/link';
-import { Edit, Trash2, FileText, File, MessageSquare } from 'lucide-react';
+import { FileText, File, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { getPosts, deletePost } from '@/app/actions/posts';
-import { formatDate } from '@/lib/date-utils';
+import { PostsTable } from '@/components/layout/posts-table';
+import { Pagination } from '@/components/ui/pagination';
+import { getPosts } from '@/app/actions/posts';
 import { getTranslations } from 'next-intl/server';
 
 type PostType = 'post' | 'page' | 'memo';
 
-export default async function AdminPostsPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
-    const { type } = await searchParams;
-    const allPosts = await getPosts();
+export default async function AdminPostsPage({ searchParams }: { searchParams: Promise<{ type?: string; page?: string; q?: string }> }) {
+    const { type, page, q: searchQuery } = await searchParams;
+    const currentPage = parseInt(page || '1', 10);
+    const { posts: allPosts, totalPages } = await getPosts(currentPage, 10, searchQuery);
     const t = await getTranslations('admin');
     const tCommon = await getTranslations('common');
-    
-    const postTypeLabels: Record<PostType, string> = {
-        post: t('post'),
-        page: t('page'),
-        memo: t('memo'),
-    };
-
-    const postTypeColors: Record<PostType, string> = {
-        post: 'bg-blue-100 text-blue-800',
-        page: 'bg-purple-100 text-purple-800',
-        memo: 'bg-orange-100 text-orange-800',
-    };
     
     // Default to 'post' type if not specified
     const currentType = (type || 'post') as PostType;
@@ -41,7 +23,7 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
     const posts = allPosts.filter(p => (p.postType || 'post') === currentType);
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col min-h-full">
             <header className="flex flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
                 <div className="flex flex-col gap-2">
                     <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">{t('contentManagement')}</h1>
@@ -65,7 +47,7 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
                     </Link>
                 </div>
             </header>
-            <main className="flex-1 px-4 pb-6 sm:px-6 overflow-auto">
+            <main className="flex-1 px-4 pb-6 sm:px-6">
                 <div className="mb-6">
                     <div className="flex gap-2">
                         <Link href="/admin/posts?type=post">
@@ -85,58 +67,35 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
                         </Link>
                     </div>
                 </div>
-                <div className="rounded-md border bg-white dark:bg-black">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>{t('titleOrContent')}</TableHead>
-                                <TableHead>{tCommon('type')}</TableHead>
-                                <TableHead>{tCommon('status')}</TableHead>
-                                <TableHead>{tCommon('date')}</TableHead>
-                                <TableHead className="text-right">{tCommon('actions')}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {posts.map((post) => {
-                                const postType = (post.postType || 'post') as PostType;
-                                const isMemo = postType === 'memo';
-                                return (
-                                    <TableRow key={post.id}>
-                                        <TableCell className="font-medium max-w-xs truncate">
-                                            {isMemo ? post.content.slice(0, 50) + (post.content.length > 50 ? '...' : '') : post.title}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge className={`${postTypeColors[postType]} shadow-none`}>
-                                                {postTypeLabels[postType]}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge className="bg-[#4cdf20]/20 text-gray-900 hover:bg-[#4cdf20]/30 shadow-none">
-                                                {post.published ? t('published') : t('draft')}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>{formatDate(post.publishedAt || post.createdAt)}</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Link href={`/admin/posts/edit?id=${post.id}`}>
-                                                    <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
-                                                </Link>
-                                                <form action={deletePost.bind(null, post.id)}>
-                                                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-100"><Trash2 className="h-4 w-4" /></Button>
-                                                </form>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                            {posts.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24 text-gray-500">{t('noContent')}</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                <PostsTable 
+                    posts={posts}
+                    currentType={currentType}
+                    searchQuery={searchQuery}
+                    labels={{
+                        titleOrContent: t('titleOrContent'),
+                        type: tCommon('type'),
+                        status: tCommon('status'),
+                        date: tCommon('date'),
+                        actions: tCommon('actions'),
+                        published: t('published'),
+                        draft: t('draft'),
+                        noContent: t('noContent'),
+                        post: t('post'),
+                        page: t('page'),
+                        memo: t('memo'),
+                        search: tCommon('search'),
+                        searchPlaceholder: t('searchPlaceholder'),
+                    }}
+                />
+                {totalPages > 1 && (
+                    <div className="mt-6 flex justify-center">
+                        <Pagination 
+                            currentPage={currentPage} 
+                            totalPages={totalPages} 
+                            baseUrl={`/admin/posts?type=${currentType}`}
+                        />
+                    </div>
+                )}
             </main>
         </div>
     );
