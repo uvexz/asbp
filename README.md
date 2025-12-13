@@ -1,4 +1,4 @@
-![ASBP](https://raw.githubusercontent.com/uvexz/asbp/refs/heads/main/public/asbp.png)
+![ASBP](https://raw.githubusercontent.com/uvexz/asbp/refs/heads/main/public/apple-touch-icon.png)
 
 # ASBP — A Simple Blogging Platform
 
@@ -60,38 +60,29 @@ npm run dev
 npm run dev          # 启动开发服务器
 npm run build        # 生产构建
 npm run start        # 启动生产服务器
-npm run lint         # 运行 ESLint
 
 npm run db:generate  # 生成数据库迁移
 npm run db:push      # 推送 schema 到数据库
-npm run db:studio    # 打开 Drizzle Studio
 ```
 
-## 项目结构
+## 部署
 
-```
-src/
-├── app/
-│   ├── (auth)/        # 认证页面
-│   ├── (blog)/        # 公开博客
-│   ├── admin/         # 管理后台
-│   ├── actions/       # Server Actions
-│   └── api/           # API 路由
-├── components/
-│   ├── layout/        # 布局组件
-│   └── ui/            # shadcn/ui 组件
-├── db/
-│   └── schema.ts      # 数据库 schema
-└── lib/               # 工具函数和配置
-```
+部署到 Vercel、Deno Deploy、Render 或其他 PaaS 平台
 
-## 用户角色
+1. Fork 并导入仓库到 Vercel 或其他平台
+2. 添加环境变量 `DATABASE_URL`、`BETTER_AUTH_URL`、`BETTER_AUTH_SECRET`
+3. 部署即可
 
-| 角色 | 权限 |
-|------|------|
-| Admin | 完整后台访问，管理所有内容和设置 |
-| User | 标准认证用户 |
-| Guest | 浏览公开文章，提交待审核评论 |
+> 注意：可能需要使用外部 PostgreSQL 服务（如 Neon.tech、Supabase.com、Prisma.io 等）
+
+## 可选配置
+
+以下配置可在管理后台的「设置」页面中配置：
+
+| 配置项 | 说明 |
+|--------|------|
+| S3 存储 | 用于媒体文件存储，支持 AWS S3 或兼容服务（如 Cloudflare R2、MinIO） |
+| Resend | 用于发送邮件通知 |
 
 ## License
 
