@@ -93,4 +93,4 @@ src/
 
 ## License
 
-MIT
+WTFPL
