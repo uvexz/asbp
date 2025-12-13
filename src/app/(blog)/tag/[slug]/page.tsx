@@ -4,6 +4,24 @@ import { getPostsByTag } from '@/app/actions/tags';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/date-utils';
 import { getTranslations } from 'next-intl/server';
+import { getSettings } from '@/app/actions/settings';
+import type { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+    const { slug } = await params;
+    const { tag } = await getPostsByTag(slug);
+    const settings = await getSettings();
+    const siteTitle = settings.siteTitle || 'My Blog';
+    const t = await getTranslations('blog');
+    
+    if (!tag) {
+        return { title: `Not Found - ${siteTitle}` };
+    }
+    
+    return {
+        title: `${t('postsTagged', { tag: tag.name })} - ${siteTitle}`,
+    };
+}
 
 export default async function TagPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;

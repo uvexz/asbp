@@ -5,9 +5,20 @@ import { MemoQuickPost } from '@/components/layout/memo-quick-post';
 import { MemoActions } from '@/components/layout/memo-actions';
 import { getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
-import { hasS3Config } from '@/app/actions/settings';
+import { hasS3Config, getSettings } from '@/app/actions/settings';
 import { headers } from 'next/headers';
 import { Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
+
+export async function generateMetadata(): Promise<Metadata> {
+    const settings = await getSettings();
+    const siteTitle = settings.siteTitle || 'My Blog';
+    const t = await getTranslations('blog');
+    
+    return {
+        title: `${t('memos')} - ${siteTitle}`,
+    };
+}
 
 interface MemoPageProps {
     searchParams: Promise<{ page?: string }>;
