@@ -5,14 +5,11 @@ import remarkGfm from 'remark-gfm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getPostComments } from '@/app/actions/comments';
-import { CommentForm } from '@/components/layout/comment-form';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CommentSection } from '@/components/layout/comment-section';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { getInitials } from '@/lib/user-utils';
 import { formatDate } from '@/lib/date-utils';
 import { getTranslations } from 'next-intl/server';
-import { getGravatarUrl } from '@/lib/gravatar';
 
 export default async function ArticleDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
@@ -61,49 +58,9 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
                 </div>
             </article>
-            <section className="space-y-8 border-t border-neutral-200 pt-12">
-                <h2 className="text-2xl font-bold text-black">{t('commentsCount', { count: comments.length })}</h2>
-                <div className="space-y-6">
-                    {comments.map((comment) => {
-                        const isUserComment = comment.user;
-                        const authorName = isUserComment ? comment.user!.name : (comment.guestName || t('anonymous'));
-                        const authorImage = isUserComment 
-                            ? comment.user!.image 
-                            : (comment.guestEmail ? getGravatarUrl(comment.guestEmail) : null);
-                        const authorBio = isUserComment ? comment.user!.bio : null;
-                        const authorWebsite = isUserComment ? comment.user!.website : comment.guestWebsite;
-                        
-                        return (
-                            <div key={comment.id} className="border-b border-neutral-100 pb-4 last:border-0">
-                                <div className="flex gap-3">
-                                    <Avatar className="h-10 w-10 flex-shrink-0">
-                                        <AvatarImage src={authorImage || undefined} />
-                                        <AvatarFallback>{getInitials(authorName)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-baseline gap-2 flex-wrap">
-                                            {authorWebsite ? (
-                                                <a href={authorWebsite} target="_blank" rel="noopener noreferrer" className="font-bold text-black hover:text-blue-600">
-                                                    {authorName}
-                                                </a>
-                                            ) : (
-                                                <span className="font-bold text-black">{authorName}</span>
-                                            )}
-                                            <span className="text-sm text-neutral-500">{formatDate(comment.createdAt)}</span>
-                                        </div>
-                                        {authorBio && (
-                                            <p className="text-sm text-neutral-500 mt-0.5">{authorBio}</p>
-                                        )}
-                                        <p className="text-neutral-700 mt-2">{comment.content}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                    {comments.length === 0 && <p className="text-neutral-500 italic">{t('noComments')}</p>}
-                </div>
-                <CommentForm postId={post.id} user={currentUser} />
-            </section>
+            <div className="border-t border-border pt-12">
+                <CommentSection postId={post.id} comments={comments} user={currentUser} />
+            </div>
         </div>
     );
 }

@@ -10,15 +10,37 @@ import { getInitials } from "@/lib/user-utils";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getTranslations } from 'next-intl/server';
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { db } from "@/lib/db";
+import { passkeys } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { PasskeyManager } from "@/components/layout/passkey-manager";
+import { ChangePassword } from "@/components/layout/change-password";
 
 export default async function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const user = await getUserById(id);
     const t = await getTranslations('admin');
     const tCommon = await getTranslations('common');
+    const tAuth = await getTranslations('auth');
 
     if (!user) {
         notFound();
+    }
+
+    // Check if current user is editing their own profile
+    const session = await auth.api.getSession({ headers: await headers() });
+    const isOwnProfile = session?.user?.id === id;
+
+    // Get passkeys if editing own profile
+    let userPasskeys: { id: string; name: string | null; credentialID: string; deviceType: string; backedUp: boolean; createdAt: Date | null }[] = [];
+    if (isOwnProfile) {
+        userPasskeys = await db
+            .select()
+            .from(passkeys)
+            .where(eq(passkeys.userId, id))
+            .orderBy(passkeys.createdAt);
     }
 
     async function handleSubmit(formData: FormData) {
@@ -51,60 +73,76 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                 <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">{t('editUser')}</h1>
             </header>
             <main className="flex-1 px-4 pb-6 sm:px-6 overflow-auto">
-                <form action={handleSubmit} className="max-w-2xl space-y-6">
-                    <div className="flex items-center gap-6 mb-8">
-                        <Avatar className="h-20 w-20">
-                            <AvatarImage src={user.image || undefined} />
-                            <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="text-xl font-bold">{user.name}</p>
-                            <p className="text-gray-500">{user.email}</p>
+                <div className="max-w-2xl space-y-8">
+                    {/* User Info Form */}
+                    <form action={handleSubmit} className="space-y-6">
+                        <div className="flex items-center gap-6 mb-8">
+                            <Avatar className="h-20 w-20">
+                                <AvatarImage src={user.image || undefined} />
+                                <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="text-xl font-bold">{user.name}</p>
+                                <p className="text-gray-500">{user.email}</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="name">{t('nickname')}</Label>
-                        <Input id="name" name="name" defaultValue={user.name} required />
-                    </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="name">{t('nickname')}</Label>
+                            <Input id="name" name="name" defaultValue={user.name} required />
+                        </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="image">{t('avatarUrl')}</Label>
-                        <Input id="image" name="image" defaultValue={user.image || ''} placeholder="https://example.com/avatar.jpg" />
-                    </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="image">{t('avatarUrl')}</Label>
+                            <Input id="image" name="image" defaultValue={user.image || ''} placeholder="https://example.com/avatar.jpg" />
+                        </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="bio">{t('bio')}</Label>
-                        <Textarea id="bio" name="bio" defaultValue={user.bio || ''} placeholder={t('bioPlaceholder')} rows={3} />
-                    </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="bio">{t('bio')}</Label>
+                            <Textarea id="bio" name="bio" defaultValue={user.bio || ''} placeholder={t('bioPlaceholder')} rows={3} />
+                        </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="website">{t('website')}</Label>
-                        <Input id="website" name="website" defaultValue={user.website || ''} placeholder="https://yourwebsite.com" />
-                    </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="website">{t('website')}</Label>
+                            <Input id="website" name="website" defaultValue={user.website || ''} placeholder="https://yourwebsite.com" />
+                        </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="role">{t('role')}</Label>
-                        <Select name="role" defaultValue={user.role || 'user'}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="admin">{t('roleAdmin')}</SelectItem>
-                                <SelectItem value="user">{t('roleUser')}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="role">{t('role')}</Label>
+                            <Select name="role" defaultValue={user.role || 'user'}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="admin">{t('roleAdmin')}</SelectItem>
+                                    <SelectItem value="user">{t('roleUser')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                    <div className="flex gap-4 pt-4">
-                        <Button type="submit" className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold">
-                            {t('saveChanges')}
-                        </Button>
-                        <Link href="/admin/users">
-                            <Button type="button" variant="outline">{tCommon('cancel')}</Button>
-                        </Link>
-                    </div>
-                </form>
+                        <div className="flex gap-4 pt-4">
+                            <Button type="submit" className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold">
+                                {t('saveChanges')}
+                            </Button>
+                            <Link href="/admin/users">
+                                <Button type="button" variant="outline">{tCommon('cancel')}</Button>
+                            </Link>
+                        </div>
+                    </form>
+
+                    {/* Security Section - Only show for own profile */}
+                    {isOwnProfile && (
+                        <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-800">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tAuth('security')}</h2>
+                            
+                            {/* Change Password */}
+                            <ChangePassword />
+                            
+                            {/* Passkey Management */}
+                            <PasskeyManager initialPasskeys={userPasskeys} />
+                        </div>
+                    )}
+                </div>
             </main>
         </div>
     );

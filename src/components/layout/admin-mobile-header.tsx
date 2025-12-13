@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LayoutDashboard, FileText, MessageSquare, Image as ImageIcon, Tag, Settings, Plus, HelpCircle, Navigation, Users, KeyRound } from 'lucide-react';
+import { Menu, X, LayoutDashboard, FileText, MessageSquare, Image as ImageIcon, Tag, Settings, Plus, Github, Navigation, Users, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { getInitials, formatRole } from '@/lib/user-utils';
 interface AdminMobileHeaderProps {
     settings?: { s3Bucket: string | null } | null;
     user: {
+        id: string;
         name: string;
         email: string;
         image?: string | null;
@@ -25,8 +26,6 @@ export function AdminMobileHeader({ settings, user }: AdminMobileHeaderProps) {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
     const t = useTranslations('admin');
-
-    const tAuth = useTranslations('auth');
     
     const navItems = [
         { href: '/admin/dashboard', label: t('dashboard'), icon: LayoutDashboard },
@@ -36,7 +35,6 @@ export function AdminMobileHeader({ settings, user }: AdminMobileHeaderProps) {
         { href: '/admin/media', label: t('media'), icon: ImageIcon },
         { href: '/admin/tags', label: t('tags'), icon: Tag },
         { href: '/admin/navigation', label: t('navigation'), icon: Navigation },
-        { href: '/admin/passkeys', label: tAuth('passkeys'), icon: KeyRound },
         { href: '/admin/settings', label: t('settings'), icon: Settings },
     ];
 
@@ -79,7 +77,11 @@ export function AdminMobileHeader({ settings, user }: AdminMobileHeaderProps) {
                 isOpen ? "translate-x-0" : "translate-x-full"
             )}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-                    <div className="flex items-center gap-3">
+                    <Link 
+                        href={`/admin/users/${user.id}`}
+                        onClick={closeMenu}
+                        className="flex items-center gap-3"
+                    >
                         <Avatar className="h-10 w-10">
                             <AvatarImage src={user.image || undefined} />
                             <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
@@ -88,7 +90,7 @@ export function AdminMobileHeader({ settings, user }: AdminMobileHeaderProps) {
                             <span className="font-medium text-gray-900 dark:text-white">{user.name}</span>
                             <span className="text-sm text-green-600 dark:text-green-400">{formatRole(user.role)}</span>
                         </div>
-                    </div>
+                    </Link>
                     <Button variant="ghost" size="icon" onClick={closeMenu}>
                         <X className="h-5 w-5" />
                     </Button>
@@ -128,12 +130,22 @@ export function AdminMobileHeader({ settings, user }: AdminMobileHeaderProps) {
                         <span>{t('newPost')}</span>
                     </Link>
                     <Link 
-                        href="#" 
+                        href="/" 
                         onClick={closeMenu}
                         className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                     >
-                        <HelpCircle className="h-5 w-5" />
-                        <span className="text-sm font-medium">{t('help')}</span>
+                        <Home className="h-5 w-5" />
+                        <span className="text-sm font-medium">{t('backToBlog')}</span>
+                    </Link>
+                    <Link 
+                        href="https://github.com/uvexz/asbp" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={closeMenu}
+                        className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                        <Github className="h-5 w-5" />
+                        <span className="text-sm font-medium">{t('openSource')}</span>
                     </Link>
                     <LogoutButton />
                 </div>

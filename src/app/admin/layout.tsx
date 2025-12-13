@@ -22,6 +22,7 @@ export default async function AdminLayout({
 
     // Extract user info from session for the sidebar
     const user = {
+        id: session.user.id,
         name: session.user.name || session.user.email || 'User',
         email: session.user.email || '',
         image: session.user.image,

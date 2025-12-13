@@ -67,7 +67,19 @@
     "passkeyError": "Passkey 操作失败",
     "deviceType": "设备类型",
     "createdAt": "创建时间",
-    "backedUp": "已备份"
+    "backedUp": "已备份",
+    "changePassword": "修改密码",
+    "changePasswordDesc": "更改您的账户密码",
+    "currentPassword": "当前密码",
+    "newPassword": "新密码",
+    "confirmNewPassword": "确认新密码",
+    "updatePassword": "更新密码",
+    "updating": "更新中...",
+    "passwordChanged": "密码已成功更新",
+    "passwordMismatch": "两次输入的密码不一致",
+    "passwordTooShort": "密码至少需要8个字符",
+    "changePasswordError": "修改密码失败，请重试",
+    "security": "安全设置"
   },
   "blog": {
     "home": "首页",
@@ -105,7 +117,10 @@
     "allRightsReserved": "保留所有权利。",
     "anonymous": "匿名",
     "commentAsUser": "以登录用户身份评论",
-    "loginForAutoApprove": "后评论将自动通过审核"
+    "loginForAutoApprove": "后评论将自动通过审核",
+    "reply": "回复",
+    "replyingTo": "回复",
+    "replyPlaceholder": "写下你的回复..."
   },
   "admin": {
     "dashboard": "仪表盘",
@@ -115,7 +130,7 @@
     "users": "用户管理",
     "media": "媒体库",
     "tags": "标签管理",
-    "settings": "设置",
+    "settings": "博客设置",
     "navigation": "导航管理",
     "newPost": "新建文章",
     "newPage": "新建页面",
@@ -234,7 +249,11 @@
     "help": "帮助",
     "quickMemo": "发布随记",
     "writeSomething": "写点什么...",
-    "publishFailed": "发布失败，请重试"
+    "publishFailed": "发布失败，请重试",
+    "openSource": "开源项目",
+    "backToBlog": "返回博客",
+    "contentGroup": "内容管理",
+    "systemGroup": "系统设置"
   },
   "pagination": {
     "previousPage": "上一页",

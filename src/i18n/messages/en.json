@@ -67,7 +67,19 @@
     "passkeyError": "Passkey operation failed",
     "deviceType": "Device Type",
     "createdAt": "Created At",
-    "backedUp": "Backed Up"
+    "backedUp": "Backed Up",
+    "changePassword": "Change Password",
+    "changePasswordDesc": "Update your account password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "updatePassword": "Update Password",
+    "updating": "Updating...",
+    "passwordChanged": "Password updated successfully",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "changePasswordError": "Failed to change password, please try again",
+    "security": "Security"
   },
   "blog": {
     "home": "Home",
@@ -105,7 +117,10 @@
     "allRightsReserved": "All Rights Reserved.",
     "anonymous": "Anonymous",
     "commentAsUser": "Commenting as logged in user",
-    "loginForAutoApprove": "for auto-approved comments"
+    "loginForAutoApprove": "for auto-approved comments",
+    "reply": "Reply",
+    "replyingTo": "Replying to",
+    "replyPlaceholder": "Write your reply..."
   },
   "admin": {
     "dashboard": "Dashboard",
@@ -233,7 +248,11 @@
     "help": "Help",
     "quickMemo": "Quick Memo",
     "writeSomething": "Write something...",
-    "publishFailed": "Publish failed, please retry"
+    "publishFailed": "Publish failed, please retry",
+    "openSource": "Open Source",
+    "backToBlog": "Back to Blog",
+    "contentGroup": "Content",
+    "systemGroup": "System"
   },
   "pagination": {
     "previousPage": "Previous page",

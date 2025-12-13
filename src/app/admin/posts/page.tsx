@@ -34,12 +34,11 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
         memo: 'bg-orange-100 text-orange-800',
     };
     
-    // Filter by type if specified
-    const posts = type 
-        ? allPosts.filter(p => (p.postType || 'post') === type)
-        : allPosts;
-
-    const currentType = type as PostType | undefined;
+    // Default to 'post' type if not specified
+    const currentType = (type || 'post') as PostType;
+    
+    // Filter by type
+    const posts = allPosts.filter(p => (p.postType || 'post') === currentType);
 
     return (
         <div className="flex flex-col h-full">
@@ -69,11 +68,6 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
             <main className="flex-1 px-4 pb-6 sm:px-6 overflow-auto">
                 <div className="mb-6">
                     <div className="flex gap-2">
-                        <Link href="/admin/posts">
-                            <Badge variant={!currentType ? "default" : "outline"} className="cursor-pointer">
-                                {tCommon('all')}
-                            </Badge>
-                        </Link>
                         <Link href="/admin/posts?type=post">
                             <Badge variant={currentType === 'post' ? "default" : "outline"} className="cursor-pointer">
                                 {t('post')}
