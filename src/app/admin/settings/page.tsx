@@ -8,9 +8,12 @@ import {
     InputGroupText,
 } from "@/components/ui/input-group";
 import { UmamiSettings } from "@/components/admin/umami-settings";
+import { S3Settings } from "@/components/admin/s3-settings";
+import { EmailSettings } from "@/components/admin/email-settings";
+import { AiSettings } from "@/components/admin/ai-settings";
 import { getSettingsUncached, updateSettings } from "@/app/actions/settings";
 import { getTranslations } from 'next-intl/server';
-import { Globe, FileText, Database, Mail, Bot, BarChart3, Key, Server, Folder, Link } from "lucide-react";
+import { Globe, FileText, BarChart3 } from "lucide-react";
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
     const settings = await getSettingsUncached();
@@ -80,163 +83,59 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
 
                 {/* Media Storage (S3) */}
                 <section className="space-y-4">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Database className="size-5" />
-                        {t('mediaStorage')}
-                    </h2>
-                    <div className="space-y-3">
-                        <InputGroup>
-                            <InputGroupAddon>
-                                <InputGroupText><Server className="size-4" /></InputGroupText>
-                            </InputGroupAddon>
-                            <InputGroupInput
-                                id="s3Endpoint"
-                                name="s3Endpoint"
-                                placeholder={t('endpoint')}
-                                defaultValue={settings.s3Endpoint || ''}
-                            />
-                        </InputGroup>
-                        <div className="grid grid-cols-2 gap-3">
-                            <InputGroup>
-                                <InputGroupAddon>
-                                    <InputGroupText>{t('region')}</InputGroupText>
-                                </InputGroupAddon>
-                                <InputGroupInput
-                                    id="s3Region"
-                                    name="s3Region"
-                                    placeholder="us-east-1"
-                                    defaultValue={settings.s3Region || ''}
-                                />
-                            </InputGroup>
-                            <InputGroup>
-                                <InputGroupAddon>
-                                    <InputGroupText><Folder className="size-4" /></InputGroupText>
-                                </InputGroupAddon>
-                                <InputGroupInput
-                                    id="s3Bucket"
-                                    name="s3Bucket"
-                                    placeholder={t('bucketName')}
-                                    defaultValue={settings.s3Bucket || ''}
-                                />
-                            </InputGroup>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <InputGroup>
-                                <InputGroupAddon>
-                                    <InputGroupText>{t('accessKey')}</InputGroupText>
-                                </InputGroupAddon>
-                                <InputGroupInput
-                                    id="s3AccessKey"
-                                    name="s3AccessKey"
-                                    defaultValue={settings.s3AccessKey || ''}
-                                />
-                            </InputGroup>
-                            <InputGroup>
-                                <InputGroupAddon>
-                                    <InputGroupText><Key className="size-4" /></InputGroupText>
-                                </InputGroupAddon>
-                                <InputGroupInput
-                                    id="s3SecretKey"
-                                    name="s3SecretKey"
-                                    type="password"
-                                    placeholder={t('secretKey')}
-                                    defaultValue={settings.s3SecretKey || ''}
-                                />
-                            </InputGroup>
-                        </div>
-                        <InputGroup>
-                            <InputGroupAddon>
-                                <InputGroupText><Link className="size-4" /></InputGroupText>
-                            </InputGroupAddon>
-                            <InputGroupInput
-                                id="s3CdnUrl"
-                                name="s3CdnUrl"
-                                placeholder={t('cdnUrlDesc')}
-                                defaultValue={settings.s3CdnUrl || ''}
-                            />
-                        </InputGroup>
-                    </div>
+                    <S3Settings
+                        defaultEnabled={!!(settings.s3Endpoint && settings.s3Bucket)}
+                        defaultEndpoint={settings.s3Endpoint || ''}
+                        defaultRegion={settings.s3Region || ''}
+                        defaultBucket={settings.s3Bucket || ''}
+                        defaultAccessKey={settings.s3AccessKey || ''}
+                        defaultSecretKey={settings.s3SecretKey || ''}
+                        defaultCdnUrl={settings.s3CdnUrl || ''}
+                        translations={{
+                            mediaStorage: t('mediaStorage'),
+                            mediaStorageDesc: t('mediaStorageDesc') || '',
+                            endpoint: t('endpoint'),
+                            region: t('region'),
+                            bucketName: t('bucketName'),
+                            accessKey: t('accessKey'),
+                            secretKey: t('secretKey'),
+                            cdnUrl: t('cdnUrl'),
+                            cdnUrlDesc: t('cdnUrlDesc'),
+                        }}
+                    />
                 </section>
 
                 {/* Email Service */}
                 <section className="space-y-4">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Mail className="size-5" />
-                        {t('emailService')}
-                    </h2>
-                    <div className="space-y-3">
-                        <InputGroup>
-                            <InputGroupAddon>
-                                <InputGroupText><Key className="size-4" /></InputGroupText>
-                            </InputGroupAddon>
-                            <InputGroupInput
-                                id="resendApiKey"
-                                name="resendApiKey"
-                                type="password"
-                                placeholder="re_..."
-                                defaultValue={settings.resendApiKey || ''}
-                            />
-                        </InputGroup>
-                        <InputGroup>
-                            <InputGroupAddon>
-                                <InputGroupText><Mail className="size-4" /></InputGroupText>
-                            </InputGroupAddon>
-                            <InputGroupInput
-                                id="resendFromEmail"
-                                name="resendFromEmail"
-                                type="email"
-                                placeholder={t('resendFromEmailDesc')}
-                                defaultValue={settings.resendFromEmail || ''}
-                            />
-                        </InputGroup>
-                    </div>
+                    <EmailSettings
+                        defaultEnabled={!!settings.resendApiKey}
+                        defaultApiKey={settings.resendApiKey || ''}
+                        defaultFromEmail={settings.resendFromEmail || ''}
+                        translations={{
+                            emailService: t('emailService'),
+                            emailServiceDesc: t('emailServiceDesc') || '',
+                            resendApiKey: t('resendApiKey'),
+                            resendFromEmail: t('resendFromEmail'),
+                            resendFromEmailDesc: t('resendFromEmailDesc'),
+                        }}
+                    />
                 </section>
 
                 {/* AI Spam Detection */}
                 <section className="space-y-4">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Bot className="size-5" />
-                        {t('aiSpamDetection')}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">{t('aiSpamDetectionDesc')}</p>
-                    <div className="space-y-3">
-                        <InputGroup>
-                            <InputGroupAddon>
-                                <InputGroupText><Server className="size-4" /></InputGroupText>
-                            </InputGroupAddon>
-                            <InputGroupInput
-                                id="aiBaseUrl"
-                                name="aiBaseUrl"
-                                placeholder="https://api.openai.com/v1"
-                                defaultValue={settings.aiBaseUrl || ''}
-                            />
-                        </InputGroup>
-                        <div className="grid grid-cols-2 gap-3">
-                            <InputGroup>
-                                <InputGroupAddon>
-                                    <InputGroupText><Key className="size-4" /></InputGroupText>
-                                </InputGroupAddon>
-                                <InputGroupInput
-                                    id="aiApiKey"
-                                    name="aiApiKey"
-                                    type="password"
-                                    placeholder="sk-..."
-                                    defaultValue={settings.aiApiKey || ''}
-                                />
-                            </InputGroup>
-                            <InputGroup>
-                                <InputGroupAddon>
-                                    <InputGroupText>{t('aiModel')}</InputGroupText>
-                                </InputGroupAddon>
-                                <InputGroupInput
-                                    id="aiModel"
-                                    name="aiModel"
-                                    placeholder="gpt-4o-mini"
-                                    defaultValue={settings.aiModel || ''}
-                                />
-                            </InputGroup>
-                        </div>
-                    </div>
+                    <AiSettings
+                        defaultEnabled={!!(settings.aiBaseUrl && settings.aiApiKey)}
+                        defaultBaseUrl={settings.aiBaseUrl || ''}
+                        defaultApiKey={settings.aiApiKey || ''}
+                        defaultModel={settings.aiModel || ''}
+                        translations={{
+                            aiSpamDetection: t('aiSpamDetection'),
+                            aiSpamDetectionDesc: t('aiSpamDetectionDesc'),
+                            aiBaseUrl: t('aiBaseUrl'),
+                            aiApiKey: t('aiApiKey'),
+                            aiModel: t('aiModel'),
+                        }}
+                    />
                 </section>
 
                 {/* Umami Analytics */}
