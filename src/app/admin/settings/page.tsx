@@ -42,12 +42,12 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                     <div className="space-y-3">
                         <InputGroup>
                             <InputGroupAddon>
-                                <InputGroupText>{t('siteTitle')}</InputGroupText>
+                                <InputGroupText><Globe className="size-4" /></InputGroupText>
                             </InputGroupAddon>
                             <InputGroupInput
                                 id="siteTitle"
                                 name="siteTitle"
-                                placeholder="My Awesome Blog"
+                                placeholder={t('siteTitle')}
                                 defaultValue={settings.siteTitle || ''}
                             />
                         </InputGroup>
@@ -83,6 +83,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
 
                 {/* Media Storage (S3) */}
                 <section className="space-y-4">
+                    <h2 className="text-lg font-semibold">{t('mediaStorage')}</h2>
                     <S3Settings
                         defaultEnabled={!!(settings.s3Endpoint && settings.s3Bucket)}
                         defaultEndpoint={settings.s3Endpoint || ''}
@@ -107,6 +108,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
 
                 {/* Email Service */}
                 <section className="space-y-4">
+                    <h2 className="text-lg font-semibold">{t('emailService')}</h2>
                     <EmailSettings
                         defaultEnabled={!!settings.resendApiKey}
                         defaultApiKey={settings.resendApiKey || ''}
@@ -123,6 +125,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
 
                 {/* AI Spam Detection */}
                 <section className="space-y-4">
+                    <h2 className="text-lg font-semibold">{t('aiSpamDetection')}</h2>
                     <AiSettings
                         defaultEnabled={!!(settings.aiBaseUrl && settings.aiApiKey)}
                         defaultBaseUrl={settings.aiBaseUrl || ''}

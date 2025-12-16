@@ -111,12 +111,13 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                             <div className="space-y-3">
                                 <InputGroup>
                                     <InputGroupAddon>
-                                        <InputGroupText>{t('nickname')}</InputGroupText>
+                                        <InputGroupText><User className="size-4" /></InputGroupText>
                                     </InputGroupAddon>
                                     <InputGroupInput
                                         id="name"
                                         name="name"
                                         defaultValue={user.name}
+                                        placeholder={t('nickname')}
                                         required
                                     />
                                 </InputGroup>

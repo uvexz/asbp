@@ -189,6 +189,7 @@
     "userManagement": "User Management",
     "userManagementDesc": "Manage user information, avatars, bios and links",
     "user": "User",
+    "userInfo": "User Information",
     "role": "Role",
     "bio": "Bio",
     "bioPlaceholder": "Tell us about yourself...",
