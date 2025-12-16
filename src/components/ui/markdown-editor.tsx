@@ -3,10 +3,11 @@
 import { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, ImagePlus, Loader2 } from 'lucide-react';
+import { Eye, Edit, ImagePlus, Loader2, FolderOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { uploadMedia } from '@/app/actions/media';
+import { MediaPicker } from '@/components/media/media-picker';
 
 interface MarkdownEditorProps {
   value: string;
@@ -78,7 +79,7 @@ export function MarkdownEditor({
           </Button>
         </div>
         {hasS3 && (
-          <div>
+          <div className="flex gap-1">
             <input
               ref={fileInputRef}
               type="file"
@@ -98,8 +99,20 @@ export function MarkdownEditor({
               ) : (
                 <ImagePlus className="h-4 w-4" />
               )}
-              <span className="ml-1">上传图片</span>
+              <span className="ml-1">上传</span>
             </Button>
+            <MediaPicker
+              onSelect={(url, alt) => {
+                const imageMarkdown = `![${alt || 'image'}](${url})`;
+                onChange(value + (value ? '\n' : '') + imageMarkdown);
+              }}
+              trigger={
+                <Button type="button" variant="outline" size="sm">
+                  <FolderOpen className="h-4 w-4" />
+                  <span className="ml-1">媒体库</span>
+                </Button>
+              }
+            />
           </div>
         )}
       </div>

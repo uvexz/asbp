@@ -6,6 +6,7 @@ import { eq, asc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { getCachedNavItems, invalidateNavigationCache } from '@/lib/cache-layer';
 
 export type NavItem = {
     id: string;
@@ -15,7 +16,17 @@ export type NavItem = {
     sortOrder: number;
 };
 
+/**
+ * Get navigation items with caching
+ */
 export async function getNavItems(): Promise<NavItem[]> {
+    return getCachedNavItems();
+}
+
+/**
+ * Get navigation items without cache (for admin)
+ */
+export async function getNavItemsUncached(): Promise<NavItem[]> {
     const items = await db.select().from(navItems).orderBy(asc(navItems.sortOrder));
     return items;
 }
@@ -45,6 +56,7 @@ export async function createNavItem(formData: FormData) {
         sortOrder,
     });
 
+    invalidateNavigationCache();
     revalidatePath('/');
     revalidatePath('/admin/navigation');
 }
@@ -71,6 +83,7 @@ export async function updateNavItem(id: string, formData: FormData) {
         .set({ label, url, openInNewTab, sortOrder })
         .where(eq(navItems.id, id));
 
+    invalidateNavigationCache();
     revalidatePath('/');
     revalidatePath('/admin/navigation');
 }
@@ -85,6 +98,8 @@ export async function deleteNavItem(id: string) {
     }
 
     await db.delete(navItems).where(eq(navItems.id, id));
+    
+    invalidateNavigationCache();
     revalidatePath('/');
     revalidatePath('/admin/navigation');
 }
@@ -105,6 +120,7 @@ export async function reorderNavItems(orderedIds: string[]) {
             .where(eq(navItems.id, orderedIds[i]));
     }
 
+    invalidateNavigationCache();
     revalidatePath('/');
     revalidatePath('/admin/navigation');
 }

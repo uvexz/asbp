@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
-import Link from 'next/link';
-import { Github, Settings } from 'lucide-react';
+import { Github, Rss, Settings } from 'lucide-react';
+import { FooterIconLink } from './footer-icon-link';
 
 interface BlogFooterProps {
     siteTitle: string;
@@ -12,25 +12,18 @@ export async function BlogFooter({ siteTitle }: BlogFooterProps) {
     
     return (
         <footer className="sm:px-10 py-8">
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2">
                 <p className="text-neutral-500 text-sm">© {currentYear} {siteTitle}. {t('allRightsReserved')}</p>
-                <div className="flex items-center gap-2 text-neutral-500">
-                    <Link
-                        href="https://github.com/uvexz/asbp"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                        aria-label="GitHub"
-                    >
+                <div className="flex items-center gap-1 text-neutral-500">
+                    <FooterIconLink href="https://github.com/uvexz/asbp" label="GitHub" external>
                         <Github className="h-3.5 w-3.5" />
-                    </Link>
-                    <Link
-                        href="/admin"
-                        className="p-1.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                        aria-label="Admin"
-                    >
+                    </FooterIconLink>
+                    <FooterIconLink href="/feed.xml" label="RSS Feed">
+                        <Rss className="h-3.5 w-3.5" />
+                    </FooterIconLink>
+                    <FooterIconLink href="/admin" label="Admin">
                         <Settings className="h-3.5 w-3.5" />
-                    </Link>
+                    </FooterIconLink>
                 </div>
             </div>
         </footer>

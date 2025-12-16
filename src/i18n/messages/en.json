@@ -120,7 +120,9 @@
     "loginForAutoApprove": "for auto-approved comments",
     "reply": "Reply",
     "replyingTo": "Replying to",
-    "replyPlaceholder": "Write your reply..."
+    "replyPlaceholder": "Write your reply...",
+    "captchaLabel": "Verify",
+    "captchaRequired": "Please complete the captcha"
   },
   "admin": {
     "dashboard": "Dashboard",

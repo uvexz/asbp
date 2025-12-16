@@ -2,8 +2,9 @@ import Link from "next/link";
 import { MobileNav, type NavItemData } from "./mobile-nav";
 import { NavIconLink } from "./nav-icon-link";
 import { getTranslations } from "next-intl/server";
-import { Home, StickyNote } from "lucide-react";
+import { Home, ScrollText } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { SearchTrigger } from "./search-dialog";
 
 export type { NavItemData };
 
@@ -39,8 +40,9 @@ export async function BlogHeader({
             <Home className="h-4 w-4" />
           </NavIconLink>
           <NavIconLink href="/memo" label={t("memos")}>
-            <StickyNote className="h-4 w-4" />
+            <ScrollText className="h-4 w-4" />
           </NavIconLink>
+          <SearchTrigger variant="icon" />
           <Separator orientation="vertical" />
           {navItems.map((item) => (
             <Link

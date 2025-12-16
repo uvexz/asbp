@@ -118,6 +118,8 @@
     "anonymous": "匿名",
     "commentAsUser": "以登录用户身份评论",
     "loginForAutoApprove": "后评论将自动通过审核",
+    "captchaLabel": "验证码",
+    "captchaRequired": "请完成验证码",
     "reply": "回复",
     "replyingTo": "回复",
     "replyPlaceholder": "写下你的回复..."

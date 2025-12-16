@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getSettings, updateSettings } from "@/app/actions/settings";
+import { getSettingsUncached, updateSettings } from "@/app/actions/settings";
 import { getTranslations } from 'next-intl/server';
 
 function Checkbox({ id, name, defaultChecked, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
@@ -18,7 +18,8 @@ function Checkbox({ id, name, defaultChecked, ...props }: React.InputHTMLAttribu
 }
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
-    const settings = await getSettings();
+    // Use uncached version for admin editing to ensure fresh data
+    const settings = await getSettingsUncached();
     const t = await getTranslations('admin');
     const { saved } = await searchParams;
 

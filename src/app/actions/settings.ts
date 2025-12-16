@@ -7,11 +7,25 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { encrypt } from '@/lib/crypto';
+import { getCachedSettings, invalidateSettingsCache } from '@/lib/cache-layer';
 
+/**
+ * Get settings with caching
+ * Use this for public/read-only access
+ */
 export async function getSettings() {
+    return getCachedSettings();
+}
+
+/**
+ * Get settings without cache (for admin forms that need fresh data)
+ */
+export async function getSettingsUncached() {
+    const { decrypt } = await import('@/lib/crypto');
     const data = await db.select().from(settings).where(eq(settings.id, 1)).limit(1);
+    
     if (data.length === 0) {
-        // Return defaults if not found (though postRegistrationCleanup should create it)
         return {
             siteTitle: 'My Awesome Blog',
             siteDescription: 'A blog about tech...',
@@ -26,7 +40,16 @@ export async function getSettings() {
             resendFromEmail: '',
         };
     }
-    return data[0];
+    
+    const row = data[0];
+    
+    // Decrypt sensitive fields for display
+    return {
+        ...row,
+        s3SecretKey: row.s3SecretKey ? decrypt(row.s3SecretKey) : '',
+        s3AccessKey: row.s3AccessKey ? decrypt(row.s3AccessKey) : '',
+        resendApiKey: row.resendApiKey ? decrypt(row.resendApiKey) : '',
+    };
 }
 
 /**
@@ -51,12 +74,19 @@ export async function updateSettings(formData: FormData) {
     const allowRegistration = formData.get('allowRegistration') === 'on';
     const s3Bucket = (formData.get('s3Bucket') as string) || null;
     const s3Region = (formData.get('s3Region') as string) || null;
-    const s3AccessKey = (formData.get('s3AccessKey') as string) || null;
-    const s3SecretKey = (formData.get('s3SecretKey') as string) || null;
     const s3Endpoint = (formData.get('s3Endpoint') as string) || null;
     const s3CdnUrl = (formData.get('s3CdnUrl') as string) || null;
-    const resendApiKey = (formData.get('resendApiKey') as string) || null;
     const resendFromEmail = (formData.get('resendFromEmail') as string) || null;
+    
+    // Get raw values for sensitive fields
+    const s3AccessKeyRaw = (formData.get('s3AccessKey') as string) || null;
+    const s3SecretKeyRaw = (formData.get('s3SecretKey') as string) || null;
+    const resendApiKeyRaw = (formData.get('resendApiKey') as string) || null;
+    
+    // Encrypt sensitive fields before storing
+    const s3AccessKey = s3AccessKeyRaw ? encrypt(s3AccessKeyRaw) : null;
+    const s3SecretKey = s3SecretKeyRaw ? encrypt(s3SecretKeyRaw) : null;
+    const resendApiKey = resendApiKeyRaw ? encrypt(resendApiKeyRaw) : null;
 
     try {
         await db.insert(settings).values({
@@ -93,6 +123,9 @@ export async function updateSettings(formData: FormData) {
         throw new Error('Failed to save settings');
     }
 
+    // Invalidate settings cache
+    invalidateSettingsCache();
+    
     revalidatePath('/');
     revalidatePath('/admin/settings');
     redirect('/admin/settings?saved=true');

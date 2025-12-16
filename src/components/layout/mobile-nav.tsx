@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, Home, StickyNote, Newspaper } from "lucide-react";
+import { Menu, Home, ScrollText, Newspaper } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { SearchTrigger } from "./search-dialog";
 
 export type NavItemData = {
   id: string;
@@ -35,12 +36,15 @@ export function MobileNav({ navItems = [], translations }: MobileNavProps) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="sm:hidden">
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">{translations.menu}</span>
-        </Button>
-      </SheetTrigger>
+      <div className="flex items-center gap-1 sm:hidden">
+        <SearchTrigger variant="icon" />
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">{translations.menu}</span>
+          </Button>
+        </SheetTrigger>
+      </div>
       <SheetContent side="right" className="w-[280px] px-4">
         <SheetHeader className="px-0">
           <SheetTitle>{translations.menu}</SheetTitle>
@@ -59,7 +63,7 @@ export function MobileNav({ navItems = [], translations }: MobileNavProps) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 text-neutral-700 text-base font-medium py-2 px-3 rounded-md hover:text-black hover:bg-neutral-100 transition-colors"
           >
-            <StickyNote className="h-4 w-4" />
+            <ScrollText className="h-4 w-4" />
             {translations.memos}
           </Link>
           <Separator className="my-4" />

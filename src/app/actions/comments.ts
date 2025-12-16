@@ -120,9 +120,16 @@ export async function createComment(postId: string, formData: FormData, parentId
         newCommentId = result[0]?.id;
     }
 
-    // Send email notification if this is a reply
-    if (parentId && newCommentId) {
-        sendReplyNotification(parentId, newCommentId, postId).catch(console.error);
+    // Send email notifications
+    if (newCommentId) {
+        // Notify admin about new comment (for guest comments)
+        if (!session?.user) {
+            sendAdminNotification(newCommentId, postId).catch(console.error);
+        }
+        // Notify parent comment author if this is a reply
+        if (parentId) {
+            sendReplyNotification(parentId, newCommentId, postId).catch(console.error);
+        }
     }
 
     revalidatePath('/admin/comments');
@@ -207,4 +214,76 @@ export async function getPostComments(postId: string) {
         },
     });
     return data;
+}
+
+/**
+ * Send email notification to admin when a new guest comment is submitted
+ */
+async function sendAdminNotification(commentId: string, postId: string) {
+    const { getResendClient } = await import('@/lib/resend');
+    const { getSettings } = await import('@/app/actions/settings');
+    const { users } = await import('@/db/schema');
+    
+    const [resend, settings] = await Promise.all([
+        getResendClient(),
+        getSettings()
+    ]);
+
+    if (!resend || !settings.resendFromEmail) {
+        return; // Email not configured
+    }
+
+    // Get admin email
+    const adminUser = await db.query.users.findFirst({
+        where: eq(users.role, 'admin'),
+        columns: { email: true, name: true }
+    });
+
+    if (!adminUser?.email) return;
+
+    // Get comment details
+    const comment = await db.query.comments.findFirst({
+        where: eq(comments.id, commentId),
+    });
+
+    if (!comment) return;
+
+    // Get post details
+    const post = await db.query.posts.findFirst({
+        where: eq(posts.id, postId),
+        columns: { title: true, slug: true }
+    });
+
+    if (!post) return;
+
+    const siteTitle = settings.siteTitle || 'Blog';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const commenterName = comment.guestName || '匿名用户';
+
+    try {
+        await resend.emails.send({
+            from: settings.resendFromEmail,
+            to: adminUser.email,
+            subject: `新评论待审核 - ${siteTitle}`,
+            html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">收到新评论</h2>
+                    <p style="color: #666;">文章《${post.title}》收到了来自 <strong>${commenterName}</strong> 的新评论：</p>
+                    <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                        <p style="color: #333; margin: 0;">${comment.content}</p>
+                    </div>
+                    <p style="margin-top: 16px;">
+                        <a href="${baseUrl}/admin/comments" style="background: #4cdf20; color: #000; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                            审核评论
+                        </a>
+                    </p>
+                    <p style="color: #999; font-size: 14px; margin-top: 24px;">
+                        此邮件由 ${siteTitle} 自动发送。
+                    </p>
+                </div>
+            `
+        });
+    } catch (error) {
+        console.error('Failed to send admin notification:', error);
+    }
 }

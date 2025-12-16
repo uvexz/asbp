@@ -8,6 +8,13 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { postSchema } from '@/lib/validations';
+import { 
+  getCachedPostBySlug, 
+  getCachedPublishedPosts,
+  invalidatePostCache, 
+  invalidatePostsListCache,
+  invalidateAllPostCaches 
+} from '@/lib/cache-layer';
 
 export type ActionResult<T = void> = 
   | { success: true; data?: T }
@@ -157,7 +164,17 @@ export type Post = {
     updatedAt: Date;
 };
 
+/**
+ * Get post by slug with caching
+ */
 export async function getPostBySlug(slug: string) {
+    return getCachedPostBySlug(slug);
+}
+
+/**
+ * Get post by slug without cache (for admin editing)
+ */
+export async function getPostBySlugUncached(slug: string) {
     const post = await db.query.posts.findFirst({
         where: eq(posts.slug, slug),
         with: {
@@ -230,6 +247,10 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
         );
     }
 
+    // Invalidate caches
+    invalidatePostsListCache();
+    invalidatePostCache(validationResult.data.slug);
+    
     revalidatePath('/');
     revalidatePath('/memo');
     revalidatePath('/admin/posts');
@@ -271,6 +292,12 @@ export async function updatePost(id: string, formData: FormData): Promise<Action
         return { success: false, error: errorMessages };
     }
 
+    // Get old slug before update for cache invalidation
+    const oldPost = await db.query.posts.findFirst({
+        where: eq(posts.id, id),
+        columns: { slug: true }
+    });
+
     await db.update(posts)
         .set({ 
             title: validationResult.data.title, 
@@ -282,6 +309,13 @@ export async function updatePost(id: string, formData: FormData): Promise<Action
             updatedAt: new Date() 
         })
         .where(eq(posts.id, id));
+
+    // Invalidate caches (both old and new slug if changed)
+    invalidatePostsListCache();
+    invalidatePostCache(validationResult.data.slug);
+    if (oldPost && oldPost.slug !== validationResult.data.slug) {
+        invalidatePostCache(oldPost.slug);
+    }
 
     revalidatePath('/admin/posts');
     revalidatePath('/memo');
@@ -298,6 +332,12 @@ export async function deletePost(id: string) {
         throw new Error('Unauthorized');
     }
 
+    // Get slug before deletion for cache invalidation
+    const post = await db.query.posts.findFirst({
+        where: eq(posts.id, id),
+        columns: { slug: true }
+    });
+
     // 级联删除关联数据
     const { postsTags, comments } = await import('@/db/schema');
     await db.delete(postsTags).where(eq(postsTags.postId, id));
@@ -305,6 +345,12 @@ export async function deletePost(id: string) {
     
     // 删除文章
     await db.delete(posts).where(eq(posts.id, id));
+    
+    // Invalidate caches
+    invalidatePostsListCache();
+    if (post) {
+        invalidatePostCache(post.slug);
+    }
     
     revalidatePath('/admin/posts');
     revalidatePath('/admin/comments');
@@ -341,6 +387,7 @@ export async function createQuickMemo(content: string): Promise<ActionResult> {
         publishedAt: new Date(),
     });
 
+    invalidatePostsListCache();
     revalidatePath('/memo');
     revalidatePath('/admin/posts');
     return { success: true };
@@ -379,6 +426,7 @@ export async function updateMemo(id: string, content: string): Promise<ActionRes
         })
         .where(eq(posts.id, id));
 
+    invalidatePostsListCache();
     revalidatePath('/memo');
     revalidatePath('/admin/posts');
     return { success: true };
@@ -408,6 +456,7 @@ export async function deleteMemo(id: string): Promise<ActionResult> {
 
     await db.delete(posts).where(eq(posts.id, id));
 
+    invalidatePostsListCache();
     revalidatePath('/memo');
     revalidatePath('/admin/posts');
     return { success: true };

@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import { md5 } from '@/lib/hash';
 import { cn } from '@/lib/utils';
 import { MessageCircle, Reply, User, Mail, Globe, Send, X } from 'lucide-react';
+import { Captcha } from '@/components/ui/captcha';
 
 interface Comment {
     id: string;
@@ -172,6 +173,7 @@ function CommentForm({
     const [result, setResult] = useState<CommentActionResult | null>(null);
     const [guestEmail, setGuestEmail] = useState('');
     const [content, setContent] = useState('');
+    const [captchaValid, setCaptchaValid] = useState(false);
     const t = useTranslations('blog');
     const tAuth = useTranslations('auth');
 
@@ -182,7 +184,17 @@ function CommentForm({
         return null;
     }, [guestEmail]);
 
+    // 登录用户不需要验证码
+    const needsCaptcha = !user;
+    const canSubmit = content.trim() && (user || captchaValid);
+
     async function handleSubmit(formData: FormData) {
+        // 访客需要验证码
+        if (needsCaptcha && !captchaValid) {
+            setResult({ success: false, error: t('captchaRequired') });
+            return;
+        }
+
         startTransition(async () => {
             const response = await createComment(postId, formData, replyTo?.id);
             setResult(response);
@@ -190,6 +202,7 @@ function CommentForm({
             if (response.success) {
                 setContent('');
                 setGuestEmail('');
+                setCaptchaValid(false);
                 onSuccess?.();
             }
         });
@@ -255,12 +268,20 @@ function CommentForm({
                     <Button
                         type="submit"
                         size="icon"
-                        disabled={isPending || !content.trim()}
+                        disabled={isPending || !canSubmit}
                         className="absolute bottom-2 right-2 h-8 w-8 rounded-full"
                     >
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>
+
+                {/* 访客验证码 */}
+                {needsCaptcha && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{t('captchaLabel')}:</span>
+                        <Captcha onVerify={setCaptchaValid} />
+                    </div>
+                )}
                 
                 {/* 访客信息输入 */}
                 {!user && (

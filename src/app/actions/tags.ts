@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { tagSchema } from '@/lib/validations';
 import { generateSlug } from '@/lib/server-utils';
+import { getCachedTags, invalidateTagsCache } from '@/lib/cache-layer';
 
 export type TagActionResult = 
   | { success: true }
@@ -30,10 +31,17 @@ async function requireAdmin() {
 }
 
 /**
- * Get all tags
+ * Get all tags with caching
  * Requirements: 8.1
  */
 export async function getTags() {
+  return getCachedTags();
+}
+
+/**
+ * Get all tags without cache (for admin)
+ */
+export async function getTagsUncached() {
   const data = await db.query.tags.findMany({
     orderBy: (tags, { asc }) => [asc(tags.name)],
   });
@@ -79,6 +87,7 @@ export async function createTag(formData: FormData): Promise<TagActionResult> {
     throw error;
   }
 
+  invalidateTagsCache();
   revalidatePath('/admin/tags');
   return { success: true };
 }
@@ -112,6 +121,7 @@ export async function createTagInline(name: string): Promise<CreateTagResult> {
       slug,
     }).returning();
 
+    invalidateTagsCache();
     revalidatePath('/admin/tags');
     return { success: true, tag: newTag };
   } catch (error) {
@@ -156,6 +166,7 @@ export async function updateTag(id: string, name: string): Promise<TagActionResu
     throw error;
   }
 
+  invalidateTagsCache();
   revalidatePath('/admin/tags');
   revalidatePath('/');
   return { success: true };
@@ -174,6 +185,7 @@ export async function deleteTag(id: string): Promise<TagActionResult> {
   // Then delete the tag itself
   await db.delete(tags).where(eq(tags.id, id));
 
+  invalidateTagsCache();
   revalidatePath('/admin/tags');
   return { success: true };
 }

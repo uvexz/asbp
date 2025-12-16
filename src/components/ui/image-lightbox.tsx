@@ -1,47 +1,74 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ImageLightboxProps {
   src: string;
-  alt: string;
+  alt?: string;
   className?: string;
 }
 
-export function ImageLightbox({ src, alt, className = '' }: ImageLightboxProps) {
+export function ImageLightbox({ src, alt, className }: ImageLightboxProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const openLightbox = useCallback(() => setIsOpen(true), []);
+  const closeLightbox = useCallback(() => setIsOpen(false), []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, closeLightbox]);
+
+  const lightboxContent = isOpen && mounted ? createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+      onClick={closeLightbox}
+    >
+      <button
+        onClick={closeLightbox}
+        className="absolute top-4 right-4 p-2 text-white/80 hover:text-white transition-colors"
+        aria-label="Close"
+      >
+        <X className="h-6 w-6" />
+      </button>
+      <img
+        src={src}
+        alt={alt || ''}
+        className="max-h-[90vh] max-w-[90vw] object-contain"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>,
+    document.body
+  ) : null;
 
   return (
     <>
       <img
         src={src}
-        alt={alt}
-        className={`cursor-pointer hover:opacity-90 transition-opacity ${className}`}
-        onClick={() => setIsOpen(true)}
+        alt={alt || ''}
+        className={cn('cursor-zoom-in', className)}
+        onClick={openLightbox}
       />
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/80 z-50"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <button
-              onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full"
-            >
-              <X className="h-6 w-6 text-white" />
-            </button>
-            <img
-              src={src}
-              alt={alt}
-              className="max-w-full max-h-[90vh] object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </>
-      )}
+      {lightboxContent}
     </>
   );
 }

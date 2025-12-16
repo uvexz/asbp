@@ -1,5 +1,47 @@
 # Changelog
 
+## v1.2.0
+
+### 🚀 性能优化
+
+**缓存层**
+- 新增 Next.js unstable_cache 缓存层，减少数据库查询
+- Settings、Navigation、Tags、Posts 数据支持缓存
+- 基于 tag 的缓存失效机制，数据更新时自动刷新
+
+**数据库连接池**
+- 优化连接池配置，支持 DB_POOL_MAX/DB_POOL_MIN 环境变量
+- 合理的超时设置，防止 Serverless 环境连接泄漏
+
+### 🔒 安全增强
+
+**敏感数据加密**
+- S3 密钥、Resend API Key 等敏感配置使用 AES-256-GCM 加密存储
+- 支持自定义 ENCRYPTION_KEY 或从 DATABASE_URL 自动派生
+- 向后兼容未加密的旧数据
+
+### 🔍 SEO 优化
+
+- 新增 `/robots.txt` 搜索引擎爬虫规则
+- 新增 `/sitemap.xml` 动态站点地图（含缓存）
+- 文章页增强 metadata：OpenGraph、Twitter Card、keywords
+- 新增 JSON-LD 结构化数据（Schema.org Article）
+
+### ✨ 新功能
+
+**全局搜索**
+- 博客头部新增搜索按钮
+- 支持 Cmd+K / Ctrl+K 快捷键打开搜索
+- 实时搜索文章标题和内容，键盘导航支持
+
+**媒体管理增强**
+- Markdown 编辑器新增"媒体库"按钮
+- 可从已上传图片中选择插入，无需重复上传
+
+**评论系统增强**
+- 访客评论新增算术验证码，防止垃圾评论
+- 新评论自动邮件通知管理员（需配置 Resend）
+
 ## v1.1.3
 
 ### 🔒 安全增强

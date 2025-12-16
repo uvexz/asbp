@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { getPostBySlug } from "@/app/actions/posts";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPostComments } from "@/app/actions/comments";
@@ -13,6 +12,7 @@ import { getTranslations } from "next-intl/server";
 import { getSettings } from "@/app/actions/settings";
 import type { Metadata } from "next";
 import { Calendar, CircleUser, Tag } from "lucide-react";
+import { ArticleJsonLd } from "@/components/seo/json-ld";
 
 export async function generateMetadata({
   params,
@@ -23,13 +23,47 @@ export async function generateMetadata({
   const post = await getPostBySlug(slug);
   const settings = await getSettings();
   const siteTitle = settings.siteTitle || "My Blog";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   if (!post) {
     return { title: `Not Found - ${siteTitle}` };
   }
 
+  // Extract description from content (first 160 chars)
+  const description =
+    post.content
+      .replace(/[#*`>\[\]()!]/g, "")
+      .replace(/\n+/g, " ")
+      .trim()
+      .slice(0, 160) + (post.content.length > 160 ? "..." : "");
+
+  // Extract keywords from tags
+  const keywords = post.tags.map((pt) => pt.tag.name);
+
   return {
     title: `${post.title} - ${siteTitle}`,
+    description,
+    keywords,
+    authors: [{ name: post.author.name }],
+    openGraph: {
+      title: post.title,
+      description,
+      type: "article",
+      publishedTime: new Date(post.publishedAt || post.createdAt).toISOString(),
+      modifiedTime: new Date(post.updatedAt).toISOString(),
+      authors: [post.author.name],
+      tags: keywords,
+      url: `${baseUrl}/${post.slug}`,
+      siteName: siteTitle,
+    },
+    twitter: {
+      card: "summary",
+      title: post.title,
+      description,
+    },
+    alternates: {
+      canonical: `${baseUrl}/${post.slug}`,
+    },
   };
 }
 
@@ -60,9 +94,23 @@ export default async function ArticleDetailPage({
       }
     : null;
 
+  const settings = await getSettings();
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
   return (
-    <div className="space-y-16 py-6 md:py-16 w-full overflow-x-hidden">
-      <article className="space-y-8 overflow-hidden">
+    <>
+      <ArticleJsonLd
+        title={post.title}
+        description={post.content.replace(/[#*`>\[\]()!]/g, "").slice(0, 160)}
+        url={`${baseUrl}/${post.slug}`}
+        datePublished={new Date(post.publishedAt || post.createdAt).toISOString()}
+        dateModified={new Date(post.updatedAt).toISOString()}
+        authorName={post.author.name}
+        siteName={settings.siteTitle || "My Blog"}
+        tags={post.tags.map((pt) => pt.tag.name)}
+      />
+      <div className="space-y-16 py-6 md:py-16 w-full overflow-x-hidden">
+        <article className="space-y-8 overflow-hidden">
         <header className="space-y-4">
           <h1 className="text-black dark:text-white text-2xl md:text-3xl font-black leading-tight tracking-[-0.033em] uppercase">
             {post.title}
@@ -91,19 +139,19 @@ export default async function ArticleDetailPage({
             )}
           </div>
         </header>
-        <div className="prose prose-neutral prose-lg max-w-none prose-headings:font-bold prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-lg prose-img:max-w-full prose-img:border-1 prose-pre:bg-neutral-900 prose-pre:text-neutral-100 prose-pre:overflow-x-auto prose-table:overflow-x-auto [&_pre]:max-w-full [&_table]:block [&_table]:overflow-x-auto">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {post.content}
-          </ReactMarkdown>
-        </div>
-      </article>
-      <div className="border-t border-border pt-12">
-        <CommentSection
-          postId={post.id}
-          comments={comments}
-          user={currentUser}
+        <MarkdownContent
+          content={post.content}
+          className="prose prose-neutral prose-lg max-w-none prose-headings:font-bold prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-lg prose-img:max-w-full prose-img:border-1 prose-pre:bg-neutral-900 prose-pre:text-neutral-100 prose-pre:overflow-x-auto prose-table:overflow-x-auto [&_pre]:max-w-full [&_table]:block [&_table]:overflow-x-auto"
         />
+      </article>
+        <div className="border-t border-border pt-12">
+          <CommentSection
+            postId={post.id}
+            comments={comments}
+            user={currentUser}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
