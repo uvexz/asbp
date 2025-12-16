@@ -37,12 +37,15 @@ interface UmamiActiveResponse {
 export class UmamiClient {
   private config: UmamiConfig;
   private baseUrl: string;
+  private apiPrefix: string;
 
   constructor(config: UmamiConfig) {
     this.config = config;
+    // Umami Cloud uses api.umami.is/v1, self-hosted uses /api
     this.baseUrl = config.isCloud
       ? 'https://api.umami.is'
       : config.hostUrl?.replace(/\/$/, '') || '';
+    this.apiPrefix = config.isCloud ? '/v1' : '/api';
   }
 
   private async getAuthHeaders(): Promise<HeadersInit> {
@@ -53,6 +56,7 @@ export class UmamiClient {
       return {
         'x-umami-api-key': this.config.apiKey,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       };
     }
 
@@ -106,7 +110,7 @@ export class UmamiClient {
       });
 
       const response = await fetch(
-        `${this.baseUrl}/api/websites/${this.config.websiteId}/stats?${params}`,
+        `${this.baseUrl}${this.apiPrefix}/websites/${this.config.websiteId}/stats?${params}`,
         { headers, next: { revalidate: 300 } }
       );
 
@@ -139,7 +143,7 @@ export class UmamiClient {
       });
 
       const response = await fetch(
-        `${this.baseUrl}/api/websites/${this.config.websiteId}/pageviews?${params}`,
+        `${this.baseUrl}${this.apiPrefix}/websites/${this.config.websiteId}/pageviews?${params}`,
         { headers, next: { revalidate: 300 } }
       );
 
@@ -161,7 +165,7 @@ export class UmamiClient {
     try {
       const headers = await this.getAuthHeaders();
       const response = await fetch(
-        `${this.baseUrl}/api/websites/${this.config.websiteId}/active`,
+        `${this.baseUrl}${this.apiPrefix}/websites/${this.config.websiteId}/active`,
         { headers, next: { revalidate: 30 } }
       );
 

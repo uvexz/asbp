@@ -1,24 +1,18 @@
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+    InputGroupText,
+} from "@/components/ui/input-group";
+import { UmamiSettings } from "@/components/admin/umami-settings";
 import { getSettingsUncached, updateSettings } from "@/app/actions/settings";
 import { getTranslations } from 'next-intl/server';
-
-function Checkbox({ id, name, defaultChecked, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
-    return (
-        <input
-            type="checkbox"
-            id={id}
-            name={name}
-            defaultChecked={defaultChecked}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            {...props}
-        />
-    );
-}
+import { Globe, FileText, Database, Mail, Bot, BarChart3, Key, Server, Folder, Link } from "lucide-react";
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
-    // Use uncached version for admin editing to ensure fresh data
     const settings = await getSettingsUncached();
     const t = await getTranslations('admin');
     const { saved } = await searchParams;
@@ -35,144 +29,250 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                     {t('settingsSaved')}
                 </div>
             )}
-            <form action={updateSettings} className="space-y-8">
+            <form action={updateSettings} className="space-y-8 max-w-2xl">
+                {/* General Settings */}
                 <section className="space-y-4">
-                    <h2 className="text-xl font-bold border-b pb-2">{t('generalSettings')}</h2>
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                        <Label htmlFor="siteTitle">{t('siteTitle')}</Label>
-                        <Input type="text" id="siteTitle" name="siteTitle" placeholder="My Awesome Blog" defaultValue={settings.siteTitle || ''} />
-                    </div>
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                        <Label htmlFor="siteDescription">{t('description')}</Label>
-                        <Input type="text" id="siteDescription" name="siteDescription" placeholder="A blog about tech..." defaultValue={settings.siteDescription || ''} />
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <Globe className="size-5" />
+                        {t('generalSettings')}
+                    </h2>
+                    <div className="space-y-3">
+                        <InputGroup>
+                            <InputGroupAddon>
+                                <InputGroupText>{t('siteTitle')}</InputGroupText>
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                id="siteTitle"
+                                name="siteTitle"
+                                placeholder="My Awesome Blog"
+                                defaultValue={settings.siteTitle || ''}
+                            />
+                        </InputGroup>
+                        <InputGroup>
+                            <InputGroupAddon>
+                                <InputGroupText><FileText className="size-4" /></InputGroupText>
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                id="siteDescription"
+                                name="siteDescription"
+                                placeholder={t('description')}
+                                defaultValue={settings.siteDescription || ''}
+                            />
+                        </InputGroup>
                     </div>
                 </section>
 
+                {/* User Registration */}
                 <section className="space-y-4">
-                    <h2 className="text-xl font-bold border-b pb-2">{t('userRegistration')}</h2>
-                    <div className="flex items-center gap-3">
-                        <Checkbox 
-                            id="allowRegistration" 
-                            name="allowRegistration" 
+                    <h2 className="text-lg font-semibold">{t('userRegistration')}</h2>
+                    <div className="flex items-center justify-between p-3 border rounded-md">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="allowRegistration" className="cursor-pointer">{t('allowRegistration')}</Label>
+                            <p className="text-sm text-muted-foreground">{t('allowRegistrationDesc')}</p>
+                        </div>
+                        <Switch
+                            id="allowRegistration"
+                            name="allowRegistration"
                             defaultChecked={settings.allowRegistration ?? false}
                         />
-                        <Label htmlFor="allowRegistration" className="cursor-pointer">{t('allowRegistration')}</Label>
-                    </div>
-                    <p className="text-sm text-gray-500">{t('allowRegistrationDesc')}</p>
-                </section>
-
-                <section className="space-y-4">
-                    <h2 className="text-xl font-bold border-b pb-2">{t('mediaStorage')}</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="s3Endpoint">{t('endpoint')}</Label>
-                            <Input type="text" id="s3Endpoint" name="s3Endpoint" placeholder="e.g. s3.amazonaws.com or MinIO URL" defaultValue={settings.s3Endpoint || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="s3Region">{t('region')}</Label>
-                            <Input type="text" id="s3Region" name="s3Region" placeholder="us-east-1" defaultValue={settings.s3Region || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="s3Bucket">{t('bucketName')}</Label>
-                            <Input type="text" id="s3Bucket" name="s3Bucket" placeholder="my-blog-media" defaultValue={settings.s3Bucket || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="s3AccessKey">{t('accessKey')}</Label>
-                            <Input type="text" id="s3AccessKey" name="s3AccessKey" defaultValue={settings.s3AccessKey || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="s3SecretKey">{t('secretKey')}</Label>
-                            <Input type="password" id="s3SecretKey" name="s3SecretKey" defaultValue={settings.s3SecretKey || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="s3CdnUrl">{t('cdnUrl')}</Label>
-                            <Input type="text" id="s3CdnUrl" name="s3CdnUrl" placeholder={t('cdnUrlDesc')} defaultValue={settings.s3CdnUrl || ''} />
-                        </div>
                     </div>
                 </section>
 
+                {/* Media Storage (S3) */}
                 <section className="space-y-4">
-                    <h2 className="text-xl font-bold border-b pb-2">{t('emailService')}</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="resendApiKey">{t('resendApiKey')}</Label>
-                            <Input type="password" id="resendApiKey" name="resendApiKey" placeholder="re_..." defaultValue={settings.resendApiKey || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="resendFromEmail">{t('resendFromEmail')}</Label>
-                            <Input type="email" id="resendFromEmail" name="resendFromEmail" placeholder={t('resendFromEmailDesc')} defaultValue={settings.resendFromEmail || ''} />
-                        </div>
-                    </div>
-                </section>
-
-                <section className="space-y-4">
-                    <h2 className="text-xl font-bold border-b pb-2">{t('aiSpamDetection')}</h2>
-                    <p className="text-sm text-gray-500">{t('aiSpamDetectionDesc')}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="aiBaseUrl">{t('aiBaseUrl')}</Label>
-                            <Input type="text" id="aiBaseUrl" name="aiBaseUrl" placeholder="https://api.openai.com/v1" defaultValue={settings.aiBaseUrl || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="aiApiKey">{t('aiApiKey')}</Label>
-                            <Input type="password" id="aiApiKey" name="aiApiKey" placeholder="sk-..." defaultValue={settings.aiApiKey || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="aiModel">{t('aiModel')}</Label>
-                            <Input type="text" id="aiModel" name="aiModel" placeholder="gpt-4o-mini" defaultValue={settings.aiModel || ''} />
-                        </div>
-                    </div>
-                </section>
-
-                <section className="space-y-4">
-                    <h2 className="text-xl font-bold border-b pb-2">{t('umamiAnalytics')}</h2>
-                    <p className="text-sm text-gray-500">{t('umamiAnalyticsDesc')}</p>
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <Checkbox 
-                                id="umamiEnabled" 
-                                name="umamiEnabled" 
-                                defaultChecked={settings.umamiEnabled ?? false}
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <Database className="size-5" />
+                        {t('mediaStorage')}
+                    </h2>
+                    <div className="space-y-3">
+                        <InputGroup>
+                            <InputGroupAddon>
+                                <InputGroupText><Server className="size-4" /></InputGroupText>
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                id="s3Endpoint"
+                                name="s3Endpoint"
+                                placeholder={t('endpoint')}
+                                defaultValue={settings.s3Endpoint || ''}
                             />
-                            <Label htmlFor="umamiEnabled" className="cursor-pointer">{t('umamiEnabled')}</Label>
+                        </InputGroup>
+                        <div className="grid grid-cols-2 gap-3">
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <InputGroupText>{t('region')}</InputGroupText>
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    id="s3Region"
+                                    name="s3Region"
+                                    placeholder="us-east-1"
+                                    defaultValue={settings.s3Region || ''}
+                                />
+                            </InputGroup>
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <InputGroupText><Folder className="size-4" /></InputGroupText>
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    id="s3Bucket"
+                                    name="s3Bucket"
+                                    placeholder={t('bucketName')}
+                                    defaultValue={settings.s3Bucket || ''}
+                                />
+                            </InputGroup>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <Checkbox 
-                                id="umamiCloud" 
-                                name="umamiCloud" 
-                                defaultChecked={settings.umamiCloud ?? false}
+                        <div className="grid grid-cols-2 gap-3">
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <InputGroupText>{t('accessKey')}</InputGroupText>
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    id="s3AccessKey"
+                                    name="s3AccessKey"
+                                    defaultValue={settings.s3AccessKey || ''}
+                                />
+                            </InputGroup>
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <InputGroupText><Key className="size-4" /></InputGroupText>
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    id="s3SecretKey"
+                                    name="s3SecretKey"
+                                    type="password"
+                                    placeholder={t('secretKey')}
+                                    defaultValue={settings.s3SecretKey || ''}
+                                />
+                            </InputGroup>
+                        </div>
+                        <InputGroup>
+                            <InputGroupAddon>
+                                <InputGroupText><Link className="size-4" /></InputGroupText>
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                id="s3CdnUrl"
+                                name="s3CdnUrl"
+                                placeholder={t('cdnUrlDesc')}
+                                defaultValue={settings.s3CdnUrl || ''}
                             />
-                            <Label htmlFor="umamiCloud" className="cursor-pointer">{t('umamiCloud')}</Label>
-                        </div>
-                        <p className="text-sm text-gray-500">{t('umamiCloudDesc')}</p>
+                        </InputGroup>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="umamiHostUrl">{t('umamiHostUrl')}</Label>
-                            <Input type="text" id="umamiHostUrl" name="umamiHostUrl" placeholder={t('umamiHostUrlPlaceholder')} defaultValue={settings.umamiHostUrl || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="umamiWebsiteId">{t('umamiWebsiteId')}</Label>
-                            <Input type="text" id="umamiWebsiteId" name="umamiWebsiteId" defaultValue={settings.umamiWebsiteId || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="umamiApiKey">{t('umamiApiKey')}</Label>
-                            <Input type="password" id="umamiApiKey" name="umamiApiKey" defaultValue={settings.umamiApiKey || ''} />
-                            <p className="text-xs text-gray-500">{t('umamiApiKeyDesc')}</p>
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="umamiApiUserId">{t('umamiApiUserId')}</Label>
-                            <Input type="text" id="umamiApiUserId" name="umamiApiUserId" defaultValue={settings.umamiApiUserId || ''} />
-                        </div>
-                        <div className="grid w-full items-center gap-1.5">
-                            <Label htmlFor="umamiApiSecret">{t('umamiApiSecret')}</Label>
-                            <Input type="password" id="umamiApiSecret" name="umamiApiSecret" defaultValue={settings.umamiApiSecret || ''} />
-                            <p className="text-xs text-gray-500">{t('umamiApiSecretDesc')}</p>
+                </section>
+
+                {/* Email Service */}
+                <section className="space-y-4">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <Mail className="size-5" />
+                        {t('emailService')}
+                    </h2>
+                    <div className="space-y-3">
+                        <InputGroup>
+                            <InputGroupAddon>
+                                <InputGroupText><Key className="size-4" /></InputGroupText>
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                id="resendApiKey"
+                                name="resendApiKey"
+                                type="password"
+                                placeholder="re_..."
+                                defaultValue={settings.resendApiKey || ''}
+                            />
+                        </InputGroup>
+                        <InputGroup>
+                            <InputGroupAddon>
+                                <InputGroupText><Mail className="size-4" /></InputGroupText>
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                id="resendFromEmail"
+                                name="resendFromEmail"
+                                type="email"
+                                placeholder={t('resendFromEmailDesc')}
+                                defaultValue={settings.resendFromEmail || ''}
+                            />
+                        </InputGroup>
+                    </div>
+                </section>
+
+                {/* AI Spam Detection */}
+                <section className="space-y-4">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <Bot className="size-5" />
+                        {t('aiSpamDetection')}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">{t('aiSpamDetectionDesc')}</p>
+                    <div className="space-y-3">
+                        <InputGroup>
+                            <InputGroupAddon>
+                                <InputGroupText><Server className="size-4" /></InputGroupText>
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                id="aiBaseUrl"
+                                name="aiBaseUrl"
+                                placeholder="https://api.openai.com/v1"
+                                defaultValue={settings.aiBaseUrl || ''}
+                            />
+                        </InputGroup>
+                        <div className="grid grid-cols-2 gap-3">
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <InputGroupText><Key className="size-4" /></InputGroupText>
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    id="aiApiKey"
+                                    name="aiApiKey"
+                                    type="password"
+                                    placeholder="sk-..."
+                                    defaultValue={settings.aiApiKey || ''}
+                                />
+                            </InputGroup>
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <InputGroupText>{t('aiModel')}</InputGroupText>
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    id="aiModel"
+                                    name="aiModel"
+                                    placeholder="gpt-4o-mini"
+                                    defaultValue={settings.aiModel || ''}
+                                />
+                            </InputGroup>
                         </div>
                     </div>
                 </section>
 
-                <Button type="submit" className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold">{t('saveChanges')}</Button>
+                {/* Umami Analytics */}
+                <section className="space-y-4">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <BarChart3 className="size-5" />
+                        {t('umamiAnalytics')}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">{t('umamiAnalyticsDesc')}</p>
+                    <UmamiSettings
+                        defaultEnabled={settings.umamiEnabled ?? false}
+                        defaultCloud={settings.umamiCloud ?? false}
+                        defaultHostUrl={settings.umamiHostUrl || ''}
+                        defaultWebsiteId={settings.umamiWebsiteId || ''}
+                        defaultApiKey={settings.umamiApiKey || ''}
+                        defaultApiUserId={settings.umamiApiUserId || ''}
+                        defaultApiSecret={settings.umamiApiSecret || ''}
+                        translations={{
+                            umamiEnabled: t('umamiEnabled'),
+                            umamiCloud: t('umamiCloud'),
+                            umamiCloudDesc: t('umamiCloudDesc'),
+                            umamiHostUrl: t('umamiHostUrl'),
+                            umamiHostUrlPlaceholder: t('umamiHostUrlPlaceholder'),
+                            umamiWebsiteId: t('umamiWebsiteId'),
+                            umamiApiKey: t('umamiApiKey'),
+                            umamiApiKeyDesc: t('umamiApiKeyDesc'),
+                            umamiApiUserId: t('umamiApiUserId'),
+                            umamiApiSecret: t('umamiApiSecret'),
+                            umamiApiSecretDesc: t('umamiApiSecretDesc'),
+                        }}
+                    />
+                </section>
+
+                <Button type="submit" className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold">
+                    {t('saveChanges')}
+                </Button>
             </form>
             </main>
         </div>
