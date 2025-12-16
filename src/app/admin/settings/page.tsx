@@ -105,6 +105,25 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                     </div>
                 </section>
 
+                <section className="space-y-4">
+                    <h2 className="text-xl font-bold border-b pb-2">{t('aiSpamDetection')}</h2>
+                    <p className="text-sm text-gray-500">{t('aiSpamDetectionDesc')}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="aiBaseUrl">{t('aiBaseUrl')}</Label>
+                            <Input type="text" id="aiBaseUrl" name="aiBaseUrl" placeholder="https://api.openai.com/v1" defaultValue={settings.aiBaseUrl || ''} />
+                        </div>
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="aiApiKey">{t('aiApiKey')}</Label>
+                            <Input type="password" id="aiApiKey" name="aiApiKey" placeholder="sk-..." defaultValue={settings.aiApiKey || ''} />
+                        </div>
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="aiModel">{t('aiModel')}</Label>
+                            <Input type="text" id="aiModel" name="aiModel" placeholder="gpt-4o-mini" defaultValue={settings.aiModel || ''} />
+                        </div>
+                    </div>
+                </section>
+
                 <Button type="submit" className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold">{t('saveChanges')}</Button>
             </form>
             </main>

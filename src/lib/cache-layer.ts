@@ -42,6 +42,9 @@ export const getCachedSettings = unstable_cache(
         s3CdnUrl: '',
         resendApiKey: '',
         resendFromEmail: '',
+        aiBaseUrl: '',
+        aiApiKey: '',
+        aiModel: '',
       };
     }
     
@@ -53,6 +56,7 @@ export const getCachedSettings = unstable_cache(
       s3SecretKey: row.s3SecretKey ? decrypt(row.s3SecretKey) : '',
       s3AccessKey: row.s3AccessKey ? decrypt(row.s3AccessKey) : '',
       resendApiKey: row.resendApiKey ? decrypt(row.resendApiKey) : '',
+      aiApiKey: row.aiApiKey ? decrypt(row.aiApiKey) : '',
     };
   },
   ['settings'],

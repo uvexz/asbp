@@ -172,6 +172,17 @@ export const settings = pgTable('settings', {
   // Resend
   resendApiKey: text('resendApiKey'),
   resendFromEmail: text('resendFromEmail'), // Sender email for notifications
+  // AI Spam Detection (OpenAI Compatible API)
+  aiBaseUrl: text('aiBaseUrl'), // e.g. https://api.openai.com/v1
+  aiApiKey: text('aiApiKey'),
+  aiModel: text('aiModel'), // e.g. gpt-4o-mini
+});
+
+// Email whitelist for auto-approved comments
+export const emailWhitelist = pgTable('email_whitelist', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').notNull().unique(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
 
 // Navigation items for the blog header

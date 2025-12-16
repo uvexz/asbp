@@ -1,6 +1,6 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { Check, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -38,16 +38,17 @@ interface CommentsTableProps {
         guest: string;
         deletedPost: string;
         noCommentsFound: string;
+        addToWhitelist?: string;
     };
 }
 
 export function CommentsTable({ comments, labels }: CommentsTableProps) {
     const [isPending, startTransition] = useTransition();
 
-    const handleApprove = (id: string) => {
+    const handleApprove = (id: string, addToWhitelist: boolean = false) => {
         startTransition(async () => {
-            await approveComment(id);
-            toast.success('评论已通过审核');
+            await approveComment(id, addToWhitelist);
+            toast.success(addToWhitelist ? '评论已通过并加入白名单' : '评论已通过审核');
         });
     };
 
@@ -78,15 +79,28 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                     {comment.status !== 'approved' && (
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-8 w-8 text-green-600 hover:bg-green-50"
-                                            onClick={() => handleApprove(comment.id)}
-                                            disabled={isPending}
-                                        >
-                                            <Check className="h-4 w-4" />
-                                        </Button>
+                                        <>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-green-600 hover:bg-green-50"
+                                                onClick={() => handleApprove(comment.id, false)}
+                                                disabled={isPending}
+                                                title="通过"
+                                            >
+                                                <Check className="h-4 w-4" />
+                                            </Button>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-blue-600 hover:bg-blue-50"
+                                                onClick={() => handleApprove(comment.id, true)}
+                                                disabled={isPending}
+                                                title={labels.addToWhitelist || '通过并加入白名单'}
+                                            >
+                                                <UserCheck className="h-4 w-4" />
+                                            </Button>
+                                        </>
                                     )}
                                     <DeleteButton
                                         onDelete={async () => {
@@ -135,15 +149,28 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">
                                         {comment.status !== 'approved' && (
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="text-green-600 hover:bg-green-50"
-                                                onClick={() => handleApprove(comment.id)}
-                                                disabled={isPending}
-                                            >
-                                                <Check className="h-4 w-4" />
-                                            </Button>
+                                            <>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="text-green-600 hover:bg-green-50"
+                                                    onClick={() => handleApprove(comment.id, false)}
+                                                    disabled={isPending}
+                                                    title="通过"
+                                                >
+                                                    <Check className="h-4 w-4" />
+                                                </Button>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="text-blue-600 hover:bg-blue-50"
+                                                    onClick={() => handleApprove(comment.id, true)}
+                                                    disabled={isPending}
+                                                    title={labels.addToWhitelist || '通过并加入白名单'}
+                                                >
+                                                    <UserCheck className="h-4 w-4" />
+                                                </Button>
+                                            </>
                                         )}
                                         <DeleteButton
                                             onDelete={async () => {

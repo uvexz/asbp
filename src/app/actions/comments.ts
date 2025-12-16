@@ -57,8 +57,22 @@ export async function getComments(page: number = 1, pageSize: number = 20) {
     };
 }
 
-export async function approveComment(id: string) {
+export async function approveComment(id: string, addToWhitelistFlag: boolean = false) {
     await requireAdmin();
+    
+    // Get comment to find email
+    if (addToWhitelistFlag) {
+        const comment = await db.query.comments.findFirst({
+            where: eq(comments.id, id),
+            columns: { guestEmail: true }
+        });
+        
+        if (comment?.guestEmail) {
+            const { addToWhitelist } = await import('@/lib/spam-detector');
+            await addToWhitelist(comment.guestEmail);
+        }
+    }
+    
     await db.update(comments).set({ status: 'approved' }).where(eq(comments.id, id));
     revalidatePath('/admin/comments');
 }
@@ -108,6 +122,23 @@ export async function createComment(postId: string, formData: FormData, parentId
             return { success: false, error: errorMessages };
         }
 
+        // Check spam using AI
+        const { checkCommentSpam, addToWhitelist } = await import('@/lib/spam-detector');
+        const spamResult = await checkCommentSpam(
+            validationResult.data.content,
+            validationResult.data.guestName,
+            validationResult.data.guestEmail,
+            validationResult.data.guestWebsite
+        );
+
+        // Reject high-risk spam
+        if (spamResult.isSpam) {
+            return { success: false, error: 'Comment rejected as spam' };
+        }
+
+        // Determine status based on spam check
+        const status = spamResult.autoApproved ? 'approved' : 'pending';
+
         const result = await db.insert(comments).values({
             content: validationResult.data.content,
             postId,
@@ -115,7 +146,7 @@ export async function createComment(postId: string, formData: FormData, parentId
             guestEmail: validationResult.data.guestEmail,
             guestWebsite: validationResult.data.guestWebsite || null,
             parentId: parentId || null,
-            status: 'pending', // Pending for guests
+            status,
         }).returning({ id: comments.id });
         newCommentId = result[0]?.id;
     }

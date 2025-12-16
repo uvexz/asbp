@@ -71,6 +71,13 @@
       "when": 1765634626380,
       "tag": "0009_sour_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1765893020161,
+      "tag": "0010_pink_colonel_america",
+      "breakpoints": true
     }
   ]
 }

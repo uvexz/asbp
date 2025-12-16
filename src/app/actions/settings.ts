@@ -38,6 +38,9 @@ export async function getSettingsUncached() {
             s3CdnUrl: '',
             resendApiKey: '',
             resendFromEmail: '',
+            aiBaseUrl: '',
+            aiApiKey: '',
+            aiModel: '',
         };
     }
     
@@ -49,6 +52,7 @@ export async function getSettingsUncached() {
         s3SecretKey: row.s3SecretKey ? decrypt(row.s3SecretKey) : '',
         s3AccessKey: row.s3AccessKey ? decrypt(row.s3AccessKey) : '',
         resendApiKey: row.resendApiKey ? decrypt(row.resendApiKey) : '',
+        aiApiKey: row.aiApiKey ? decrypt(row.aiApiKey) : '',
     };
 }
 
@@ -77,16 +81,20 @@ export async function updateSettings(formData: FormData) {
     const s3Endpoint = (formData.get('s3Endpoint') as string) || null;
     const s3CdnUrl = (formData.get('s3CdnUrl') as string) || null;
     const resendFromEmail = (formData.get('resendFromEmail') as string) || null;
+    const aiBaseUrl = (formData.get('aiBaseUrl') as string) || null;
+    const aiModel = (formData.get('aiModel') as string) || null;
     
     // Get raw values for sensitive fields
     const s3AccessKeyRaw = (formData.get('s3AccessKey') as string) || null;
     const s3SecretKeyRaw = (formData.get('s3SecretKey') as string) || null;
     const resendApiKeyRaw = (formData.get('resendApiKey') as string) || null;
+    const aiApiKeyRaw = (formData.get('aiApiKey') as string) || null;
     
     // Encrypt sensitive fields before storing
     const s3AccessKey = s3AccessKeyRaw ? encrypt(s3AccessKeyRaw) : null;
     const s3SecretKey = s3SecretKeyRaw ? encrypt(s3SecretKeyRaw) : null;
     const resendApiKey = resendApiKeyRaw ? encrypt(resendApiKeyRaw) : null;
+    const aiApiKey = aiApiKeyRaw ? encrypt(aiApiKeyRaw) : null;
 
     try {
         await db.insert(settings).values({
@@ -102,6 +110,9 @@ export async function updateSettings(formData: FormData) {
             s3CdnUrl,
             resendApiKey,
             resendFromEmail,
+            aiBaseUrl,
+            aiApiKey,
+            aiModel,
         }).onConflictDoUpdate({
             target: settings.id,
             set: {
@@ -116,6 +127,9 @@ export async function updateSettings(formData: FormData) {
                 s3CdnUrl,
                 resendApiKey,
                 resendFromEmail,
+                aiBaseUrl,
+                aiApiKey,
+                aiModel,
             }
         });
     } catch (error) {

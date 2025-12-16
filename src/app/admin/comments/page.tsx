@@ -29,6 +29,7 @@ export default async function AdminCommentsPage({ searchParams }: { searchParams
                         guest: t('guest'),
                         deletedPost: t('deletedPost'),
                         noCommentsFound: t('noCommentsFound'),
+                        addToWhitelist: t('addToWhitelist'),
                     }}
                 />
                 {totalPages > 1 && (
