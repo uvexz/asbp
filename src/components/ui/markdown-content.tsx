@@ -12,7 +12,7 @@ interface MarkdownContentProps {
 
 const components: Components = {
   img: ({ src, alt }) => {
-    if (!src) return null;
+    if (!src || typeof src !== 'string') return null;
     return <ImageLightbox src={src} alt={alt} />;
   },
 };
