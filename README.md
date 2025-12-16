@@ -70,7 +70,11 @@ npm run db:push      # 推送 schema 到数据库
 部署到 Vercel、Deno Deploy、Render 或其他 PaaS 平台
 
 1. Fork 并导入仓库到 Vercel 或其他平台
-2. 添加环境变量 `DATABASE_URL`、`BETTER_AUTH_URL`、`BETTER_AUTH_SECRET`
+2. 添加环境变量：
+   - `DATABASE_URL` — PostgreSQL 连接字符串（必填）
+   - `BETTER_AUTH_URL` — 认证服务 URL（必填）
+   - `BETTER_AUTH_SECRET` — 认证密钥（必填）
+   - `NEXT_PUBLIC_APP_URL` — 站点公开 URL（推荐，用于 SEO、RSS、邮件链接）
 3. 部署即可
 
 > 注意：可能需要使用外部 PostgreSQL 服务（如 Neon.tech、Supabase.com、Prisma.io 等）

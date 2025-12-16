@@ -257,7 +257,7 @@ async function sendAdminNotification(commentId: string, postId: string) {
     if (!post) return;
 
     const siteTitle = settings.siteTitle || 'Blog';
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
     const commenterName = comment.guestName || '匿名用户';
 
     try {

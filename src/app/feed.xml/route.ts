@@ -4,7 +4,7 @@ import { getCachedFeedPosts, getCachedSettings } from '@/lib/cache-layer';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
   const settings = await getCachedSettings();
   const posts = await getCachedFeedPosts(20);
 

@@ -17,7 +17,7 @@
 
 **敏感数据加密**
 - S3 密钥、Resend API Key 等敏感配置使用 AES-256-GCM 加密存储
-- 支持自定义 ENCRYPTION_KEY 或从 DATABASE_URL 自动派生
+- 支持自定义 ENCRYPTION_KEY 或从 BETTER_AUTH_SECRET 自动派生
 - 向后兼容未加密的旧数据
 
 ### 🔍 SEO 优化

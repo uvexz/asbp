@@ -11,7 +11,7 @@ const AUTH_TAG_LENGTH = 16;
 
 /**
  * Get or derive encryption key
- * Priority: ENCRYPTION_KEY env var > derived from DATABASE_URL
+ * Priority: ENCRYPTION_KEY env var > derived from BETTER_AUTH_SECRET
  */
 function getEncryptionKey(): Buffer {
   if (process.env.ENCRYPTION_KEY) {
@@ -22,14 +22,14 @@ function getEncryptionKey(): Buffer {
     return key;
   }
   
-  // Derive key from DATABASE_URL as fallback
-  if (process.env.DATABASE_URL) {
+  // Derive key from BETTER_AUTH_SECRET as fallback (already required for auth)
+  if (process.env.BETTER_AUTH_SECRET) {
     return createHash('sha256')
-      .update(process.env.DATABASE_URL + '_settings_encryption')
+      .update(process.env.BETTER_AUTH_SECRET + '_settings_encryption')
       .digest();
   }
   
-  throw new Error('No encryption key available. Set ENCRYPTION_KEY or DATABASE_URL');
+  throw new Error('No encryption key available. Set ENCRYPTION_KEY or BETTER_AUTH_SECRET');
 }
 
 /**

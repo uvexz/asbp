@@ -22,8 +22,8 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getPostBySlug(slug);
   const settings = await getSettings();
-  const siteTitle = settings.siteTitle || "My Blog";
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const siteTitle = settings.siteTitle || "ASBP";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000";
 
   if (!post) {
     return { title: `Not Found - ${siteTitle}` };
@@ -95,7 +95,7 @@ export default async function ArticleDetailPage({
     : null;
 
   const settings = await getSettings();
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000";
 
   return (
     <>
