@@ -34,6 +34,7 @@
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.0",
     "feed": "^5.1.0",
+    "ioredis": "^5.8.2",
     "lucide-react": "^0.559.0",
     "next": "^16.0.10",
     "next-intl": "^4.5.8",
