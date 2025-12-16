@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.2.1
+
+### 🚀 性能优化
+
+**Redis 缓存支持**
+- 新增可选 Redis 缓存层，设置 `REDIS_URL` 启用
+- 缓存覆盖：Settings、Navigation、Tags、Posts、Sitemap、RSS Feed
+- 未配置 Redis 时自动回退到 Next.js 内存缓存
+
+### 🤖 AI 垃圾评论检测
+
+- 支持 OpenAI 兼容 API 自动检测垃圾评论
+- 评分逻辑：低分自动通过，中分待审核，高分自动拒绝
+- 新增邮箱白名单功能，白名单用户评论自动通过
+- 审核时可一键"通过并加入白名单"
+
 ## v1.2.0
 
 ### 🚀 性能优化
