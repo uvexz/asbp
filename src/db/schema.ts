@@ -176,6 +176,14 @@ export const settings = pgTable('settings', {
   aiBaseUrl: text('aiBaseUrl'), // e.g. https://api.openai.com/v1
   aiApiKey: text('aiApiKey'),
   aiModel: text('aiModel'), // e.g. gpt-4o-mini
+  // Umami Analytics
+  umamiEnabled: boolean('umamiEnabled').default(false),
+  umamiCloud: boolean('umamiCloud').default(false), // true = cloud.umami.is, false = self-hosted
+  umamiHostUrl: text('umamiHostUrl'), // Self-hosted URL (e.g. https://umami.example.com)
+  umamiWebsiteId: text('umamiWebsiteId'), // Website ID
+  umamiApiKey: text('umamiApiKey'), // API key for dashboard stats (Cloud only)
+  umamiApiUserId: text('umamiApiUserId'), // User ID for self-hosted API
+  umamiApiSecret: text('umamiApiSecret'), // Secret for self-hosted API
 });
 
 // Email whitelist for auto-approved comments

@@ -124,6 +124,54 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                     </div>
                 </section>
 
+                <section className="space-y-4">
+                    <h2 className="text-xl font-bold border-b pb-2">{t('umamiAnalytics')}</h2>
+                    <p className="text-sm text-gray-500">{t('umamiAnalyticsDesc')}</p>
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <Checkbox 
+                                id="umamiEnabled" 
+                                name="umamiEnabled" 
+                                defaultChecked={settings.umamiEnabled ?? false}
+                            />
+                            <Label htmlFor="umamiEnabled" className="cursor-pointer">{t('umamiEnabled')}</Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Checkbox 
+                                id="umamiCloud" 
+                                name="umamiCloud" 
+                                defaultChecked={settings.umamiCloud ?? false}
+                            />
+                            <Label htmlFor="umamiCloud" className="cursor-pointer">{t('umamiCloud')}</Label>
+                        </div>
+                        <p className="text-sm text-gray-500">{t('umamiCloudDesc')}</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="umamiHostUrl">{t('umamiHostUrl')}</Label>
+                            <Input type="text" id="umamiHostUrl" name="umamiHostUrl" placeholder={t('umamiHostUrlPlaceholder')} defaultValue={settings.umamiHostUrl || ''} />
+                        </div>
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="umamiWebsiteId">{t('umamiWebsiteId')}</Label>
+                            <Input type="text" id="umamiWebsiteId" name="umamiWebsiteId" defaultValue={settings.umamiWebsiteId || ''} />
+                        </div>
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="umamiApiKey">{t('umamiApiKey')}</Label>
+                            <Input type="password" id="umamiApiKey" name="umamiApiKey" defaultValue={settings.umamiApiKey || ''} />
+                            <p className="text-xs text-gray-500">{t('umamiApiKeyDesc')}</p>
+                        </div>
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="umamiApiUserId">{t('umamiApiUserId')}</Label>
+                            <Input type="text" id="umamiApiUserId" name="umamiApiUserId" defaultValue={settings.umamiApiUserId || ''} />
+                        </div>
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="umamiApiSecret">{t('umamiApiSecret')}</Label>
+                            <Input type="password" id="umamiApiSecret" name="umamiApiSecret" defaultValue={settings.umamiApiSecret || ''} />
+                            <p className="text-xs text-gray-500">{t('umamiApiSecretDesc')}</p>
+                        </div>
+                    </div>
+                </section>
+
                 <Button type="submit" className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold">{t('saveChanges')}</Button>
             </form>
             </main>

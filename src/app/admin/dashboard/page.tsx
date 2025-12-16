@@ -1,17 +1,47 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrafficChart } from '@/components/admin/traffic-chart';
 import { db } from '@/lib/db';
 import { posts, comments, sessions } from '@/db/schema';
 import { count, eq } from 'drizzle-orm';
 import { getTranslations } from 'next-intl/server';
+import { getSettings } from '@/app/actions/settings';
+import { createUmamiClient, UmamiClient } from '@/lib/umami';
+
+async function getUmamiData(client: UmamiClient, isConfigured: boolean) {
+    if (!isConfigured) {
+        return { trafficData: null, trafficStats: null, activeVisitors: 0 };
+    }
+    
+    const now = Date.now();
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+    
+    const [pageviews, stats, active] = await Promise.all([
+        client.getPageviews(sevenDaysAgo, now, 'day'),
+        client.getStats(sevenDaysAgo, now),
+        client.getActiveVisitors(),
+    ]);
+    
+    return {
+        trafficData: pageviews,
+        trafficStats: stats,
+        activeVisitors: active,
+    };
+}
 
 export default async function AdminDashboardPage() {
     const t = await getTranslations('admin');
+    const settings = await getSettings();
     
     // Fetch counts in parallel
     const [postCount] = await db.select({ count: count() }).from(posts);
     const [commentCount] = await db.select({ count: count() }).from(comments).where(eq(comments.status, 'pending'));
-    // Visitors is approximated by sessions or unique IPs in sessions over 30 days
     const [visitorCount] = await db.select({ count: count() }).from(sessions);
+
+    // Fetch Umami stats if configured
+    const umamiClient = createUmamiClient(settings);
+    const isUmamiConfigured = !!(settings.umamiEnabled && umamiClient.isConfigured());
+    
+    const { trafficData, trafficStats, activeVisitors } = await getUmamiData(umamiClient, isUmamiConfigured);
 
     return (
         <div className="flex flex-col h-full">
@@ -48,15 +78,16 @@ export default async function AdminDashboardPage() {
             </div>
             <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-gray-900 dark:text-gray-50 text-[22px] font-bold leading-tight tracking-[-0.015em]">{t('websiteTraffic')}</h2>
+                    <h2 className="text-gray-900 dark:text-gray-50 text-[22px] font-bold leading-tight tracking-[-0.015em]">
+                        {t('websiteTraffic')} <span className="text-sm font-normal text-gray-500">({t('last7Days')})</span>
+                    </h2>
                 </div>
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="w-full h-80 flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-md border border-dashed border-gray-300 dark:border-gray-700">
-                            <p className="text-gray-500 dark:text-gray-400">{t('trafficChartPending')}</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                <TrafficChart 
+                    data={trafficData}
+                    stats={trafficStats}
+                    activeVisitors={activeVisitors}
+                    isConfigured={isUmamiConfigured}
+                />
             </div>
             </main>
         </div>

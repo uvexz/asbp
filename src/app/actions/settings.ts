@@ -41,6 +41,13 @@ export async function getSettingsUncached() {
             aiBaseUrl: '',
             aiApiKey: '',
             aiModel: '',
+            umamiEnabled: false,
+            umamiCloud: false,
+            umamiHostUrl: '',
+            umamiWebsiteId: '',
+            umamiApiKey: '',
+            umamiApiUserId: '',
+            umamiApiSecret: '',
         };
     }
     
@@ -53,6 +60,8 @@ export async function getSettingsUncached() {
         s3AccessKey: row.s3AccessKey ? decrypt(row.s3AccessKey) : '',
         resendApiKey: row.resendApiKey ? decrypt(row.resendApiKey) : '',
         aiApiKey: row.aiApiKey ? decrypt(row.aiApiKey) : '',
+        umamiApiKey: row.umamiApiKey ? decrypt(row.umamiApiKey) : '',
+        umamiApiSecret: row.umamiApiSecret ? decrypt(row.umamiApiSecret) : '',
     };
 }
 
@@ -84,17 +93,28 @@ export async function updateSettings(formData: FormData) {
     const aiBaseUrl = (formData.get('aiBaseUrl') as string) || null;
     const aiModel = (formData.get('aiModel') as string) || null;
     
+    // Umami settings
+    const umamiEnabled = formData.get('umamiEnabled') === 'on';
+    const umamiCloud = formData.get('umamiCloud') === 'on';
+    const umamiHostUrl = (formData.get('umamiHostUrl') as string) || null;
+    const umamiWebsiteId = (formData.get('umamiWebsiteId') as string) || null;
+    const umamiApiUserId = (formData.get('umamiApiUserId') as string) || null;
+    
     // Get raw values for sensitive fields
     const s3AccessKeyRaw = (formData.get('s3AccessKey') as string) || null;
     const s3SecretKeyRaw = (formData.get('s3SecretKey') as string) || null;
     const resendApiKeyRaw = (formData.get('resendApiKey') as string) || null;
     const aiApiKeyRaw = (formData.get('aiApiKey') as string) || null;
+    const umamiApiKeyRaw = (formData.get('umamiApiKey') as string) || null;
+    const umamiApiSecretRaw = (formData.get('umamiApiSecret') as string) || null;
     
     // Encrypt sensitive fields before storing
     const s3AccessKey = s3AccessKeyRaw ? encrypt(s3AccessKeyRaw) : null;
     const s3SecretKey = s3SecretKeyRaw ? encrypt(s3SecretKeyRaw) : null;
     const resendApiKey = resendApiKeyRaw ? encrypt(resendApiKeyRaw) : null;
     const aiApiKey = aiApiKeyRaw ? encrypt(aiApiKeyRaw) : null;
+    const umamiApiKey = umamiApiKeyRaw ? encrypt(umamiApiKeyRaw) : null;
+    const umamiApiSecret = umamiApiSecretRaw ? encrypt(umamiApiSecretRaw) : null;
 
     try {
         await db.insert(settings).values({
@@ -113,6 +133,13 @@ export async function updateSettings(formData: FormData) {
             aiBaseUrl,
             aiApiKey,
             aiModel,
+            umamiEnabled,
+            umamiCloud,
+            umamiHostUrl,
+            umamiWebsiteId,
+            umamiApiKey,
+            umamiApiUserId,
+            umamiApiSecret,
         }).onConflictDoUpdate({
             target: settings.id,
             set: {
@@ -130,6 +157,13 @@ export async function updateSettings(formData: FormData) {
                 aiBaseUrl,
                 aiApiKey,
                 aiModel,
+                umamiEnabled,
+                umamiCloud,
+                umamiHostUrl,
+                umamiWebsiteId,
+                umamiApiKey,
+                umamiApiUserId,
+                umamiApiSecret,
             }
         });
     } catch (error) {

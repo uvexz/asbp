@@ -91,6 +91,13 @@ async function fetchSettings() {
       aiBaseUrl: '',
       aiApiKey: '',
       aiModel: '',
+      umamiEnabled: false,
+      umamiCloud: false,
+      umamiHostUrl: '',
+      umamiWebsiteId: '',
+      umamiApiKey: '',
+      umamiApiUserId: '',
+      umamiApiSecret: '',
     };
   }
   
@@ -101,6 +108,8 @@ async function fetchSettings() {
     s3AccessKey: row.s3AccessKey ? decrypt(row.s3AccessKey) : '',
     resendApiKey: row.resendApiKey ? decrypt(row.resendApiKey) : '',
     aiApiKey: row.aiApiKey ? decrypt(row.aiApiKey) : '',
+    umamiApiKey: row.umamiApiKey ? decrypt(row.umamiApiKey) : '',
+    umamiApiSecret: row.umamiApiSecret ? decrypt(row.umamiApiSecret) : '',
   };
 }
 

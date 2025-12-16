@@ -1,5 +1,6 @@
 import { BlogHeader } from '@/components/layout/blog-header';
 import { BlogFooter } from '@/components/layout/blog-footer';
+import { UmamiScript } from '@/components/umami-script';
 import { getSettings } from '@/app/actions/settings';
 import { getNavItems } from '@/app/actions/navigation';
 
@@ -14,6 +15,12 @@ export default async function BlogLayout({
 
     return (
         <div className="bg-white dark:bg-gray-950 font-sans">
+            <UmamiScript
+                enabled={settings.umamiEnabled ?? false}
+                isCloud={settings.umamiCloud ?? false}
+                hostUrl={settings.umamiHostUrl}
+                websiteId={settings.umamiWebsiteId}
+            />
             <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
                 <div className="layout-container flex h-full grow flex-col">
                     <div className="px-4 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
