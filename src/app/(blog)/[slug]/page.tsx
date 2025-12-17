@@ -93,6 +93,7 @@ export default async function ArticleDetailPage({
         image: session.user.image,
       }
     : null;
+  const isAdmin = session?.user?.role === 'admin';
 
   const settings = await getSettings();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000";
@@ -149,6 +150,7 @@ export default async function ArticleDetailPage({
             postId={post.id}
             comments={comments}
             user={currentUser}
+            isAdmin={isAdmin}
           />
         </div>
       </div>

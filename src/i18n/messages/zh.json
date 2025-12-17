@@ -123,7 +123,9 @@
     "reply": "回复",
     "replyingTo": "回复",
     "replyPlaceholder": "写下你的回复...",
-    "spamRejected": "评论被识别为垃圾信息，已拒绝"
+    "spamRejected": "评论被识别为垃圾信息，已拒绝",
+    "delete": "删除",
+    "confirmDeleteComment": "确定要删除这条评论吗？"
   },
   "admin": {
     "dashboard": "仪表盘",

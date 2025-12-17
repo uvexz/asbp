@@ -3,14 +3,15 @@
 import { useState, useTransition, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { createComment, type CommentActionResult } from '@/app/actions/comments';
+import { createComment, deleteComment, type CommentActionResult } from '@/app/actions/comments';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { md5 } from '@/lib/hash';
 import { cn } from '@/lib/utils';
-import { MessageCircle, Reply, User, Mail, Globe, Send, X } from 'lucide-react';
+import { MessageCircle, Reply, User, Mail, Globe, Send, X, Trash2 } from 'lucide-react';
 import { Captcha } from '@/components/ui/captcha';
+import { useRouter } from 'next/navigation';
 
 interface Comment {
     id: string;
@@ -37,6 +38,7 @@ interface CommentSectionProps {
         name: string;
         image?: string | null;
     } | null;
+    isAdmin?: boolean;
 }
 
 function getInitials(name: string): string {
@@ -98,12 +100,17 @@ InputGroup.Input = InputGroupInput;
 function CommentItem({ 
     comment, 
     onReply,
+    onDelete,
+    isAdmin,
     t 
 }: { 
     comment: Comment; 
     onReply: (commentId: string, authorName: string) => void;
+    onDelete?: (commentId: string) => void;
+    isAdmin?: boolean;
     t: ReturnType<typeof useTranslations<'blog'>>;
 }) {
+    const [isDeleting, setIsDeleting] = useState(false);
     const isUserComment = comment.user;
     const authorName = isUserComment ? comment.user!.name : (comment.guestName || t('anonymous'));
     const authorImage = isUserComment 
@@ -111,6 +118,17 @@ function CommentItem({
         : (comment.guestEmail ? getGravatarUrl(comment.guestEmail) : null);
     const authorBio = isUserComment ? comment.user!.bio : null;
     const authorWebsite = isUserComment ? comment.user!.website : comment.guestWebsite;
+
+    const handleDelete = async () => {
+        if (!confirm(t('confirmDeleteComment'))) return;
+        setIsDeleting(true);
+        try {
+            await deleteComment(comment.id);
+            onDelete?.(comment.id);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     return (
         <div className="group">
@@ -141,14 +159,27 @@ function CommentItem({
                         <p className="text-xs text-muted-foreground mt-0.5">{authorBio}</p>
                     )}
                     <p className="text-foreground/90 mt-2 text-sm leading-relaxed">{comment.content}</p>
-                    <button
-                        type="button"
-                        onClick={() => onReply(comment.id, authorName)}
-                        className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                        <Reply className="h-3.5 w-3.5" />
-                        {t('reply')}
-                    </button>
+                    <div className="mt-2 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            type="button"
+                            onClick={() => onReply(comment.id, authorName)}
+                            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                        >
+                            <Reply className="h-3.5 w-3.5" />
+                            {t('reply')}
+                        </button>
+                        {isAdmin && (
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                            >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                {t('delete')}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -341,8 +372,10 @@ function CommentForm({
 
 
 // 主评论区组件
-export function CommentSection({ postId, comments, user }: CommentSectionProps) {
+export function CommentSection({ postId, comments: initialComments, user, isAdmin }: CommentSectionProps) {
     const [replyTo, setReplyTo] = useState<{ id: string; authorName: string } | null>(null);
+    const [comments, setComments] = useState(initialComments);
+    const router = useRouter();
     const t = useTranslations('blog');
 
     // 构建评论树结构
@@ -371,6 +404,12 @@ export function CommentSection({ postId, comments, user }: CommentSectionProps) 
         setReplyTo(null);
     };
 
+    const handleDelete = (commentId: string) => {
+        // 删除评论及其所有回复
+        setComments(prev => prev.filter(c => c.id !== commentId && c.parentId !== commentId));
+        router.refresh();
+    };
+
     return (
         <section className="space-y-8">
             {/* 标题 */}
@@ -391,6 +430,8 @@ export function CommentSection({ postId, comments, user }: CommentSectionProps) 
                                 <CommentItem 
                                     comment={comment} 
                                     onReply={handleReply}
+                                    onDelete={handleDelete}
+                                    isAdmin={isAdmin}
                                     t={t}
                                 />
                                 {/* 回复列表 */}
@@ -401,6 +442,8 @@ export function CommentSection({ postId, comments, user }: CommentSectionProps) 
                                                 key={reply.id} 
                                                 comment={reply} 
                                                 onReply={handleReply}
+                                                onDelete={handleDelete}
+                                                isAdmin={isAdmin}
                                                 t={t}
                                             />
                                         ))}
