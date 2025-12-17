@@ -123,19 +123,45 @@ ${website ? `网站: ${website}` : ''}
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 5,
+        max_tokens: 100,
         temperature: 0,
       }),
     });
 
     if (!response.ok) {
-      console.error('AI spam check failed:', response.status, await response.text());
+      console.error('AI spam check failed:', response.status);
       return { isSpam: false, score: 0.5, autoApproved: false, reason: 'ai_error' };
     }
 
     const data = await response.json();
-    const scoreText = data.choices?.[0]?.message?.content?.trim() || '0.5';
-    const score = parseFloat(scoreText);
+    
+    // Extract score from response - compatible with multiple model formats:
+    // 1. Standard OpenAI: message.content = "0.2"
+    // 2. Reasoning models (o1, DeepSeek-R1, etc.): message.reasoning + message.content
+    // 3. Some providers put final answer in content even with reasoning
+    const message = data.choices?.[0]?.message;
+    
+    // Prioritize content field (final answer), fallback to reasoning field
+    const rawContent = message?.content?.trim() || message?.reasoning || '';
+    
+    // Extract score using multiple patterns:
+    // - Direct number: "0.2"
+    // - Number in text: "The score is 0.2" or "评分：0.2"
+    // - Number at end of reasoning: "...so I'll give it 0.2"
+    let score = 0.5;
+    
+    // First try: exact match for standalone score
+    const exactMatch = rawContent.match(/^(0\.[1-9])$/);
+    if (exactMatch) {
+      score = parseFloat(exactMatch[1]);
+    } else {
+      // Second try: find any valid score in the text
+      const allMatches = rawContent.match(/\b(0\.[1-9])\b/g);
+      if (allMatches && allMatches.length > 0) {
+        // Use the last match (usually the final conclusion)
+        score = parseFloat(allMatches[allMatches.length - 1]);
+      }
+    }
     
     if (isNaN(score) || score < 0.1 || score > 0.9) {
       return { isSpam: false, score: 0.5, autoApproved: false, reason: 'invalid_score' };

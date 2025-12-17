@@ -122,7 +122,8 @@
     "replyingTo": "Replying to",
     "replyPlaceholder": "Write your reply...",
     "captchaLabel": "Verify",
-    "captchaRequired": "Please complete the captcha"
+    "captchaRequired": "Please complete the captcha",
+    "spamRejected": "Comment rejected as spam"
   },
   "admin": {
     "dashboard": "Dashboard",

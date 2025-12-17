@@ -33,9 +33,17 @@ export function AiSettings({
   translations: t,
 }: AiSettingsProps) {
   const [enabled, setEnabled] = useState(defaultEnabled);
+  const [baseUrl, setBaseUrl] = useState(defaultBaseUrl);
+  const [apiKey, setApiKey] = useState(defaultApiKey);
+  const [model, setModel] = useState(defaultModel);
 
   return (
     <div className="space-y-4">
+      {/* Hidden inputs to preserve values when collapsed */}
+      <input type="hidden" name="aiBaseUrl" value={baseUrl} />
+      <input type="hidden" name="aiApiKey" value={apiKey} />
+      <input type="hidden" name="aiModel" value={model} />
+
       <div className="flex items-center justify-between p-3 border rounded-md">
         <div className="flex items-center gap-3">
           <Bot className="size-5 text-muted-foreground" />
@@ -61,9 +69,9 @@ export function AiSettings({
             </InputGroupAddon>
             <InputGroupInput
               id="aiBaseUrl"
-              name="aiBaseUrl"
               placeholder="https://api.openai.com/v1"
-              defaultValue={defaultBaseUrl}
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
             />
           </InputGroup>
           <div className="grid grid-cols-2 gap-3">
@@ -73,10 +81,10 @@ export function AiSettings({
               </InputGroupAddon>
               <InputGroupInput
                 id="aiApiKey"
-                name="aiApiKey"
                 type="password"
                 placeholder="sk-..."
-                defaultValue={defaultApiKey}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
               />
             </InputGroup>
             <InputGroup>
@@ -85,9 +93,9 @@ export function AiSettings({
               </InputGroupAddon>
               <InputGroupInput
                 id="aiModel"
-                name="aiModel"
                 placeholder="gpt-4o-mini"
-                defaultValue={defaultModel}
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
               />
             </InputGroup>
           </div>

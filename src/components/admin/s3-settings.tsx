@@ -43,9 +43,23 @@ export function S3Settings({
   translations: t,
 }: S3SettingsProps) {
   const [enabled, setEnabled] = useState(defaultEnabled);
+  const [endpoint, setEndpoint] = useState(defaultEndpoint);
+  const [region, setRegion] = useState(defaultRegion);
+  const [bucket, setBucket] = useState(defaultBucket);
+  const [accessKey, setAccessKey] = useState(defaultAccessKey);
+  const [secretKey, setSecretKey] = useState(defaultSecretKey);
+  const [cdnUrl, setCdnUrl] = useState(defaultCdnUrl);
 
   return (
     <div className="space-y-4">
+      {/* Hidden inputs to preserve values when collapsed */}
+      <input type="hidden" name="s3Endpoint" value={endpoint} />
+      <input type="hidden" name="s3Region" value={region} />
+      <input type="hidden" name="s3Bucket" value={bucket} />
+      <input type="hidden" name="s3AccessKey" value={accessKey} />
+      <input type="hidden" name="s3SecretKey" value={secretKey} />
+      <input type="hidden" name="s3CdnUrl" value={cdnUrl} />
+
       <div className="flex items-center justify-between p-3 border rounded-md">
         <div className="flex items-center gap-3">
           <Database className="size-5 text-muted-foreground" />
@@ -73,9 +87,9 @@ export function S3Settings({
             </InputGroupAddon>
             <InputGroupInput
               id="s3Endpoint"
-              name="s3Endpoint"
               placeholder={t.endpoint}
-              defaultValue={defaultEndpoint}
+              value={endpoint}
+              onChange={(e) => setEndpoint(e.target.value)}
             />
           </InputGroup>
           <div className="grid grid-cols-2 gap-3">
@@ -85,9 +99,9 @@ export function S3Settings({
               </InputGroupAddon>
               <InputGroupInput
                 id="s3Region"
-                name="s3Region"
                 placeholder="us-east-1"
-                defaultValue={defaultRegion}
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
               />
             </InputGroup>
             <InputGroup>
@@ -96,9 +110,9 @@ export function S3Settings({
               </InputGroupAddon>
               <InputGroupInput
                 id="s3Bucket"
-                name="s3Bucket"
                 placeholder={t.bucketName}
-                defaultValue={defaultBucket}
+                value={bucket}
+                onChange={(e) => setBucket(e.target.value)}
               />
             </InputGroup>
           </div>
@@ -109,8 +123,8 @@ export function S3Settings({
               </InputGroupAddon>
               <InputGroupInput
                 id="s3AccessKey"
-                name="s3AccessKey"
-                defaultValue={defaultAccessKey}
+                value={accessKey}
+                onChange={(e) => setAccessKey(e.target.value)}
               />
             </InputGroup>
             <InputGroup>
@@ -119,10 +133,10 @@ export function S3Settings({
               </InputGroupAddon>
               <InputGroupInput
                 id="s3SecretKey"
-                name="s3SecretKey"
                 type="password"
                 placeholder={t.secretKey}
-                defaultValue={defaultSecretKey}
+                value={secretKey}
+                onChange={(e) => setSecretKey(e.target.value)}
               />
             </InputGroup>
           </div>
@@ -132,9 +146,9 @@ export function S3Settings({
             </InputGroupAddon>
             <InputGroupInput
               id="s3CdnUrl"
-              name="s3CdnUrl"
               placeholder={t.cdnUrlDesc}
-              defaultValue={defaultCdnUrl}
+              value={cdnUrl}
+              onChange={(e) => setCdnUrl(e.target.value)}
             />
           </InputGroup>
         </div>

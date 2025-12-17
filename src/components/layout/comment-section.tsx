@@ -232,7 +232,7 @@ function CommentForm({
             
             {result && !result.success && (
                 <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md text-red-800 dark:text-red-200 text-sm">
-                    {result.error}
+                    {result.error === 'spam_rejected' ? t('spamRejected') : result.error}
                 </div>
             )}
 

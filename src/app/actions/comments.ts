@@ -133,7 +133,7 @@ export async function createComment(postId: string, formData: FormData, parentId
 
         // Reject high-risk spam
         if (spamResult.isSpam) {
-            return { success: false, error: 'Comment rejected as spam' };
+            return { success: false, error: 'spam_rejected' };
         }
 
         // Determine status based on spam check

@@ -31,9 +31,15 @@ export function EmailSettings({
   translations: t,
 }: EmailSettingsProps) {
   const [enabled, setEnabled] = useState(defaultEnabled);
+  const [apiKey, setApiKey] = useState(defaultApiKey);
+  const [fromEmail, setFromEmail] = useState(defaultFromEmail);
 
   return (
     <div className="space-y-4">
+      {/* Hidden inputs to preserve values when collapsed */}
+      <input type="hidden" name="resendApiKey" value={apiKey} />
+      <input type="hidden" name="resendFromEmail" value={fromEmail} />
+
       <div className="flex items-center justify-between p-3 border rounded-md">
         <div className="flex items-center gap-3">
           <Mail className="size-5 text-muted-foreground" />
@@ -61,10 +67,10 @@ export function EmailSettings({
             </InputGroupAddon>
             <InputGroupInput
               id="resendApiKey"
-              name="resendApiKey"
               type="password"
               placeholder="re_..."
-              defaultValue={defaultApiKey}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
             />
           </InputGroup>
           <InputGroup>
@@ -73,10 +79,10 @@ export function EmailSettings({
             </InputGroupAddon>
             <InputGroupInput
               id="resendFromEmail"
-              name="resendFromEmail"
               type="email"
               placeholder={t.resendFromEmailDesc}
-              defaultValue={defaultFromEmail}
+              value={fromEmail}
+              onChange={(e) => setFromEmail(e.target.value)}
             />
           </InputGroup>
         </div>

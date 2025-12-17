@@ -122,7 +122,8 @@
     "captchaRequired": "请完成验证码",
     "reply": "回复",
     "replyingTo": "回复",
-    "replyPlaceholder": "写下你的回复..."
+    "replyPlaceholder": "写下你的回复...",
+    "spamRejected": "评论被识别为垃圾信息，已拒绝"
   },
   "admin": {
     "dashboard": "仪表盘",
