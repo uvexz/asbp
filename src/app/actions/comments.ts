@@ -10,7 +10,7 @@ import { commentSchema } from '@/lib/validations';
 import { isAdminAuthorized } from '@/lib/server-utils';
 
 export type CommentActionResult = 
-  | { success: true }
+  | { success: true; autoApproved?: boolean }
   | { success: false; error: string };
 
 async function requireAdmin() {
@@ -149,14 +149,25 @@ export async function createComment(postId: string, formData: FormData, parentId
             status,
         }).returning({ id: comments.id });
         newCommentId = result[0]?.id;
+
+        // Send email notifications
+        if (newCommentId) {
+            // Only notify admin for pending comments (not auto-approved)
+            if (!spamResult.autoApproved) {
+                sendAdminNotification(newCommentId, postId).catch(console.error);
+            }
+            // Notify parent comment author if this is a reply
+            if (parentId) {
+                sendReplyNotification(parentId, newCommentId, postId).catch(console.error);
+            }
+        }
+
+        revalidatePath('/admin/comments');
+        return { success: true, autoApproved: spamResult.autoApproved };
     }
 
-    // Send email notifications
+    // Send email notifications for logged-in users
     if (newCommentId) {
-        // Notify admin about new comment (for guest comments)
-        if (!session?.user) {
-            sendAdminNotification(newCommentId, postId).catch(console.error);
-        }
         // Notify parent comment author if this is a reply
         if (parentId) {
             sendReplyNotification(parentId, newCommentId, postId).catch(console.error);
@@ -165,7 +176,7 @@ export async function createComment(postId: string, formData: FormData, parentId
 
     revalidatePath('/admin/comments');
     
-    return { success: true };
+    return { success: true, autoApproved: true };
 }
 
 async function sendReplyNotification(parentCommentId: string, newCommentId: string, postId: string) {

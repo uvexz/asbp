@@ -257,7 +257,7 @@ function CommentForm({
 
             {result?.success && (
                 <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-md text-green-800 dark:text-green-200 text-sm">
-                    {user ? t('commentPublished') : t('commentPending')}
+                    {result.autoApproved ? t('commentPublished') : t('commentPending')}
                 </div>
             )}
             
