@@ -1,6 +1,11 @@
-import { Plus, Trash2, ExternalLink, GripVertical } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, GripVertical, Type, Link as LinkIcon, ListOrdered } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+    InputGroupText,
+} from "@/components/ui/input-group";
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -47,15 +52,30 @@ export default async function AdminNavigationPage() {
                         <form action={createNavItem} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="label">{t('displayName')}</Label>
-                                <Input id="label" name="label" placeholder="About" required />
+                                <InputGroup>
+                                    <InputGroupAddon>
+                                        <InputGroupText><Type className="size-4" /></InputGroupText>
+                                    </InputGroupAddon>
+                                    <InputGroupInput id="label" name="label" placeholder="About" required />
+                                </InputGroup>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="url">{t('linkUrl')}</Label>
-                                <Input id="url" name="url" placeholder="/about or https://..." required />
+                                <InputGroup>
+                                    <InputGroupAddon>
+                                        <InputGroupText><LinkIcon className="size-4" /></InputGroupText>
+                                    </InputGroupAddon>
+                                    <InputGroupInput id="url" name="url" placeholder="/about or https://..." required />
+                                </InputGroup>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="sortOrder">{t('sortOrder')}</Label>
-                                <Input id="sortOrder" name="sortOrder" type="number" defaultValue="0" />
+                                <InputGroup>
+                                    <InputGroupAddon>
+                                        <InputGroupText><ListOrdered className="size-4" /></InputGroupText>
+                                    </InputGroupAddon>
+                                    <InputGroupInput id="sortOrder" name="sortOrder" type="number" defaultValue="0" />
+                                </InputGroup>
                                 <p className="text-xs text-gray-500">{t('sortOrderHint')}</p>
                             </div>
                             <div className="flex items-center space-x-2">

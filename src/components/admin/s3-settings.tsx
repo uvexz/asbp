@@ -9,7 +9,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '@/components/ui/input-group';
-import { Database, Server, Folder, Key, Link } from 'lucide-react';
+import { Database, Server, Folder, Key, Link, Globe, User } from 'lucide-react';
 
 interface S3SettingsProps {
   defaultEnabled: boolean;
@@ -95,7 +95,7 @@ export function S3Settings({
           <div className="grid grid-cols-2 gap-3">
             <InputGroup>
               <InputGroupAddon>
-                <InputGroupText>{t.region}</InputGroupText>
+                <InputGroupText><Globe className="size-4" /></InputGroupText>
               </InputGroupAddon>
               <InputGroupInput
                 id="s3Region"
@@ -119,7 +119,7 @@ export function S3Settings({
           <div className="grid grid-cols-2 gap-3">
             <InputGroup>
               <InputGroupAddon>
-                <InputGroupText>{t.accessKey}</InputGroupText>
+                <InputGroupText><User className="size-4" /></InputGroupText>
               </InputGroupAddon>
               <InputGroupInput
                 id="s3AccessKey"

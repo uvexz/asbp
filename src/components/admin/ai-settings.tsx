@@ -9,7 +9,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '@/components/ui/input-group';
-import { Bot, Server, Key } from 'lucide-react';
+import { Bot, Server, Key, Cpu } from 'lucide-react';
 
 interface AiSettingsProps {
   defaultEnabled: boolean;
@@ -89,7 +89,7 @@ export function AiSettings({
             </InputGroup>
             <InputGroup>
               <InputGroupAddon>
-                <InputGroupText>{t.aiModel}</InputGroupText>
+                <InputGroupText><Cpu className="size-4" /></InputGroupText>
               </InputGroupAddon>
               <InputGroupInput
                 id="aiModel"

@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { Plus, Pencil, Check, X } from 'lucide-react';
+import { Plus, Pencil, Check, X, Tag as TagIcon } from 'lucide-react';
 import { DeleteButton } from '@/components/ui/delete-button';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+    InputGroupText,
+} from "@/components/ui/input-group";
 import {
     Table,
     TableBody,
@@ -119,16 +125,20 @@ export default function AdminTagsPage() {
                 <div className="mb-8">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('createNewTag')}</h2>
                     <form onSubmit={handleCreateTag} className="flex items-center gap-4 max-w-md">
-                        <Input
-                            type="text"
-                            placeholder={t('enterTagName')}
-                            value={newTagName}
-                            onChange={(e) => setNewTagName(e.target.value)}
-                            disabled={isPending}
-                            className="flex-1"
-                        />
-                        <Button 
-                            type="submit" 
+                        <InputGroup className="flex-1">
+                            <InputGroupAddon>
+                                <InputGroupText><TagIcon className="size-4" /></InputGroupText>
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                type="text"
+                                placeholder={t('enterTagName')}
+                                value={newTagName}
+                                onChange={(e) => setNewTagName(e.target.value)}
+                                disabled={isPending}
+                            />
+                        </InputGroup>
+                        <Button
+                            type="submit"
                             disabled={isPending}
                             className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold"
                         >

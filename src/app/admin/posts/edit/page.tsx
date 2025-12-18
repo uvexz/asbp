@@ -1,7 +1,12 @@
 import Link from 'next/link';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Type, Link as LinkIcon, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+    InputGroupText,
+} from "@/components/ui/input-group";
 import { Label } from '@/components/ui/label';
 import { createPost, updatePost, getPostById } from '@/app/actions/posts';
 import { getTags, getPostTags, updatePostTags } from '@/app/actions/tags';
@@ -102,14 +107,18 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                             ) : (
                                 <div className="space-y-2">
                                     <Label htmlFor="title">{t('postTitle')}</Label>
-                                    <Input
-                                        id="title"
-                                        name="title"
-                                        placeholder={t('postTitle')}
-                                        className="bg-gray-50 dark:bg-white/5 border-gray-300 dark:border-white/20"
-                                        required
-                                        defaultValue={post?.title}
-                                    />
+                                    <InputGroup>
+                                        <InputGroupAddon>
+                                            <InputGroupText><Type className="size-4" /></InputGroupText>
+                                        </InputGroupAddon>
+                                        <InputGroupInput
+                                            id="title"
+                                            name="title"
+                                            placeholder={t('postTitle')}
+                                            required
+                                            defaultValue={post?.title}
+                                        />
+                                    </InputGroup>
                                 </div>
                             )}
                             
@@ -119,14 +128,19 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                             ) : (
                                 <div className="space-y-2">
                                     <Label htmlFor="slug">{t('postSlug')}</Label>
-                                    <Input
-                                        id="slug"
-                                        name="slug"
-                                        placeholder="article-slug"
-                                        className="bg-gray-50 dark:bg-white/5 border-gray-300 dark:border-white/20 font-mono text-sm"
-                                        required
-                                        defaultValue={post?.slug}
-                                    />
+                                    <InputGroup>
+                                        <InputGroupAddon>
+                                            <InputGroupText><LinkIcon className="size-4" /></InputGroupText>
+                                        </InputGroupAddon>
+                                        <InputGroupInput
+                                            id="slug"
+                                            name="slug"
+                                            placeholder="article-slug"
+                                            className="font-mono text-sm"
+                                            required
+                                            defaultValue={post?.slug}
+                                        />
+                                    </InputGroup>
                                 </div>
                             )}
                             
@@ -156,13 +170,17 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="publishedAt">{t('publishTime')}</Label>
-                                    <Input
-                                        type="datetime-local"
-                                        id="publishedAt"
-                                        name="publishedAt"
-                                        className="bg-gray-50 dark:bg-white/5 border-gray-300 dark:border-white/20"
-                                        defaultValue={post?.publishedAt ? new Date(post.publishedAt.getTime() - post.publishedAt.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
-                                    />
+                                    <InputGroup>
+                                        <InputGroupAddon>
+                                            <InputGroupText><Calendar className="size-4" /></InputGroupText>
+                                        </InputGroupAddon>
+                                        <InputGroupInput
+                                            type="datetime-local"
+                                            id="publishedAt"
+                                            name="publishedAt"
+                                            defaultValue={post?.publishedAt ? new Date(post.publishedAt.getTime() - post.publishedAt.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                                        />
+                                    </InputGroup>
                                     <p className="text-xs text-muted-foreground">{t('publishTimeHint')}</p>
                                 </div>
                             </div>
