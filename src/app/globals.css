@@ -121,3 +121,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Custom Scrollbar for code blocks and tables */
+  .prose pre::-webkit-scrollbar,
+  .prose table::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  .prose pre::-webkit-scrollbar-track,
+  .prose table::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .prose pre::-webkit-scrollbar-thumb,
+  .prose table::-webkit-scrollbar-thumb {
+    @apply bg-neutral-300 dark:bg-neutral-700 rounded-full;
+  }
+
+  .prose pre::-webkit-scrollbar-thumb:hover,
+  .prose table::-webkit-scrollbar-thumb:hover {
+    @apply bg-neutral-400 dark:bg-neutral-600;
+  }
+}

@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const settings = await getSettings();
     const siteTitle = settings.siteTitle || 'My Blog';
     const t = await getTranslations('blog');
-    
+
     return {
         title: `${t('memos')} - ${siteTitle}`,
     };
@@ -29,9 +29,9 @@ export default async function MemoPage({ searchParams }: MemoPageProps) {
     const currentPage = Math.max(1, parseInt(params.page || '1', 10) || 1);
     const pageSize = 20;
     const t = await getTranslations('blog');
-    
+
     const { memos, totalPages } = await getPublishedMemos(currentPage, pageSize);
-    
+
     // Check if user is admin for quick post button
     const session = await auth.api.getSession({
         headers: await headers()
@@ -48,7 +48,7 @@ export default async function MemoPage({ searchParams }: MemoPageProps) {
             <div className="space-y-6">
                 {memos.map((memo) => (
                     <article key={memo.id} className="border-b border-neutral-200 pb-6 group">
-                        <div className="prose prose-neutral max-w-none prose-a:text-blue-600 prose-a:no-underline">
+                        <div className="prose prose-neutral prose-base md:prose-lg max-w-none prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-lg prose-img:shadow-md prose-img:border prose-img:border-neutral-200 dark:prose-img:border-neutral-800 prose-pre:bg-neutral-900 prose-pre:text-neutral-50 prose-pre:p-4 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-code:bg-neutral-900 prose-code:text-neutral-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-table:w-full prose-table:table-auto prose-table:border-collapse prose-thead:w-full prose-thead:table-auto prose-thead:min-w-max prose-th:border prose-th:border-neutral-200 dark:prose-th:border-neutral-800 prose-th:p-2 prose-td:border prose-td:border-neutral-200 dark:prose-td:border-neutral-800 prose-td:p-2 [&_pre]:max-w-full">
                             <MemoContent content={memo.content} />
                         </div>
                         <div className="flex items-center justify-between mt-4">
@@ -63,10 +63,10 @@ export default async function MemoPage({ searchParams }: MemoPageProps) {
                                 })}
                             </p>
                             {isAdmin && (
-                                <MemoActions 
-                                    memoId={memo.id} 
-                                    content={memo.content} 
-                                    hasS3={hasS3} 
+                                <MemoActions
+                                    memoId={memo.id}
+                                    content={memo.content}
+                                    hasS3={hasS3}
                                 />
                             )}
                         </div>
@@ -74,10 +74,10 @@ export default async function MemoPage({ searchParams }: MemoPageProps) {
                 ))}
                 {memos.length === 0 && <p className="text-neutral-500">{t('noMemos')}</p>}
             </div>
-            
-            <Pagination 
-                currentPage={currentPage} 
-                totalPages={totalPages} 
+
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
                 baseUrl="/memo"
             />
         </div>

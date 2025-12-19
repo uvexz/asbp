@@ -88,10 +88,10 @@ export default async function ArticleDetailPage({
   });
   const currentUser = session?.user
     ? {
-        id: session.user.id,
-        name: session.user.name,
-        image: session.user.image,
-      }
+      id: session.user.id,
+      name: session.user.name,
+      image: session.user.image,
+    }
     : null;
   const isAdmin = session?.user?.role === 'admin';
 
@@ -112,39 +112,39 @@ export default async function ArticleDetailPage({
       />
       <div className="space-y-16 py-6 md:py-16 w-full overflow-x-hidden">
         <article className="space-y-8 overflow-hidden">
-        <header className="space-y-4">
-          <h1 className="text-black dark:text-white text-2xl md:text-3xl font-black leading-tight tracking-[-0.033em] uppercase">
-            {post.title}
-          </h1>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <p className="text-neutral-500 text-sm font-normal leading-none flex items-center gap-1">
-              <CircleUser className="h-3 w-3" />
-              {post.author.name}
-              <Calendar className="ms-2 h-3 w-3" />
-              {formatDate(post.publishedAt || post.createdAt)}
-            </p>
-            {post.tags.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                {post.tags.map((postTag) => (
-                  <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
-                    <Badge
-                      variant="secondary"
-                      className="hover:bg-neutral-200 transition-colors leading-none"
-                    >
-                      <Tag className="h-3 w-3 text-neutral-500" />{" "}
-                      {postTag.tag.name}
-                    </Badge>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </header>
-        <MarkdownContent
-          content={post.content}
-          className="prose prose-neutral prose-lg max-w-none prose-headings:font-bold prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-lg prose-img:max-w-full prose-img:border-1 prose-pre:bg-neutral-900 prose-pre:text-neutral-100 prose-pre:overflow-x-auto prose-table:overflow-x-auto [&_pre]:max-w-full [&_table]:block [&_table]:overflow-x-auto"
-        />
-      </article>
+          <header className="space-y-4">
+            <h1 className="text-black dark:text-white text-2xl md:text-3xl font-black leading-tight tracking-[-0.033em] uppercase">
+              {post.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <p className="text-neutral-500 text-sm font-normal leading-none flex items-center gap-1">
+                <CircleUser className="h-3 w-3" />
+                {post.author.name}
+                <Calendar className="ms-2 h-3 w-3" />
+                {formatDate(post.publishedAt || post.createdAt)}
+              </p>
+              {post.tags.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {post.tags.map((postTag) => (
+                    <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
+                      <Badge
+                        variant="secondary"
+                        className="hover:bg-neutral-200 transition-colors leading-none"
+                      >
+                        <Tag className="h-3 w-3 text-neutral-500" />{" "}
+                        {postTag.tag.name}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </header>
+          <MarkdownContent
+            content={post.content}
+            className="prose prose-neutral prose-base md:prose-lg max-w-none prose-headings:font-bold prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-lg prose-img:shadow-md prose-img:border prose-img:border-neutral-200 dark:prose-img:border-neutral-800 prose-pre:bg-neutral-900 prose-pre:text-neutral-50 prose-pre:p-4 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-code:bg-neutral-900 prose-code:text-neutral-50 prose-code:font-light prose-code:text-sm prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-table:w-full prose-table:table-auto prose-table:border-collapse prose-thead:w-full prose-thead:table-auto prose-thead:min-w-max prose-th:border prose-th:border-neutral-200 dark:prose-th:border-neutral-800 prose-th:p-2 prose-td:border prose-td:border-neutral-200 dark:prose-td:border-neutral-800 prose-td:p-2 [&_pre]:max-w-full"
+          />
+        </article>
         <div className="border-t border-border pt-12">
           <CommentSection
             postId={post.id}

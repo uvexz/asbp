@@ -15,6 +15,13 @@ const components: Components = {
     if (!src || typeof src !== 'string') return null;
     return <ImageLightbox src={src} alt={alt} />;
   },
+  table: ({ children, ...props }) => (
+    <div className="overflow-x-auto w-full my-4">
+      <table className="w-full border-collapse" {...props}>
+        {children}
+      </table>
+    </div>
+  ),
 };
 
 export function MarkdownContent({ content, className }: MarkdownContentProps) {

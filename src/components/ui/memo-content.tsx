@@ -34,7 +34,18 @@ export function MemoContent({ content }: MemoContentProps) {
   return (
     <div>
       {textContent && (
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            table: ({ children, ...props }) => (
+              <div className="overflow-x-auto w-full my-4">
+                <table className="w-full border-collapse" {...props}>
+                  {children}
+                </table>
+              </div>
+            ),
+          }}
+        >
           {textContent}
         </ReactMarkdown>
       )}
