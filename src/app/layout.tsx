@@ -1,9 +1,10 @@
-import type { } from "next";
+import type {} from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages } from 'next-intl/server';
-import { Toaster } from 'sonner';
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,7 +21,11 @@ import { settings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function generateMetadata() {
-  const data = await db.select().from(settings).where(eq(settings.id, 1)).limit(1);
+  const data = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.id, 1))
+    .limit(1);
   const siteSettings = data.length > 0 ? data[0] : null;
 
   return {
@@ -46,6 +51,12 @@ export default async function RootLayout({
           {children}
           <Toaster position="top-center" richColors />
         </NextIntlClientProvider>
+        <Script
+          src="/js/instantpage.min.js"
+          strategy="afterInteractive"
+          type="module"
+          crossOrigin="anonymous"
+        />
       </body>
     </html>
   );
