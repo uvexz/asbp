@@ -50,7 +50,7 @@ export function DeleteButton({
         <AlertDialog open={open} onOpenChange={setOpen}>
             <AlertDialogTrigger asChild>
                 {variant === 'icon' ? (
-                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-100">
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 ) : (
@@ -70,7 +70,7 @@ export function DeleteButton({
                     <AlertDialogAction
                         onClick={handleDelete}
                         disabled={isPending}
-                        className="bg-red-500 hover:bg-red-600"
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
                         {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                         确认删除

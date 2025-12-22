@@ -9,12 +9,12 @@ interface BlogFooterProps {
 export async function BlogFooter({ siteTitle }: BlogFooterProps) {
     const currentYear = new Date().getFullYear();
     const t = await getTranslations('blog');
-    
+
     return (
-        <footer className="sm:px-10 py-8">
+        <footer className="px-4 sm:px-6 py-8">
             <div className="flex items-center justify-center gap-2">
-                <p className="text-neutral-500 text-sm">© {currentYear} {siteTitle}. {t('allRightsReserved')}</p>
-                <div className="flex items-center gap-1 text-neutral-500">
+                <p className="text-muted-foreground text-sm">© {currentYear} {siteTitle}. {t('allRightsReserved')}</p>
+                <div className="flex items-center gap-1 text-muted-foreground">
                     <FooterIconLink href="https://github.com/uvexz/asbp" label="GitHub" external>
                         <Github className="h-3.5 w-3.5" />
                     </FooterIconLink>

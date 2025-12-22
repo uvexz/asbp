@@ -35,7 +35,7 @@ export default async function AdminLayout({
     };
 
     return (
-        <div className="fixed inset-0 flex flex-col lg:flex-row bg-[#f6f8f6] dark:bg-[#152111] font-sans">
+        <div className="fixed inset-0 flex flex-col lg:flex-row bg-muted/40 font-sans">
             <AdminMobileHeader settings={settings} user={user} />
             <AdminSidebar settings={settings} user={user} />
             <main className="flex-1 overflow-y-auto overflow-x-hidden">

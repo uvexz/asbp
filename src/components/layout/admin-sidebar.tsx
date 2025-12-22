@@ -25,7 +25,7 @@ import { getInitials, formatRole } from '@/lib/user-utils';
 export function AdminSidebar({ settings, user }: AdminSidebarProps) {
     const pathname = usePathname();
     const t = useTranslations('admin');
-    
+
     // 内容管理组
     const contentItems = [
         { href: '/admin/posts', label: t('posts'), icon: FileText },
@@ -48,25 +48,25 @@ export function AdminSidebar({ settings, user }: AdminSidebarProps) {
     ];
 
     return (
-        <aside className="hidden lg:flex w-64 flex-col justify-between border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-black p-4 h-screen sticky top-0">
+        <aside className="hidden lg:flex w-64 flex-col justify-between border-r border-sidebar-border bg-sidebar p-4 h-screen sticky top-0">
             <div className="flex flex-col gap-4">
-                <Link 
+                <Link
                     href={`/admin/users/${user.id}`}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                 >
                     <Avatar className="h-10 w-10">
                         <AvatarImage src={user.image || undefined} />
-                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                        <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">{getInitials(user.name)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                        <h1 className="text-gray-900 dark:text-gray-100 text-base font-medium leading-normal">{user.name}</h1>
-                        <p className="text-green-600 dark:text-green-400 text-sm font-normal leading-normal">{formatRole(user.role)}</p>
+                        <h1 className="text-sidebar-foreground text-base font-medium leading-normal">{user.name}</h1>
+                        <p className="text-muted-foreground text-sm font-normal leading-normal">{formatRole(user.role)}</p>
                     </div>
                 </Link>
                 <nav className="flex flex-col gap-6 mt-4">
                     {/* 内容管理组 */}
                     <div className="space-y-1">
-                        <p className="px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('contentGroup')}</p>
+                        <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t('contentGroup')}</p>
                         {contentItems.map((item) => {
                             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                             return (
@@ -76,20 +76,20 @@ export function AdminSidebar({ settings, user }: AdminSidebarProps) {
                                     className={cn(
                                         "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
                                         isActive
-                                            ? "bg-green-100 text-gray-900 dark:bg-green-900/20 dark:text-gray-50"
-                                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                                     )}
                                 >
-                                    <item.icon className={cn("h-5 w-5", isActive ? "text-gray-900 dark:text-gray-50" : "text-gray-700 dark:text-gray-300")} />
+                                    <item.icon className={cn("h-5 w-5", isActive ? "text-sidebar-primary" : "text-sidebar-foreground")} />
                                     <p className="text-sm font-medium leading-normal">{item.label}</p>
                                 </Link>
                             );
                         })}
                     </div>
-                    
+
                     {/* 系统管理组 */}
                     <div className="space-y-1">
-                        <p className="px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('systemGroup')}</p>
+                        <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t('systemGroup')}</p>
                         {systemItems.map((item) => {
                             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                             return (
@@ -99,11 +99,11 @@ export function AdminSidebar({ settings, user }: AdminSidebarProps) {
                                     className={cn(
                                         "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
                                         isActive
-                                            ? "bg-green-100 text-gray-900 dark:bg-green-900/20 dark:text-gray-50"
-                                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                                     )}
                                 >
-                                    <item.icon className={cn("h-5 w-5", isActive ? "text-gray-900 dark:text-gray-50" : "text-gray-700 dark:text-gray-300")} />
+                                    <item.icon className={cn("h-5 w-5", isActive ? "text-sidebar-primary" : "text-sidebar-foreground")} />
                                     <p className="text-sm font-medium leading-normal">{item.label}</p>
                                 </Link>
                             );
@@ -114,26 +114,26 @@ export function AdminSidebar({ settings, user }: AdminSidebarProps) {
             <div className="flex flex-col gap-4">
                 <Link
                     href="/admin/posts/edit"
-                    className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-[#4cdf20] text-gray-900 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#4cdf20]/90 transition-colors"
+                    className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-primary text-primary-foreground text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors"
                 >
                     <Plus className="h-5 w-5" />
                     <span className="truncate">{t('newPost')}</span>
                 </Link>
                 <div className="flex flex-col gap-1">
-                    <Link 
+                    <Link
                         href="/"
-                        className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        className="flex items-center gap-3 px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg transition-colors"
                     >
-                        <Home className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                        <Home className="h-5 w-5 text-sidebar-foreground" />
                         <p className="text-sm font-medium leading-normal">{t('backToBlog')}</p>
                     </Link>
-                    <Link 
-                        href="https://github.com/uvexz/asbp" 
+                    <Link
+                        href="https://github.com/uvexz/asbp"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        className="flex items-center gap-3 px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg transition-colors"
                     >
-                        <Github className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                        <Github className="h-5 w-5 text-sidebar-foreground" />
                         <p className="text-sm font-medium leading-normal">{t('openSource')}</p>
                     </Link>
                     <LogoutButton />

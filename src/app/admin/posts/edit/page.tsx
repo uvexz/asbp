@@ -55,15 +55,15 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
     // For edit mode, update tags before the main action
     async function handleEditSubmit(formData: FormData) {
         'use server';
-        
+
         if (!post) return;
-        
+
         // Get tag IDs from form
         const tagIds = formData.getAll('tagIds') as string[];
-        
+
         // Update tags first (before redirect happens)
         await updatePostTags(post.id, tagIds);
-        
+
         // Then update post (this will redirect)
         await updatePost(post.id, formData);
     }
@@ -81,16 +81,16 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
         <div className="flex flex-col h-full">
             <form action={action} className="flex flex-col h-full">
                 <header className="flex flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
-                    <div className="flex items-center gap-4 text-gray-900 dark:text-white">
+                    <div className="flex items-center gap-4 text-foreground">
                         <Link href="/admin/posts">
                             <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
                         </Link>
-                        <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">
+                        <h1 className="text-foreground text-4xl font-black leading-tight tracking-[-0.033em]">
                             {isEdit ? postTypeLabels[currentPostType].edit : postTypeLabels[currentPostType].new}
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button type="submit" className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold">
+                        <Button type="submit" size="sm" className="font-bold">
                             <Save className="mr-2 h-4 w-4" /> {tCommon('save')}
                         </Button>
                     </div>
@@ -100,7 +100,7 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                         <div className="flex-grow space-y-4">
                             {/* Hidden postType field */}
                             <input type="hidden" name="postType" value={currentPostType} />
-                            
+
                             {/* Title - hidden for memo, but still required for DB */}
                             {isMemo ? (
                                 <input type="hidden" name="title" value={post?.title || ''} />
@@ -121,7 +121,7 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                                     </InputGroup>
                                 </div>
                             )}
-                            
+
                             {/* Slug - auto-generated for memo */}
                             {isMemo ? (
                                 <input type="hidden" name="slug" value={post?.slug || ''} />
@@ -143,7 +143,7 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                                     </InputGroup>
                                 </div>
                             )}
-                            
+
                             <div className="space-y-2">
                                 <Label htmlFor="content">{t('postContent')}</Label>
                                 <PostContentEditor
@@ -187,8 +187,8 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                             {!isMemo && (
                                 <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4">
                                     <h3 className="font-semibold leading-none tracking-tight">{t('postTags')}</h3>
-                                    <TagSelector 
-                                        availableTags={allTags} 
+                                    <TagSelector
+                                        availableTags={allTags}
                                         selectedTagIds={postTagIds}
                                     />
                                 </div>

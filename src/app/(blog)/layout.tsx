@@ -26,7 +26,7 @@ export default async function BlogLayout({
           <div className="px-4 md:px-6 flex flex-1 justify-center py-5">
             <div className="layout-content-container flex flex-col max-w-[768px] flex-1 min-w-0 w-full">
               <BlogHeader siteTitle={siteTitle} navItems={navItems} />
-              <main className="flex-1 sm:px-10 py-10 space-y-12">
+              <main className="flex-1 px-4 sm:px-6 md:px-8 py-10 space-y-12">
                 {children}
               </main>
               <BlogFooter siteTitle={siteTitle} />

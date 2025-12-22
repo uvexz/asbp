@@ -113,11 +113,11 @@ export default async function ArticleDetailPage({
       <div className="space-y-16 py-6 md:py-16 w-full overflow-x-hidden">
         <article className="space-y-8 overflow-hidden">
           <header className="space-y-4">
-            <h1 className="text-black dark:text-white text-2xl md:text-3xl font-black leading-tight tracking-[-0.033em] uppercase">
+            <h1 className="text-foreground text-2xl md:text-3xl font-black leading-tight tracking-[-0.033em] uppercase">
               {post.title}
             </h1>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <p className="text-neutral-500 text-sm font-normal leading-none flex items-center gap-1">
+              <p className="text-muted-foreground text-sm font-normal leading-none flex items-center gap-1">
                 <CircleUser className="h-3 w-3" />
                 {post.author.name}
                 <Calendar className="ms-2 h-3 w-3" />
@@ -129,9 +129,9 @@ export default async function ArticleDetailPage({
                     <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
                       <Badge
                         variant="secondary"
-                        className="hover:bg-neutral-200 transition-colors leading-none"
+                        className="hover:bg-muted transition-colors leading-none"
                       >
-                        <Tag className="h-3 w-3 text-neutral-500" />{" "}
+                        <Tag className="h-3 w-3 text-muted-foreground" />{" "}
                         {postTag.tag.name}
                       </Badge>
                     </Link>

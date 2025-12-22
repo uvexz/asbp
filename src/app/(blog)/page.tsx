@@ -24,16 +24,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         {posts.map((post) => (
           <div
             key={post.id}
-            className="flex flex-col gap-2 border-b border-neutral-200 pb-6"
+            className="flex flex-col gap-2 border-b border-border pb-6"
           >
             <Link
               href={`/${post.slug}`}
-              className="text-black text-xl font-bold leading-normal hover:text-neutral-700 transition-colors uppercase"
+              className="text-foreground text-xl font-bold leading-normal hover:text-muted-foreground transition-colors uppercase"
             >
               {post.title}
             </Link>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <p className="text-neutral-500 text-sm font-normal leading-none flex items-center gap-1">
+              <p className="text-muted-foreground text-sm font-normal leading-none flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 {formatDate(post.publishedAt || post.createdAt)}
               </p>
@@ -46,9 +46,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     >
                       <Badge
                         variant="secondary"
-                        className="hover:bg-neutral-200 transition-colors leading-none"
+                        className="hover:bg-muted transition-colors leading-none"
                       >
-                        <Tag className="h-3 w-3 text-neutral-500" />{" "}
+                        <Tag className="h-3 w-3 text-muted-foreground" />{" "}
                         {postTag.tag.name}
                       </Badge>
                     </Link>
@@ -59,7 +59,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
         ))}
         {posts.length === 0 && (
-          <p className="text-neutral-500">{t("noPosts")}</p>
+          <p className="text-muted-foreground">{t("noPosts")}</p>
         )}
       </div>
 

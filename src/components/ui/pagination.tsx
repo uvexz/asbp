@@ -19,7 +19,7 @@ interface PaginationProps {
  */
 export function Pagination({ currentPage, totalPages, baseUrl = '' }: PaginationProps) {
   const t = useTranslations('pagination');
-  
+
   // Don't render pagination if there's only one page or no pages
   if (totalPages <= 1) {
     return null;
@@ -105,7 +105,7 @@ export function Pagination({ currentPage, totalPages, baseUrl = '' }: Pagination
           return (
             <span
               key={`ellipsis-${index}`}
-              className="px-2 text-neutral-500"
+              className="px-2 text-muted-foreground"
               aria-hidden="true"
             >
               …

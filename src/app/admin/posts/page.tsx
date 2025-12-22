@@ -15,10 +15,10 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
     const { posts: allPosts, totalPages } = await getPosts(currentPage, 10, searchQuery);
     const t = await getTranslations('admin');
     const tCommon = await getTranslations('common');
-    
+
     // Default to 'post' type if not specified
     const currentType = (type || 'post') as PostType;
-    
+
     // Filter by type
     const posts = allPosts.filter(p => (p.postType || 'post') === currentType);
 
@@ -26,8 +26,8 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
         <div className="flex flex-col min-h-full">
             <header className="flex flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">{t('contentManagement')}</h1>
-                    <p className="text-gray-500 text-base font-normal leading-normal">{t('contentManagementDesc')}</p>
+                    <h1 className="text-foreground text-4xl font-black leading-tight tracking-[-0.033em]">{t('contentManagement')}</h1>
+                    <p className="text-muted-foreground text-base font-normal leading-normal">{t('contentManagementDesc')}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Link href="/admin/posts/edit?type=memo">
@@ -41,7 +41,7 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
                         </Button>
                     </Link>
                     <Link href="/admin/posts/edit?type=post">
-                        <Button className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold" size="sm">
+                        <Button size="sm">
                             <FileText className="mr-2 h-4 w-4" /> {t('newPost')}
                         </Button>
                     </Link>
@@ -67,7 +67,7 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
                         </Link>
                     </div>
                 </div>
-                <PostsTable 
+                <PostsTable
                     posts={posts}
                     currentType={currentType}
                     searchQuery={searchQuery}
@@ -89,9 +89,9 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
                 />
                 {totalPages > 1 && (
                     <div className="mt-6 flex justify-center">
-                        <Pagination 
-                            currentPage={currentPage} 
-                            totalPages={totalPages} 
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
                             baseUrl={`/admin/posts?type=${currentType}`}
                         />
                     </div>

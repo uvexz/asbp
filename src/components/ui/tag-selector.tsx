@@ -48,10 +48,10 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
 
   const handleCreateTag = async () => {
     if (!newTagName.trim()) return;
-    
+
     setIsCreating(true);
     setError(null);
-    
+
     try {
       const result = await createTagInline(newTagName.trim());
       if (result.success) {
@@ -75,7 +75,7 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
       {selectedIds.map(id => (
         <input key={id} type="hidden" name={name} value={id} />
       ))}
-      
+
       {/* Selected tags display */}
       <div className="flex flex-wrap gap-2 min-h-[32px]">
         {selectedTags.length === 0 ? (
@@ -87,7 +87,7 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
               <button
                 type="button"
                 onClick={() => handleRemove(tag.id)}
-                className="ml-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-0.5"
+                className="ml-1 hover:bg-muted rounded-full p-0.5"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -108,7 +108,7 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
           <span>{unselectedTags.length === 0 ? '创建新标签...' : '选择或创建标签...'}</span>
           <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </Button>
-        
+
         {isOpen && (
           <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-lg">
             {/* Create new tag input */}
@@ -140,7 +140,7 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
               </div>
               {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
             </div>
-            
+
             {/* Existing tags list */}
             {unselectedTags.length > 0 && (
               <div className="max-h-48 overflow-auto p-1">
@@ -164,11 +164,11 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
           </div>
         )}
       </div>
-      
+
       {/* Click outside to close */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 z-0" 
+        <div
+          className="fixed inset-0 z-0"
           onClick={() => setIsOpen(false)}
         />
       )}

@@ -26,9 +26,9 @@ export async function BlogHeader({
   };
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap sm:mt-20 mt-5 sm:px-10 py-4">
-      <div className="flex items-center gap-4 text-black">
-        <h2 className="text-black text-lg font-bold leading-tight tracking-[-0.015em]">
+    <header className="flex items-center justify-between whitespace-nowrap sm:mt-20 mt-5 px-4 sm:px-6 py-4">
+      <div className="flex items-center gap-4 text-foreground">
+        <h2 className="text-foreground text-lg font-bold leading-tight tracking-[-0.015em]">
           {siteTitle}
         </h2>
       </div>
@@ -50,7 +50,7 @@ export async function BlogHeader({
               href={item.url}
               target={item.openInNewTab ? "_blank" : undefined}
               rel={item.openInNewTab ? "noopener noreferrer" : undefined}
-              className="text-neutral-500 text-sm font-medium leading-normal hover:text-black transition-colors"
+              className="text-muted-foreground text-sm font-medium leading-normal hover:text-foreground transition-colors"
             >
               {item.label}
             </Link>
