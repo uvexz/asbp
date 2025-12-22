@@ -11,9 +11,11 @@ import { UmamiSettings } from "@/components/admin/umami-settings";
 import { S3Settings } from "@/components/admin/s3-settings";
 import { EmailSettings } from "@/components/admin/email-settings";
 import { AiSettings } from "@/components/admin/ai-settings";
+import { ExportSettings } from "@/components/admin/export-settings";
+import { ImportSettings } from "@/components/admin/import-settings";
 import { getSettingsUncached, updateSettings } from "@/app/actions/settings";
 import { getTranslations } from 'next-intl/server';
-import { Globe, FileText, BarChart3 } from "lucide-react";
+import { Globe, FileText, BarChart3, Download, Upload } from "lucide-react";
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
     const settings = await getSettingsUncached();
@@ -176,6 +178,59 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                     {t('saveChanges')}
                 </Button>
             </form>
+
+            {/* Data Export */}
+            <section className="space-y-4 max-w-2xl mt-8 pt-8 border-t">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Download className="size-5" />
+                    {t('dataExport')}
+                </h2>
+                <ExportSettings
+                    translations={{
+                        dataExport: t('dataExport'),
+                        dataExportDesc: t('dataExportDesc'),
+                        exportPosts: t('exportPosts'),
+                        exportComments: t('exportComments'),
+                        exportTags: t('exportTags'),
+                        exportNavigation: t('exportNavigation'),
+                        exportMedia: t('exportMedia'),
+                        exportMediaDesc: t('exportMediaDesc'),
+                        exportUsers: t('exportUsers'),
+                        exportUsersDesc: t('exportUsersDesc'),
+                        exportSettings: t('exportSettings'),
+                        exportSettingsDesc: t('exportSettingsDesc'),
+                        exportButton: t('exportButton'),
+                        exporting: t('exporting'),
+                    }}
+                />
+            </section>
+
+            {/* Data Import */}
+            <section className="space-y-4 max-w-2xl mt-8 pt-8 border-t">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Upload className="size-5" />
+                    {t('dataImport')}
+                </h2>
+                <ImportSettings
+                    translations={{
+                        dataImport: t('dataImport'),
+                        dataImportDesc: t('dataImportDesc'),
+                        selectFile: t('selectFile'),
+                        importButton: t('importButton'),
+                        importing: t('importing'),
+                        importSuccess: t('importSuccess'),
+                        importFailed: t('importFailed'),
+                        noFileSelected: t('noFileSelected'),
+                        importResults: t('importResults'),
+                        postsImported: t('postsImported'),
+                        commentsImported: t('commentsImported'),
+                        tagsImported: t('tagsImported'),
+                        navItemsImported: t('navItemsImported'),
+                        mediaImported: t('mediaImported'),
+                        settingsImported: t('settingsImported'),
+                    }}
+                />
+            </section>
             </main>
         </div>
     );
