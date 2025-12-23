@@ -26,7 +26,7 @@ export async function BlogHeader({
   };
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap sm:mt-20 mt-5 px-4 sm:px-6 py-4">
+    <header className="flex items-center justify-between whitespace-nowrap sm:mt-20 mt-5 px-4 sm:px-8 py-4">
       <div className="flex items-center gap-4 text-foreground">
         <h2 className="text-foreground text-lg font-bold leading-tight tracking-[-0.015em]">
           {siteTitle}
