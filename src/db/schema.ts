@@ -162,6 +162,7 @@ export const settings = pgTable('settings', {
   siteTitle: text('siteTitle').default('My Awesome Blog'),
   siteDescription: text('siteDescription').default('A blog about tech...'),
   allowRegistration: boolean('allowRegistration').default(true),
+  faviconUrl: text('faviconUrl'),
   // S3
   s3Bucket: text('s3Bucket'),
   s3Region: text('s3Region'),

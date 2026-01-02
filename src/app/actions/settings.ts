@@ -24,12 +24,13 @@ export async function getSettings() {
 export async function getSettingsUncached() {
     const { decrypt } = await import('@/lib/crypto');
     const data = await db.select().from(settings).where(eq(settings.id, 1)).limit(1);
-    
+
     if (data.length === 0) {
         return {
             siteTitle: 'My Awesome Blog',
             siteDescription: 'A blog about tech...',
             allowRegistration: false,
+            faviconUrl: '',
             s3Bucket: '',
             s3Region: '',
             s3AccessKey: '',
@@ -50,12 +51,13 @@ export async function getSettingsUncached() {
             umamiApiSecret: '',
         };
     }
-    
+
     const row = data[0];
-    
+
     // Decrypt sensitive fields for display
     return {
         ...row,
+        faviconUrl: row.faviconUrl || '',
         s3SecretKey: row.s3SecretKey ? decrypt(row.s3SecretKey) : '',
         s3AccessKey: row.s3AccessKey ? decrypt(row.s3AccessKey) : '',
         resendApiKey: row.resendApiKey ? decrypt(row.resendApiKey) : '',
@@ -85,6 +87,7 @@ export async function updateSettings(formData: FormData) {
     const siteTitle = (formData.get('siteTitle') as string) || '';
     const siteDescription = (formData.get('siteDescription') as string) || '';
     const allowRegistration = formData.get('allowRegistration') === 'on';
+    const faviconUrl = (formData.get('faviconUrl') as string) || null;
     const s3Bucket = (formData.get('s3Bucket') as string) || null;
     const s3Region = (formData.get('s3Region') as string) || null;
     const s3Endpoint = (formData.get('s3Endpoint') as string) || null;
@@ -92,14 +95,14 @@ export async function updateSettings(formData: FormData) {
     const resendFromEmail = (formData.get('resendFromEmail') as string) || null;
     const aiBaseUrl = (formData.get('aiBaseUrl') as string) || null;
     const aiModel = (formData.get('aiModel') as string) || null;
-    
+
     // Umami settings
     const umamiEnabled = formData.get('umamiEnabled') === 'on';
     const umamiCloud = formData.get('umamiCloud') === 'on';
     const umamiHostUrl = (formData.get('umamiHostUrl') as string) || null;
     const umamiWebsiteId = (formData.get('umamiWebsiteId') as string) || null;
     const umamiApiUserId = (formData.get('umamiApiUserId') as string) || null;
-    
+
     // Get raw values for sensitive fields
     const s3AccessKeyRaw = (formData.get('s3AccessKey') as string) || null;
     const s3SecretKeyRaw = (formData.get('s3SecretKey') as string) || null;
@@ -107,7 +110,7 @@ export async function updateSettings(formData: FormData) {
     const aiApiKeyRaw = (formData.get('aiApiKey') as string) || null;
     const umamiApiKeyRaw = (formData.get('umamiApiKey') as string) || null;
     const umamiApiSecretRaw = (formData.get('umamiApiSecret') as string) || null;
-    
+
     // Encrypt sensitive fields before storing
     const s3AccessKey = s3AccessKeyRaw ? encrypt(s3AccessKeyRaw) : null;
     const s3SecretKey = s3SecretKeyRaw ? encrypt(s3SecretKeyRaw) : null;
@@ -122,6 +125,7 @@ export async function updateSettings(formData: FormData) {
             siteTitle,
             siteDescription,
             allowRegistration,
+            faviconUrl,
             s3Bucket,
             s3Region,
             s3AccessKey,
@@ -146,6 +150,7 @@ export async function updateSettings(formData: FormData) {
                 siteTitle,
                 siteDescription,
                 allowRegistration,
+                faviconUrl,
                 s3Bucket,
                 s3Region,
                 s3AccessKey,
@@ -173,7 +178,7 @@ export async function updateSettings(formData: FormData) {
 
     // Invalidate settings cache
     invalidateSettingsCache();
-    
+
     revalidatePath('/');
     revalidatePath('/admin/settings');
     redirect('/admin/settings?saved=true');

@@ -1,4 +1,4 @@
-import type {} from "next";
+import type { } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -31,6 +31,7 @@ export async function generateMetadata() {
   return {
     title: siteSettings?.siteTitle || "ASBP",
     description: siteSettings?.siteDescription || "A Simple Blogging Platform",
+    icons: siteSettings?.faviconUrl ? [{ rel: "icon", url: siteSettings.faviconUrl }] : undefined,
   };
 }
 
