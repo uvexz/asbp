@@ -31,7 +31,9 @@ export async function generateMetadata() {
   return {
     title: siteSettings?.siteTitle || "ASBP",
     description: siteSettings?.siteDescription || "A Simple Blogging Platform",
-    icons: siteSettings?.faviconUrl ? [{ rel: "icon", url: siteSettings.faviconUrl }] : undefined,
+    icons: siteSettings?.faviconUrl
+      ? [{ rel: "icon", url: siteSettings.faviconUrl }]
+      : [{ rel: "icon", url: "/favicon.ico" }],
   };
 }
 
