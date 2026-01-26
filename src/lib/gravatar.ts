@@ -8,5 +8,5 @@ export function getGravatarUrl(email: string): string {
     const hash = createHash('md5')
         .update(email.trim().toLowerCase())
         .digest('hex');
-    return `https://use.sevencdn.com/avatar/${hash}?d=mp`;
+    return `https://weavatar.com/avatar/${hash}?d=mp`;
 }

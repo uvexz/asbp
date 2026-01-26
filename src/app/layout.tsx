@@ -1,5 +1,4 @@
 import type { } from "next";
-import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { NextIntlClientProvider } from "next-intl";
@@ -54,12 +53,6 @@ export default async function RootLayout({
           {children}
           <Toaster position="top-center" richColors />
         </NextIntlClientProvider>
-        <Script
-          src="/js/instantpage.min.js"
-          strategy="afterInteractive"
-          type="module"
-          crossOrigin="anonymous"
-        />
       </body>
     </html>
   );
