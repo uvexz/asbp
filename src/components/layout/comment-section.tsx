@@ -50,7 +50,7 @@ function getInitials(name: string): string {
 
 function getGravatarUrl(email: string): string {
     const hash = md5(email.trim().toLowerCase());
-    return `https://use.sevencdn.com/avatar/${hash}?d=mp`;
+    return `https://weavatar.com/avatar/${hash}?d=mp`;
 }
 
 function formatDate(date: Date): string {
