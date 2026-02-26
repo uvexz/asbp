@@ -44,6 +44,8 @@ export const REDIS_KEYS = {
   TAGS: 'cache:tags',
   POST: (slug: string) => `cache:post:${slug}`,
   POSTS_LIST: (page: number, pageSize: number) => `cache:posts:${page}:${pageSize}`,
+  MEMOS_LIST: (page: number, pageSize: number) => `cache:memos:${page}:${pageSize}`,
+  TAG_POSTS: (slug: string) => `cache:tag:${slug}:posts`,
   SITEMAP_POSTS: 'cache:sitemap:posts',
   SITEMAP_TAGS: 'cache:sitemap:tags',
   FEED_POSTS: (limit: number) => `cache:feed:${limit}`,
@@ -56,6 +58,8 @@ export const REDIS_TTL = {
   TAGS: 3600,          // 1 hour
   POST: 3600,          // 1 hour
   POSTS_LIST: 300,     // 5 minutes
+  MEMOS_LIST: 300,     // 5 minutes
+  TAG_POSTS: 300,      // 5 minutes
   SITEMAP: 3600,       // 1 hour
   FEED: 300,           // 5 minutes
 } as const;

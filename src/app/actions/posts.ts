@@ -8,15 +8,15 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { postSchema } from '@/lib/validations';
-import { 
-  getCachedPostBySlug, 
+import {
+  getCachedPostBySlug,
   getCachedPublishedPosts,
-  invalidatePostCache, 
+  getCachedPublishedMemos,
+  invalidatePostCache,
   invalidatePostsListCache,
-  invalidateAllPostCaches 
 } from '@/lib/cache-layer';
 
-export type ActionResult<T = void> = 
+export type ActionResult<T = void> =
   | { success: true; data?: T }
   | { success: false; error: string };
 
@@ -27,7 +27,7 @@ export async function getPosts(page: number = 1, pageSize: number = 20, search?:
 
     // Build where condition for search
     const { ilike, or } = await import('drizzle-orm');
-    const searchCondition = search?.trim() 
+    const searchCondition = search?.trim()
         ? or(
             ilike(posts.title, `%${search.trim()}%`),
             ilike(posts.content, `%${search.trim()}%`)
@@ -38,7 +38,7 @@ export async function getPosts(page: number = 1, pageSize: number = 20, search?:
         .select({ count: count() })
         .from(posts)
         .where(searchCondition);
-    
+
     const total = totalResult?.count ?? 0;
     const totalPages = Math.ceil(total / validPageSize);
 
@@ -56,7 +56,7 @@ export async function getPosts(page: number = 1, pageSize: number = 20, search?:
             },
         }
     });
-    
+
     return {
         posts: data,
         total,
@@ -75,41 +75,7 @@ export async function getPublishedPosts(
     page: number = 1,
     pageSize: number = 10
 ) {
-    // Ensure valid pagination parameters
-    const validPage = Math.max(1, page);
-    const validPageSize = Math.max(1, Math.min(100, pageSize));
-    const offset = (validPage - 1) * validPageSize;
-
-    // Get total count of published posts (only 'post' type)
-    const [totalResult] = await db
-        .select({ count: count() })
-        .from(posts)
-        .where(and(eq(posts.published, true), eq(posts.postType, 'post')));
-    
-    const total = totalResult?.count ?? 0;
-    const totalPages = Math.ceil(total / validPageSize);
-
-    // Get paginated posts (only 'post' type), ordered by publishedAt (fallback to createdAt)
-    const data = await db.query.posts.findMany({
-        where: and(eq(posts.published, true), eq(posts.postType, 'post')),
-        orderBy: [desc(posts.publishedAt), desc(posts.createdAt)],
-        limit: validPageSize,
-        offset: offset,
-        with: {
-            author: true,
-            tags: {
-                with: {
-                    tag: true,
-                },
-            },
-        }
-    });
-
-    return {
-        posts: data,
-        total,
-        totalPages,
-    };
+    return getCachedPublishedPosts(page, pageSize);
 }
 
 /**
@@ -119,33 +85,7 @@ export async function getPublishedMemos(
     page: number = 1,
     pageSize: number = 20
 ) {
-    const validPage = Math.max(1, page);
-    const validPageSize = Math.max(1, Math.min(100, pageSize));
-    const offset = (validPage - 1) * validPageSize;
-
-    const [totalResult] = await db
-        .select({ count: count() })
-        .from(posts)
-        .where(and(eq(posts.published, true), eq(posts.postType, 'memo')));
-    
-    const total = totalResult?.count ?? 0;
-    const totalPages = Math.ceil(total / validPageSize);
-
-    const data = await db.query.posts.findMany({
-        where: and(eq(posts.published, true), eq(posts.postType, 'memo')),
-        orderBy: [desc(posts.createdAt)],
-        limit: validPageSize,
-        offset: offset,
-        with: {
-            author: true,
-        }
-    });
-
-    return {
-        memos: data,
-        total,
-        totalPages,
-    };
+    return getCachedPublishedMemos(page, pageSize);
 }
 
 /**
@@ -216,7 +156,7 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
 
     // Validate input using postSchema
     const validationResult = postSchema.safeParse({ title, slug, content, published, publishedAt });
-    
+
     if (!validationResult.success) {
         const errorMessages = validationResult.error.issues
             .map(issue => issue.message)
@@ -250,7 +190,7 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     // Invalidate caches
     invalidatePostsListCache();
     invalidatePostCache(validationResult.data.slug);
-    
+
     revalidatePath('/');
     revalidatePath('/memo');
     revalidatePath('/admin/posts');
@@ -284,7 +224,7 @@ export async function updatePost(id: string, formData: FormData): Promise<Action
 
     // Validate input using postSchema
     const validationResult = postSchema.safeParse({ title, slug, content, published, publishedAt });
-    
+
     if (!validationResult.success) {
         const errorMessages = validationResult.error.issues
             .map(issue => issue.message)
@@ -299,14 +239,14 @@ export async function updatePost(id: string, formData: FormData): Promise<Action
     });
 
     await db.update(posts)
-        .set({ 
-            title: validationResult.data.title, 
-            slug: validationResult.data.slug, 
-            content: validationResult.data.content, 
+        .set({
+            title: validationResult.data.title,
+            slug: validationResult.data.slug,
+            content: validationResult.data.content,
             published: validationResult.data.published,
             postType,
             publishedAt: validationResult.data.publishedAt,
-            updatedAt: new Date() 
+            updatedAt: new Date()
         })
         .where(eq(posts.id, id));
 
@@ -342,16 +282,16 @@ export async function deletePost(id: string) {
     const { postsTags, comments } = await import('@/db/schema');
     await db.delete(postsTags).where(eq(postsTags.postId, id));
     await db.delete(comments).where(eq(comments.postId, id));
-    
+
     // 删除文章
     await db.delete(posts).where(eq(posts.id, id));
-    
+
     // Invalidate caches
     invalidatePostsListCache();
     if (post) {
         invalidatePostCache(post.slug);
     }
-    
+
     revalidatePath('/admin/posts');
     revalidatePath('/admin/comments');
 }
@@ -420,9 +360,9 @@ export async function updateMemo(id: string, content: string): Promise<ActionRes
     }
 
     await db.update(posts)
-        .set({ 
+        .set({
             content: content.trim(),
-            updatedAt: new Date() 
+            updatedAt: new Date()
         })
         .where(eq(posts.id, id));
 
