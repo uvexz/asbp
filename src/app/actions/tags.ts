@@ -8,13 +8,13 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { tagSchema } from '@/lib/validations';
 import { generateSlug } from '@/lib/server-utils';
-import { getCachedTags, invalidateTagsCache } from '@/lib/cache-layer';
+import { getCachedTags, getCachedPostsByTag, invalidateTagsCache } from '@/lib/cache-layer';
 
-export type TagActionResult = 
+export type TagActionResult =
   | { success: true }
   | { success: false; error: string };
 
-export type CreateTagResult = 
+export type CreateTagResult =
   | { success: true; tag: { id: string; name: string; slug: string } }
   | { success: false; error: string };
 
@@ -22,11 +22,11 @@ async function requireAdmin() {
   const session = await auth.api.getSession({
     headers: await headers()
   });
-  
+
   if (!session || session.user.role !== 'admin') {
     throw new Error('Unauthorized');
   }
-  
+
   return session;
 }
 
@@ -60,7 +60,7 @@ export async function createTag(formData: FormData): Promise<TagActionResult> {
 
   // Validate input using tagSchema
   const validationResult = tagSchema.safeParse({ name });
-  
+
   if (!validationResult.success) {
     const errorMessages = validationResult.error.issues
       .map(issue => issue.message)
@@ -101,7 +101,7 @@ export async function createTagInline(name: string): Promise<CreateTagResult> {
 
   // Validate input using tagSchema
   const validationResult = tagSchema.safeParse({ name });
-  
+
   if (!validationResult.success) {
     const errorMessages = validationResult.error.issues
       .map(issue => issue.message)
@@ -141,7 +141,7 @@ export async function updateTag(id: string, name: string): Promise<TagActionResu
 
   // Validate input using tagSchema
   const validationResult = tagSchema.safeParse({ name });
-  
+
   if (!validationResult.success) {
     const errorMessages = validationResult.error.issues
       .map(issue => issue.message)
@@ -181,7 +181,7 @@ export async function deleteTag(id: string): Promise<TagActionResult> {
 
   // First, delete all post-tag associations (cascade)
   await db.delete(postsTags).where(eq(postsTags.tagId, id));
-  
+
   // Then delete the tag itself
   await db.delete(tags).where(eq(tags.id, id));
 
@@ -244,37 +244,5 @@ export async function getTagBySlug(slug: string) {
  * Requirements: 11.3
  */
 export async function getPostsByTag(tagSlug: string) {
-  // First get the tag
-  const tag = await db.query.tags.findFirst({
-    where: eq(tags.slug, tagSlug),
-  });
-  
-  if (!tag) {
-    return { tag: null, posts: [] };
-  }
-  
-  // Get all post-tag associations for this tag
-  const postTagAssociations = await db.query.postsTags.findMany({
-    where: eq(postsTags.tagId, tag.id),
-    with: {
-      post: {
-        with: {
-          author: true,
-          tags: {
-            with: {
-              tag: true,
-            },
-          },
-        },
-      },
-    },
-  });
-  
-  // Filter to only published posts and sort by date
-  const publishedPosts = postTagAssociations
-    .map(pt => pt.post)
-    .filter(post => post.published === true)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  
-  return { tag, posts: publishedPosts };
+  return getCachedPostsByTag(tagSlug);
 }

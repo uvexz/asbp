@@ -4,6 +4,7 @@ import "./globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { Toaster } from "sonner";
+import { getSettings } from "@/app/actions/settings";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,17 +16,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-import { db } from "@/lib/db";
-import { settings } from "@/db/schema";
-import { eq } from "drizzle-orm";
-
 export async function generateMetadata() {
-  const data = await db
-    .select()
-    .from(settings)
-    .where(eq(settings.id, 1))
-    .limit(1);
-  const siteSettings = data.length > 0 ? data[0] : null;
+  const siteSettings = await getSettings();
 
   return {
     title: siteSettings?.siteTitle || "ASBP",

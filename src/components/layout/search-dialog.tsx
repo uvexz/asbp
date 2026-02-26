@@ -24,6 +24,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
 
+  const navigateTo = useCallback((slug: string) => {
+    onOpenChange(false);
+    router.push(`/${slug}`);
+  }, [onOpenChange, router]);
+
   // Debounced search
   useEffect(() => {
     if (!query || query.length < 2) {
@@ -63,12 +68,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
       e.preventDefault();
       navigateTo(results[selectedIndex].slug);
     }
-  }, [results, selectedIndex]);
-
-  const navigateTo = (slug: string) => {
-    onOpenChange(false);
-    router.push(`/${slug}`);
-  };
+  }, [results, selectedIndex, navigateTo]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

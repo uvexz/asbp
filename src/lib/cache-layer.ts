@@ -5,7 +5,7 @@
 
 import { unstable_cache, revalidateTag } from 'next/cache';
 import { db } from './db';
-import { settings, navItems, tags, posts } from '@/db/schema';
+import { settings, navItems, tags, posts, postsTags } from '@/db/schema';
 import { eq, asc, and, desc, count } from 'drizzle-orm';
 import { decrypt } from './crypto';
 import { getRedis, isRedisEnabled, REDIS_KEYS, REDIS_TTL } from './redis';
@@ -80,6 +80,7 @@ async function fetchSettings() {
       siteTitle: 'My Awesome Blog',
       siteDescription: 'A blog about tech...',
       allowRegistration: false,
+      faviconUrl: '',
       s3Bucket: '',
       s3Region: '',
       s3AccessKey: '',
@@ -269,6 +270,112 @@ export async function getCachedPublishedPosts(page: number = 1, pageSize: number
 }
 
 // ============================================
+// Published Memos List Cache
+// ============================================
+
+async function fetchPublishedMemos(page: number = 1, pageSize: number = 20) {
+  const validPage = Math.max(1, page);
+  const validPageSize = Math.max(1, Math.min(100, pageSize));
+  const offset = (validPage - 1) * validPageSize;
+
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(posts)
+    .where(and(eq(posts.published, true), eq(posts.postType, 'memo')));
+
+  const total = totalResult?.count ?? 0;
+  const totalPages = Math.ceil(total / validPageSize);
+
+  const data = await db.query.posts.findMany({
+    where: and(eq(posts.published, true), eq(posts.postType, 'memo')),
+    orderBy: [desc(posts.createdAt)],
+    limit: validPageSize,
+    offset: offset,
+    with: {
+      author: true,
+    },
+  });
+
+  return { memos: data, total, totalPages };
+}
+
+const getCachedPublishedMemosFallback = unstable_cache(
+  fetchPublishedMemos,
+  ['published-memos'],
+  { tags: [CACHE_TAGS.POSTS_LIST], revalidate: 300 }
+);
+
+export async function getCachedPublishedMemos(page: number = 1, pageSize: number = 20) {
+  if (isRedisEnabled()) {
+    const cacheKey = REDIS_KEYS.MEMOS_LIST(page, pageSize);
+    const cached = await getFromRedis<Awaited<ReturnType<typeof fetchPublishedMemos>>>(cacheKey);
+    if (cached) return cached;
+
+    const data = await fetchPublishedMemos(page, pageSize);
+    await setToRedis(cacheKey, data, REDIS_TTL.MEMOS_LIST);
+    return data;
+  }
+  return getCachedPublishedMemosFallback(page, pageSize);
+}
+
+// ============================================
+// Posts By Tag Cache
+// ============================================
+
+async function fetchPostsByTag(tagSlug: string) {
+  const tag = await db.query.tags.findFirst({
+    where: eq(tags.slug, tagSlug),
+  });
+
+  if (!tag) {
+    return { tag: null, posts: [] };
+  }
+
+  const postTagAssociations = await db.query.postsTags.findMany({
+    where: eq(postsTags.tagId, tag.id),
+    with: {
+      post: {
+        with: {
+          author: true,
+          tags: {
+            with: {
+              tag: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const publishedPosts = postTagAssociations
+    .map(pt => pt.post)
+    .filter(post => post.published === true)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return { tag, posts: publishedPosts };
+}
+
+export async function getCachedPostsByTag(tagSlug: string) {
+  if (isRedisEnabled()) {
+    const cacheKey = REDIS_KEYS.TAG_POSTS(tagSlug);
+    const cached = await getFromRedis<Awaited<ReturnType<typeof fetchPostsByTag>>>(cacheKey);
+    if (cached) return cached;
+
+    const data = await fetchPostsByTag(tagSlug);
+    await setToRedis(cacheKey, data, REDIS_TTL.TAG_POSTS);
+    return data;
+  }
+
+  const getCachedPostsByTagFallback = unstable_cache(
+    async () => fetchPostsByTag(tagSlug),
+    [`tag-posts-${tagSlug}`],
+    { tags: [CACHE_TAGS.POSTS_LIST, CACHE_TAGS.TAGS], revalidate: 300 }
+  );
+
+  return getCachedPostsByTagFallback();
+}
+
+// ============================================
 // Sitemap Cache
 // ============================================
 
@@ -394,6 +501,8 @@ export function invalidatePostCache(slug: string) {
 export function invalidatePostsListCache() {
   if (isRedisEnabled()) {
     deleteFromRedis('cache:posts:*');
+    deleteFromRedis('cache:memos:*');
+    deleteFromRedis('cache:tag:*');
     deleteFromRedis(REDIS_KEYS.SITEMAP_POSTS);
     deleteFromRedis('cache:feed:*');
   }
