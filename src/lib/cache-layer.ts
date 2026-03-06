@@ -5,7 +5,7 @@
 
 import { unstable_cache, revalidateTag } from 'next/cache';
 import { db } from './db';
-import { settings, navItems, tags, posts, postsTags } from '@/db/schema';
+import { settings, navItems, tags, posts, postsTags, comments } from '@/db/schema';
 import { eq, asc, and, desc, count } from 'drizzle-orm';
 import { decrypt } from './crypto';
 import { getRedis, isRedisEnabled, REDIS_KEYS, REDIS_TTL } from './redis';
@@ -17,6 +17,7 @@ export const CACHE_TAGS = {
   TAGS: 'tags',
   POST: (slug: string) => `post:${slug}`,
   POSTS_LIST: 'posts-list',
+  COMMENTS: (postId: string) => `comments:${postId}`,
 } as const;
 
 // Default cache options
@@ -376,6 +377,43 @@ export async function getCachedPostsByTag(tagSlug: string) {
 }
 
 // ============================================
+// Post Comments Cache
+// ============================================
+
+async function fetchPostComments(postId: string) {
+  return db.query.comments.findMany({
+    where: (comments, { eq, and }) => and(
+      eq(comments.postId, postId),
+      eq(comments.status, 'approved')
+    ),
+    orderBy: (comments, { desc }) => [desc(comments.createdAt)],
+    with: {
+      user: true,
+    },
+  });
+}
+
+export async function getCachedPostComments(postId: string) {
+  if (isRedisEnabled()) {
+    const cacheKey = REDIS_KEYS.COMMENTS(postId);
+    const cached = await getFromRedis<Awaited<ReturnType<typeof fetchPostComments>>>(cacheKey);
+    if (cached) return cached;
+
+    const data = await fetchPostComments(postId);
+    await setToRedis(cacheKey, data, REDIS_TTL.COMMENTS);
+    return data;
+  }
+
+  const getCachedPostCommentsFallback = unstable_cache(
+    () => fetchPostComments(postId),
+    [`post-comments-${postId}`],
+    { tags: [CACHE_TAGS.COMMENTS(postId)], revalidate: 60 }
+  );
+
+  return getCachedPostCommentsFallback();
+}
+
+// ============================================
 // Sitemap Cache
 // ============================================
 
@@ -507,6 +545,13 @@ export function invalidatePostsListCache() {
     deleteFromRedis('cache:feed:*');
   }
   revalidateTag(CACHE_TAGS.POSTS_LIST, CACHE_PROFILE);
+}
+
+export function invalidateCommentsCache(postId: string) {
+  if (isRedisEnabled()) {
+    deleteFromRedis(REDIS_KEYS.COMMENTS(postId));
+  }
+  revalidateTag(CACHE_TAGS.COMMENTS(postId), CACHE_PROFILE);
 }
 
 export function invalidateAllPostCaches(slug?: string) {

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-static';
+export const revalidate = 86400;
+
 // Proxy Umami Cloud script to avoid ad blockers
 export async function GET() {
   try {
@@ -7,6 +10,7 @@ export async function GET() {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; UmamiProxy/1.0)',
       },
+      next: { revalidate: 86400 },
     });
 
     if (!response.ok) {

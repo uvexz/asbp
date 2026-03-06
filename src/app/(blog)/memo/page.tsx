@@ -1,12 +1,9 @@
 import { getPublishedMemos } from '@/app/actions/posts';
 import { Pagination } from '@/components/ui/pagination';
 import { MemoContent } from '@/components/ui/memo-content';
-import { MemoQuickPost } from '@/components/layout/memo-quick-post';
-import { MemoActions } from '@/components/layout/memo-actions';
+import { MemoActionsAdminGate, MemoQuickPostAdminGate } from '@/components/layout/memo-admin-controls';
 import { getTranslations } from 'next-intl/server';
-import { auth } from '@/lib/auth';
-import { hasS3Config, getSettings } from '@/app/actions/settings';
-import { headers } from 'next/headers';
+import { getSettings } from '@/app/actions/settings';
 import { Calendar } from 'lucide-react';
 import type { Metadata } from 'next';
 
@@ -32,18 +29,11 @@ export default async function MemoPage({ searchParams }: MemoPageProps) {
 
     const { memos, totalPages } = await getPublishedMemos(currentPage, pageSize);
 
-    // Check if user is admin for quick post button
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-    const isAdmin = session?.user?.role === 'admin';
-    const hasS3 = isAdmin ? await hasS3Config() : false;
-
     return (
         <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-black text-4xl font-black leading-tight tracking-[-0.033em] min-w-72">{t('memos')}</h1>
-                {isAdmin && <MemoQuickPost hasS3={hasS3} />}
+                <MemoQuickPostAdminGate />
             </div>
             <div className="space-y-6">
                 {memos.map((memo) => (
@@ -62,13 +52,7 @@ export default async function MemoPage({ searchParams }: MemoPageProps) {
                                     minute: '2-digit'
                                 })}
                             </p>
-                            {isAdmin && (
-                                <MemoActions
-                                    memoId={memo.id}
-                                    content={memo.content}
-                                    hasS3={hasS3}
-                                />
-                            )}
+                            <MemoActionsAdminGate memoId={memo.id} content={memo.content} />
                         </div>
                     </article>
                 ))}

@@ -5,8 +5,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPostComments } from "@/app/actions/comments";
 import { CommentSection } from "@/components/layout/comment-section";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { formatDate } from "@/lib/date-utils";
 import { getTranslations } from "next-intl/server";
 import { getSettings } from "@/app/actions/settings";
@@ -82,19 +80,6 @@ export default async function ArticleDetailPage({
 
   const comments = await getPostComments(post.id);
 
-  // Get current user session
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  const currentUser = session?.user
-    ? {
-      id: session.user.id,
-      name: session.user.name,
-      image: session.user.image,
-    }
-    : null;
-  const isAdmin = session?.user?.role === 'admin';
-
   const settings = await getSettings();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000";
 
@@ -149,8 +134,6 @@ export default async function ArticleDetailPage({
           <CommentSection
             postId={post.id}
             comments={comments}
-            user={currentUser}
-            isAdmin={isAdmin}
           />
         </div>
       </div>

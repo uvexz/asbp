@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { MessageCircle, Reply, User, Mail, Globe, Send, X, Trash2 } from 'lucide-react';
 import { Captcha } from '@/components/ui/captcha';
 import { useRouter } from 'next/navigation';
+import { useSession } from '@/components/auth/use-session';
 
 interface Comment {
     id: string;
@@ -377,6 +378,9 @@ export function CommentSection({ postId, comments: initialComments, user, isAdmi
     const [comments, setComments] = useState(initialComments);
     const router = useRouter();
     const t = useTranslations('blog');
+    const { data: session } = useSession({ enabled: !user });
+    const effectiveUser = session?.user ?? user ?? null;
+    const effectiveIsAdmin = session?.isAdmin ?? isAdmin ?? false;
 
     // 构建评论树结构
     const rootComments = comments.filter(c => !c.parentId);
@@ -431,7 +435,7 @@ export function CommentSection({ postId, comments: initialComments, user, isAdmi
                                     comment={comment} 
                                     onReply={handleReply}
                                     onDelete={handleDelete}
-                                    isAdmin={isAdmin}
+                                    isAdmin={effectiveIsAdmin}
                                     t={t}
                                 />
                                 {/* 回复列表 */}
@@ -443,7 +447,7 @@ export function CommentSection({ postId, comments: initialComments, user, isAdmi
                                                 comment={reply} 
                                                 onReply={handleReply}
                                                 onDelete={handleDelete}
-                                                isAdmin={isAdmin}
+                                                isAdmin={effectiveIsAdmin}
                                                 t={t}
                                             />
                                         ))}
@@ -462,7 +466,7 @@ export function CommentSection({ postId, comments: initialComments, user, isAdmi
                 <h3 className="text-lg font-semibold text-foreground mb-4">{t('leaveComment')}</h3>
                 <CommentForm 
                     postId={postId} 
-                    user={user} 
+                    user={effectiveUser} 
                     replyTo={replyTo}
                     onCancelReply={handleCancelReply}
                     onSuccess={handleSuccess}

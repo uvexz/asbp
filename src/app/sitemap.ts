@@ -1,8 +1,8 @@
 import { MetadataRoute } from 'next';
 import { getCachedSitemapPosts, getCachedSitemapTags } from '@/lib/cache-layer';
 
-// Force dynamic generation - sitemap needs database access
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';

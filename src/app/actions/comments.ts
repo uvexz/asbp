@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { commentSchema } from '@/lib/validations';
 import { isAdminAuthorized } from '@/lib/server-utils';
+import { getCachedPostComments, invalidateCommentsCache } from '@/lib/cache-layer';
 
 export type CommentActionResult = 
   | { success: true; autoApproved?: boolean }
@@ -60,26 +61,33 @@ export async function getComments(page: number = 1, pageSize: number = 20) {
 export async function approveComment(id: string, addToWhitelistFlag: boolean = false) {
     await requireAdmin();
     
-    // Get comment to find email
-    if (addToWhitelistFlag) {
-        const comment = await db.query.comments.findFirst({
-            where: eq(comments.id, id),
-            columns: { guestEmail: true }
-        });
-        
-        if (comment?.guestEmail) {
-            const { addToWhitelist } = await import('@/lib/spam-detector');
-            await addToWhitelist(comment.guestEmail);
-        }
+    const comment = await db.query.comments.findFirst({
+        where: eq(comments.id, id),
+        columns: { guestEmail: true, postId: true }
+    });
+    
+    if (addToWhitelistFlag && comment?.guestEmail) {
+        const { addToWhitelist } = await import('@/lib/spam-detector');
+        await addToWhitelist(comment.guestEmail);
     }
     
     await db.update(comments).set({ status: 'approved' }).where(eq(comments.id, id));
+    if (comment?.postId) {
+        invalidateCommentsCache(comment.postId);
+    }
     revalidatePath('/admin/comments');
 }
 
 export async function deleteComment(id: string) {
     await requireAdmin();
+    const comment = await db.query.comments.findFirst({
+        where: eq(comments.id, id),
+        columns: { postId: true }
+    });
     await db.delete(comments).where(eq(comments.id, id));
+    if (comment?.postId) {
+        invalidateCommentsCache(comment.postId);
+    }
     revalidatePath('/admin/comments');
 }
 
@@ -111,6 +119,7 @@ export async function createComment(postId: string, formData: FormData, parentId
             status: 'approved', // Auto-approve for logged in users
         }).returning({ id: comments.id });
         newCommentId = result[0]?.id;
+        invalidateCommentsCache(postId);
     } else {
         // Guest user - validate guest fields
         const validationResult = commentSchema.safeParse({ content, guestName, guestEmail, guestWebsite });
@@ -149,6 +158,7 @@ export async function createComment(postId: string, formData: FormData, parentId
             status,
         }).returning({ id: comments.id });
         newCommentId = result[0]?.id;
+        invalidateCommentsCache(postId);
 
         // Send email notifications
         if (newCommentId) {
@@ -245,17 +255,7 @@ async function sendReplyNotification(parentCommentId: string, newCommentId: stri
 }
 
 export async function getPostComments(postId: string) {
-    const data = await db.query.comments.findMany({
-        where: (comments, { eq, and }) => and(
-            eq(comments.postId, postId),
-            eq(comments.status, 'approved')
-        ),
-        orderBy: (comments, { desc }) => [desc(comments.createdAt)],
-        with: {
-            user: true,
-        },
-    });
-    return data;
+    return getCachedPostComments(postId);
 }
 
 /**

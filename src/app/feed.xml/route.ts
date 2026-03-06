@@ -1,12 +1,25 @@
 import { Feed } from 'feed';
 import { getCachedFeedPosts, getCachedSettings } from '@/lib/cache-layer';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
+export const revalidate = 300;
 
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
-  const settings = await getCachedSettings();
-  const posts = await getCachedFeedPosts(20);
+  let settings: Awaited<ReturnType<typeof getCachedSettings>>;
+  let posts: Awaited<ReturnType<typeof getCachedFeedPosts>>;
+
+  try {
+    settings = await getCachedSettings();
+    posts = await getCachedFeedPosts(20);
+  } catch (error) {
+    console.error('Feed generation error:', error);
+    settings = {
+      siteTitle: 'Blog',
+      siteDescription: '',
+    } as Awaited<ReturnType<typeof getCachedSettings>>;
+    posts = [];
+  }
 
   const feed = new Feed({
     title: settings.siteTitle || 'Blog',
