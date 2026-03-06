@@ -85,22 +85,40 @@ export function MemoActions({ memoId, content: initialContent, hasS3 = false }: 
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = Array.from(e.target.files ?? []);
+        if (files.length === 0) return;
 
         setIsUploading(true);
         setError(null);
 
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            const result = await uploadMedia(formData);
+            const markdownLines: string[] = [];
+            const errors: string[] = [];
 
-            if (result.success && result.data) {
-                const imageMarkdown = `![${file.name}](${result.data.url})`;
-                setContent(prev => prev + (prev ? '\n' : '') + imageMarkdown);
-            } else {
-                setError(result.success ? tCommon('uploadFailed') : result.error);
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                const result = await uploadMedia(formData);
+
+                if (result.success && result.data) {
+                    markdownLines.push(`![${file.name}](${result.data.url})`);
+                } else if (!result.success) {
+                    errors.push(result.error);
+                }
+            }
+
+            if (markdownLines.length > 0) {
+                setContent(prev => prev + (prev ? '\n' : '') + markdownLines.join('\n'));
+            }
+
+            if (errors.length > 0) {
+                const successCount = markdownLines.length;
+                const failCount = errors.length;
+                const reason = errors[0];
+                const summary = successCount > 0
+                    ? `已上传 ${successCount} 张，${failCount} 张失败。`
+                    : `上传失败，共 ${failCount} 张。`;
+                setError(reason ? `${summary} 原因：${reason}` : summary);
             }
         } catch {
             setError(tCommon('uploadFailedRetry'));
@@ -194,6 +212,7 @@ export function MemoActions({ memoId, content: initialContent, hasS3 = false }: 
                                                 accept="image/*"
                                                 onChange={handleImageUpload}
                                                 className="hidden"
+                                                multiple
                                             />
                                             <Button
                                                 type="button"

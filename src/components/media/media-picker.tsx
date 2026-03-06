@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition, useRef } from 'react';
+import { useState, useEffect, useTransition, useRef, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,46 +9,56 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Upload, Image as ImageIcon, Loader2, Check, FileText } from "lucide-react";
+import { Upload, Image as ImageIcon, Loader2, Check } from "lucide-react";
 import { getMedia, uploadMedia, type Media } from "@/app/actions/media";
 import { hasS3Config } from "@/app/actions/settings";
 import { cn } from "@/lib/utils";
 
 interface MediaPickerProps {
   onSelect: (url: string, alt?: string) => void;
+  onSelectMultiple?: (items: Array<{ url: string; alt?: string }>) => void;
   trigger?: React.ReactNode;
   className?: string;
+  multiple?: boolean;
 }
 
-export function MediaPicker({ onSelect, trigger, className }: MediaPickerProps) {
+export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, multiple = false }: MediaPickerProps) {
   const [open, setOpen] = useState(false);
   const [mediaList, setMediaList] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasS3, setHasS3] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedIds = useMemo(() => new Set(selectedMedia.map((media) => media.id)), [selectedMedia]);
 
   useEffect(() => {
     if (open) {
       loadData();
+    } else {
+      setSelectedMedia([]);
     }
   }, [open]);
 
-  async function loadData() {
+  async function loadData(): Promise<Media[]> {
     setIsLoading(true);
     setError(null);
     try {
       const s3Configured = await hasS3Config();
       setHasS3(s3Configured);
       
-      if (s3Configured) {
-        const data = await getMedia();
-        setMediaList(data);
+      if (!s3Configured) {
+        setMediaList([]);
+        return [];
       }
+
+      const data = await getMedia();
+      setMediaList(data);
+      return data;
     } catch {
       setError('Failed to load media');
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -59,24 +69,51 @@ export function MediaPicker({ onSelect, trigger, className }: MediaPickerProps) 
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
 
     setError(null);
-    const formData = new FormData();
-    formData.append('file', file);
 
     startTransition(async () => {
-      const result = await uploadMedia(formData);
-      if (result.success && result.data) {
-        await loadData();
-        // Auto-select the newly uploaded file
-        const newMedia = mediaList.find(m => m.id === result.data?.id);
-        if (newMedia) {
-          setSelectedMedia(newMedia);
+      const uploadedIds: string[] = [];
+      const errors: string[] = [];
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const result = await uploadMedia(formData);
+        if (result.success && result.data) {
+          uploadedIds.push(result.data.id);
+        } else if (!result.success) {
+          errors.push(result.error);
         }
-      } else if (!result.success) {
-        setError(result.error);
+      }
+
+      const data = await loadData();
+      if (uploadedIds.length > 0) {
+        const newlyUploaded = data.filter((media) => uploadedIds.includes(media.id));
+        setSelectedMedia((prev) => {
+          if (!multiple) {
+            return newlyUploaded.slice(0, 1);
+          }
+          const merged = [...prev];
+          for (const media of newlyUploaded) {
+            if (!merged.some((item) => item.id === media.id)) {
+              merged.push(media);
+            }
+          }
+          return merged;
+        });
+      }
+
+      if (errors.length > 0) {
+        const successCount = uploadedIds.length;
+        const failCount = errors.length;
+        const reason = errors[0];
+        const summary = successCount > 0
+          ? `已上传 ${successCount} 张，${failCount} 张失败。`
+          : `上传失败，共 ${failCount} 张。`;
+        setError(reason ? `${summary} 原因：${reason}` : summary);
       }
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -85,11 +122,37 @@ export function MediaPicker({ onSelect, trigger, className }: MediaPickerProps) 
   }
 
   function handleSelect() {
-    if (selectedMedia) {
-      onSelect(selectedMedia.url, selectedMedia.filename);
-      setOpen(false);
-      setSelectedMedia(null);
+    if (selectedMedia.length === 0) return;
+
+    if (multiple && onSelectMultiple) {
+      onSelectMultiple(
+        selectedMedia.map((media) => ({ url: media.url, alt: media.filename }))
+      );
+    } else if (multiple) {
+      selectedMedia.forEach((media) => onSelect(media.url, media.filename));
+    } else {
+      const media = selectedMedia[0];
+      if (media) {
+        onSelect(media.url, media.filename);
+      }
     }
+
+    setOpen(false);
+    setSelectedMedia([]);
+  }
+
+  function toggleSelect(media: Media) {
+    if (!multiple) {
+      setSelectedMedia([media]);
+      return;
+    }
+
+    setSelectedMedia((prev) => {
+      if (prev.some((item) => item.id === media.id)) {
+        return prev.filter((item) => item.id !== media.id);
+      }
+      return [...prev, media];
+    });
   }
 
   function isImageFile(mimeType: string | null): boolean {
@@ -136,6 +199,7 @@ export function MediaPicker({ onSelect, trigger, className }: MediaPickerProps) 
                 className="hidden"
                 onChange={handleFileChange}
                 accept="image/*"
+                multiple={multiple}
               />
               <Button
                 variant="outline"
@@ -164,10 +228,10 @@ export function MediaPicker({ onSelect, trigger, className }: MediaPickerProps) 
                     <button
                       key={media.id}
                       type="button"
-                      onClick={() => setSelectedMedia(media)}
+                      onClick={() => toggleSelect(media)}
                       className={cn(
                         "aspect-square rounded-lg overflow-hidden border-2 transition-all relative",
-                        selectedMedia?.id === media.id
+                        selectedIds.has(media.id)
                           ? "border-blue-500 ring-2 ring-blue-200"
                           : "border-transparent hover:border-gray-300"
                       )}
@@ -178,7 +242,7 @@ export function MediaPicker({ onSelect, trigger, className }: MediaPickerProps) 
                         alt={media.filename}
                         className="w-full h-full object-cover"
                       />
-                      {selectedMedia?.id === media.id && (
+                      {selectedIds.has(media.id) && (
                         <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-1">
                           <Check className="h-3 w-3 text-white" />
                         </div>
@@ -195,10 +259,10 @@ export function MediaPicker({ onSelect, trigger, className }: MediaPickerProps) 
               </Button>
               <Button
                 onClick={handleSelect}
-                disabled={!selectedMedia}
+                disabled={selectedMedia.length === 0}
                 className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90"
               >
-                插入选中图片
+                插入选中图片{multiple && selectedMedia.length > 0 ? ` (${selectedMedia.length})` : ''}
               </Button>
             </div>
           </>

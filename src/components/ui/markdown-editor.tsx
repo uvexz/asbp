@@ -28,25 +28,46 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const [isPreview, setIsPreview] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
 
     setIsUploading(true);
+    setUploadError(null);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const result = await uploadMedia(formData);
-      
-      if (result.success && result.data) {
-        // Insert markdown image syntax at cursor or end
-        const imageMarkdown = `![${file.name}](${result.data.url})`;
-        onChange(value + (value ? '\n' : '') + imageMarkdown);
+      const markdownLines: string[] = [];
+      const errors: string[] = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const result = await uploadMedia(formData);
+        
+        if (result.success && result.data) {
+          markdownLines.push(`![${file.name}](${result.data.url})`);
+        } else if (!result.success) {
+          errors.push(result.error);
+        }
+      }
+
+      if (markdownLines.length > 0) {
+        onChange(value + (value ? '\n' : '') + markdownLines.join('\n'));
+      }
+
+      if (errors.length > 0) {
+        const successCount = markdownLines.length;
+        const failCount = errors.length;
+        const reason = errors[0];
+        const summary = successCount > 0
+          ? `已上传 ${successCount} 张，${failCount} 张失败。`
+          : `上传失败，共 ${failCount} 张。`;
+        setUploadError(reason ? `${summary} 原因：${reason}` : summary);
       }
     } catch (error) {
       console.error('Upload failed:', error);
+      setUploadError('上传失败，请重试');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -86,6 +107,7 @@ export function MarkdownEditor({
               accept="image/*"
               onChange={handleImageUpload}
               className="hidden"
+              multiple
             />
             <Button
               type="button"
@@ -102,9 +124,16 @@ export function MarkdownEditor({
               <span className="ml-1">上传</span>
             </Button>
             <MediaPicker
+              multiple
               onSelect={(url, alt) => {
                 const imageMarkdown = `![${alt || 'image'}](${url})`;
                 onChange(value + (value ? '\n' : '') + imageMarkdown);
+              }}
+              onSelectMultiple={(items) => {
+                const markdown = items
+                  .map((item) => `![${item.alt || 'image'}](${item.url})`)
+                  .join('\n');
+                onChange(value + (value ? '\n' : '') + markdown);
               }}
               trigger={
                 <Button type="button" variant="outline" size="sm">
@@ -116,6 +145,10 @@ export function MarkdownEditor({
           </div>
         )}
       </div>
+
+      {uploadError && (
+        <p className="text-sm text-red-500">{uploadError}</p>
+      )}
 
       {isPreview ? (
         <div
