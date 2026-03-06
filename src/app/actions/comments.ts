@@ -10,23 +10,24 @@ import { commentSchema } from '@/lib/validations';
 import { isAdminAuthorized } from '@/lib/server-utils';
 import { getCachedPostComments, invalidateCommentsCache } from '@/lib/cache-layer';
 
-export type CommentActionResult = 
-  | { success: true; autoApproved?: boolean }
-  | { success: false; error: string };
+export type CommentActionResult =
+    | { success: true; autoApproved?: boolean }
+    | { success: false; error: string };
 
 async function requireAdmin() {
     const session = await auth.api.getSession({
         headers: await headers()
     });
-    
+
     if (!isAdminAuthorized(session)) {
         throw new Error('Unauthorized');
     }
-    
+
     return session;
 }
 
 export async function getComments(page: number = 1, pageSize: number = 20) {
+    await requireAdmin();
     const validPage = Math.max(1, page);
     const validPageSize = Math.max(1, Math.min(100, pageSize));
     const offset = (validPage - 1) * validPageSize;
@@ -60,17 +61,17 @@ export async function getComments(page: number = 1, pageSize: number = 20) {
 
 export async function approveComment(id: string, addToWhitelistFlag: boolean = false) {
     await requireAdmin();
-    
+
     const comment = await db.query.comments.findFirst({
         where: eq(comments.id, id),
         columns: { guestEmail: true, postId: true }
     });
-    
+
     if (addToWhitelistFlag && comment?.guestEmail) {
         const { addToWhitelist } = await import('@/lib/spam-detector');
         await addToWhitelist(comment.guestEmail);
     }
-    
+
     await db.update(comments).set({ status: 'approved' }).where(eq(comments.id, id));
     if (comment?.postId) {
         invalidateCommentsCache(comment.postId);
@@ -123,7 +124,7 @@ export async function createComment(postId: string, formData: FormData, parentId
     } else {
         // Guest user - validate guest fields
         const validationResult = commentSchema.safeParse({ content, guestName, guestEmail, guestWebsite });
-        
+
         if (!validationResult.success) {
             const errorMessages = validationResult.error.issues
                 .map(issue => issue.message)
@@ -132,7 +133,7 @@ export async function createComment(postId: string, formData: FormData, parentId
         }
 
         // Check spam using AI
-        const { checkCommentSpam, addToWhitelist } = await import('@/lib/spam-detector');
+        const { checkCommentSpam } = await import('@/lib/spam-detector');
         const spamResult = await checkCommentSpam(
             validationResult.data.content,
             validationResult.data.guestName,
@@ -185,14 +186,14 @@ export async function createComment(postId: string, formData: FormData, parentId
     }
 
     revalidatePath('/admin/comments');
-    
+
     return { success: true, autoApproved: true };
 }
 
 async function sendReplyNotification(parentCommentId: string, newCommentId: string, postId: string) {
     const { getResendClient } = await import('@/lib/resend');
     const { getSettings } = await import('@/app/actions/settings');
-    
+
     const [resend, settings] = await Promise.all([
         getResendClient(),
         getSettings()
@@ -265,7 +266,7 @@ async function sendAdminNotification(commentId: string, postId: string) {
     const { getResendClient } = await import('@/lib/resend');
     const { getSettings } = await import('@/app/actions/settings');
     const { users } = await import('@/db/schema');
-    
+
     const [resend, settings] = await Promise.all([
         getResendClient(),
         getSettings()

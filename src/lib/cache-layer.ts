@@ -5,7 +5,7 @@
 
 import { unstable_cache, revalidateTag } from 'next/cache';
 import { db } from './db';
-import { settings, navItems, tags, posts, postsTags, comments } from '@/db/schema';
+import { settings, navItems, tags, posts, postsTags } from '@/db/schema';
 import { eq, asc, and, desc, count } from 'drizzle-orm';
 import { decrypt } from './crypto';
 import { getRedis, isRedisEnabled, REDIS_KEYS, REDIS_TTL } from './redis';
@@ -30,7 +30,7 @@ const DEFAULT_REVALIDATE = 3600; // 1 hour
 async function getFromRedis<T>(key: string): Promise<T | null> {
   const redis = getRedis();
   if (!redis) return null;
-  
+
   try {
     const data = await redis.get(key);
     return data ? JSON.parse(data) : null;
@@ -43,7 +43,7 @@ async function getFromRedis<T>(key: string): Promise<T | null> {
 async function setToRedis<T>(key: string, value: T, ttl: number): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
-  
+
   try {
     await redis.setex(key, ttl, JSON.stringify(value));
   } catch (err) {
@@ -54,7 +54,7 @@ async function setToRedis<T>(key: string, value: T, ttl: number): Promise<void> 
 async function deleteFromRedis(pattern: string): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
-  
+
   try {
     if (pattern.includes('*')) {
       const keys = await redis.keys(pattern);
@@ -75,7 +75,7 @@ async function deleteFromRedis(pattern: string): Promise<void> {
 
 async function fetchSettings() {
   const data = await db.select().from(settings).where(eq(settings.id, 1)).limit(1);
-  
+
   if (data.length === 0) {
     return {
       siteTitle: 'My Awesome Blog',
@@ -102,7 +102,7 @@ async function fetchSettings() {
       umamiApiSecret: '',
     };
   }
-  
+
   const row = data[0];
   return {
     ...row,
@@ -125,7 +125,7 @@ export async function getCachedSettings() {
   if (isRedisEnabled()) {
     const cached = await getFromRedis<Awaited<ReturnType<typeof fetchSettings>>>(REDIS_KEYS.SETTINGS);
     if (cached) return cached;
-    
+
     const data = await fetchSettings();
     await setToRedis(REDIS_KEYS.SETTINGS, data, REDIS_TTL.SETTINGS);
     return data;
@@ -151,7 +151,7 @@ export async function getCachedNavItems() {
   if (isRedisEnabled()) {
     const cached = await getFromRedis<Awaited<ReturnType<typeof fetchNavItems>>>(REDIS_KEYS.NAVIGATION);
     if (cached) return cached;
-    
+
     const data = await fetchNavItems();
     await setToRedis(REDIS_KEYS.NAVIGATION, data, REDIS_TTL.NAVIGATION);
     return data;
@@ -179,7 +179,7 @@ export async function getCachedTags() {
   if (isRedisEnabled()) {
     const cached = await getFromRedis<Awaited<ReturnType<typeof fetchTags>>>(REDIS_KEYS.TAGS);
     if (cached) return cached;
-    
+
     const data = await fetchTags();
     await setToRedis(REDIS_KEYS.TAGS, data, REDIS_TTL.TAGS);
     return data;
@@ -205,14 +205,14 @@ export async function getCachedPostBySlug(slug: string) {
   if (isRedisEnabled()) {
     const cached = await getFromRedis<Awaited<ReturnType<typeof fetchPostBySlug>>>(REDIS_KEYS.POST(slug));
     if (cached) return cached;
-    
+
     const data = await fetchPostBySlug(slug);
     if (data) {
       await setToRedis(REDIS_KEYS.POST(slug), data, REDIS_TTL.POST);
     }
     return data;
   }
-  
+
   return unstable_cache(
     () => fetchPostBySlug(slug),
     [`post-${slug}`],
@@ -233,7 +233,7 @@ async function fetchPublishedPosts(page: number = 1, pageSize: number = 10) {
     .select({ count: count() })
     .from(posts)
     .where(and(eq(posts.published, true), eq(posts.postType, 'post')));
-  
+
   const total = totalResult?.count ?? 0;
   const totalPages = Math.ceil(total / validPageSize);
 
@@ -262,7 +262,7 @@ export async function getCachedPublishedPosts(page: number = 1, pageSize: number
     const cacheKey = REDIS_KEYS.POSTS_LIST(page, pageSize);
     const cached = await getFromRedis<Awaited<ReturnType<typeof fetchPublishedPosts>>>(cacheKey);
     if (cached) return cached;
-    
+
     const data = await fetchPublishedPosts(page, pageSize);
     await setToRedis(cacheKey, data, REDIS_TTL.POSTS_LIST);
     return data;
@@ -439,7 +439,7 @@ export async function getCachedSitemapPosts() {
   if (isRedisEnabled()) {
     const cached = await getFromRedis<Awaited<ReturnType<typeof fetchSitemapPosts>>>(REDIS_KEYS.SITEMAP_POSTS);
     if (cached) return cached;
-    
+
     const data = await fetchSitemapPosts();
     await setToRedis(REDIS_KEYS.SITEMAP_POSTS, data, REDIS_TTL.SITEMAP);
     return data;
@@ -461,7 +461,7 @@ export async function getCachedSitemapTags() {
   if (isRedisEnabled()) {
     const cached = await getFromRedis<Awaited<ReturnType<typeof fetchSitemapTags>>>(REDIS_KEYS.SITEMAP_TAGS);
     if (cached) return cached;
-    
+
     const data = await fetchSitemapTags();
     await setToRedis(REDIS_KEYS.SITEMAP_TAGS, data, REDIS_TTL.SITEMAP);
     return data;
@@ -493,7 +493,7 @@ export async function getCachedFeedPosts(limit: number = 20) {
     const cacheKey = REDIS_KEYS.FEED_POSTS(limit);
     const cached = await getFromRedis<Awaited<ReturnType<typeof fetchFeedPosts>>>(cacheKey);
     if (cached) return cached;
-    
+
     const data = await fetchFeedPosts(limit);
     await setToRedis(cacheKey, data, REDIS_TTL.FEED);
     return data;

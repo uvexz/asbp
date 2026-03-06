@@ -1,7 +1,6 @@
 import { getUserById, updateUser } from "@/app/actions/users";
 import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
     InputGroup,
     InputGroupAddon,
@@ -13,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/user-utils";
 import Link from "next/link";
-import { ArrowLeft, User, Mail, Globe, FileText, Shield, Image } from "lucide-react";
+import { ArrowLeft, User, Mail, Globe, FileText, Shield, Image as ImageIcon } from "lucide-react";
 import { getTranslations } from 'next-intl/server';
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -50,7 +49,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
 
     async function handleSubmit(formData: FormData) {
         'use server';
-        
+
         const name = formData.get('name') as string;
         const image = formData.get('image') as string;
         const bio = formData.get('bio') as string;
@@ -91,11 +90,10 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                                 <Mail className="size-4" />
                                 {user.email}
                             </p>
-                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                                user.role === 'admin' 
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
-                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
-                            }`}>
+                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${user.role === 'admin'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                                }`}>
                                 {user.role === 'admin' ? t('roleAdmin') : t('roleUser')}
                             </span>
                         </div>
@@ -123,7 +121,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                                 </InputGroup>
                                 <InputGroup>
                                     <InputGroupAddon>
-                                        <InputGroupText><Image className="size-4" /></InputGroupText>
+                                        <InputGroupText><ImageIcon className="size-4" /></InputGroupText>
                                     </InputGroupAddon>
                                     <InputGroupInput
                                         id="image"
@@ -191,10 +189,10 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                     {isOwnProfile && (
                         <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-800">
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tAuth('security')}</h2>
-                            
+
                             {/* Change Password */}
                             <ChangePassword />
-                            
+
                             {/* Passkey Management */}
                             <PasskeyManager initialPasskeys={userPasskeys} />
                         </div>

@@ -32,7 +32,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   // Debounced search
   useEffect(() => {
     if (!query || query.length < 2) {
-      setResults([]);
+      setTimeout(() => setResults([]), 0);
       return;
     }
 
@@ -50,9 +50,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   // Reset on close
   useEffect(() => {
     if (!open) {
-      setQuery('');
-      setResults([]);
-      setSelectedIndex(0);
+      setTimeout(() => {
+        setQuery('');
+        setResults([]);
+        setSelectedIndex(0);
+      }, 0);
     }
   }, [open]);
 

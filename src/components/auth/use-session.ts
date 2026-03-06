@@ -48,7 +48,7 @@ export function useSession(options: UseSessionOptions = {}) {
     if (!enabled) return;
     if (data) return;
     if (cachedSession) {
-      setData(cachedSession);
+      setTimeout(() => setData(cachedSession!), 0);
       return;
     }
 

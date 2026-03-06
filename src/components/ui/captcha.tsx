@@ -41,12 +41,12 @@ export function Captcha({ onVerify, className }: CaptchaProps) {
   }, [onVerify]);
 
   useEffect(() => {
-    refresh();
+    setTimeout(refresh, 0);
   }, [refresh]);
 
   const handleChange = (value: string) => {
     setUserAnswer(value);
-    
+
     if (question && value.trim() !== '') {
       const numAnswer = parseInt(value, 10);
       const valid = !isNaN(numAnswer) && numAnswer === question.answer;

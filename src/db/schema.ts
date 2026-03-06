@@ -1,5 +1,5 @@
 
-import { pgTable, text, timestamp, boolean, uuid, integer, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, uuid, integer, primaryKey, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const users = pgTable('user', {
@@ -85,7 +85,12 @@ export const posts = pgTable('post', {
   publishedAt: timestamp('publishedAt'), // 自定义发布时间
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-});
+}, (t) => [
+  index('posts_author_id_idx').on(t.authorId),
+  index('posts_published_idx').on(t.published),
+  index('posts_post_type_idx').on(t.postType),
+  index('posts_created_at_idx').on(t.createdAt),
+]);
 
 export const postsRelations = relations(posts, ({ one, many }) => ({
   author: one(users, {
@@ -107,7 +112,12 @@ export const comments = pgTable('comment', {
   guestWebsite: text('guestWebsite'),
   status: text('status').default('pending'), // approved, rejected, pending
   createdAt: timestamp('createdAt').notNull().defaultNow(),
-});
+}, (t) => [
+  index('comments_post_id_idx').on(t.postId),
+  index('comments_user_id_idx').on(t.userId),
+  index('comments_status_idx').on(t.status),
+  index('comments_created_at_idx').on(t.createdAt),
+]);
 
 export const commentsRelations = relations(comments, ({ one }) => ({
   post: one(posts, {

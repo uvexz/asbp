@@ -16,7 +16,7 @@ export function ImageLightbox({ src, alt, className }: ImageLightboxProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
   }, []);
 
   const openLightbox = useCallback(() => setIsOpen(true), []);
@@ -24,14 +24,14 @@ export function ImageLightbox({ src, alt, className }: ImageLightboxProps) {
 
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeLightbox();
     };
-    
+
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
-    
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
@@ -50,6 +50,7 @@ export function ImageLightbox({ src, alt, className }: ImageLightboxProps) {
       >
         <X className="h-6 w-6" />
       </button>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt || ''}
@@ -62,6 +63,7 @@ export function ImageLightbox({ src, alt, className }: ImageLightboxProps) {
 
   return (
     <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt || ''}

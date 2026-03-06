@@ -85,6 +85,13 @@
       "when": 1765895019174,
       "tag": "0011_quick_cobalt_man",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772810620676,
+      "tag": "0012_wooden_maddog",
+      "breakpoints": true
     }
   ]
 }
