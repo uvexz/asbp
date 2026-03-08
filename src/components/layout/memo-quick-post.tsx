@@ -69,7 +69,7 @@ export function MemoQuickPost({ className, hasS3 = false }: MemoQuickPostProps) 
         const formData = new FormData();
         formData.append('file', file);
         const result = await uploadMedia(formData);
-        
+
         if (result.success && result.data) {
           markdownLines.push(`![${file.name}](${result.data.url})`);
         } else if (!result.success) {
@@ -86,9 +86,9 @@ export function MemoQuickPost({ className, hasS3 = false }: MemoQuickPostProps) 
         const failCount = errors.length;
         const reason = errors[0];
         const summary = successCount > 0
-          ? `已上传 ${successCount} 张，${failCount} 张失败。`
-          : `上传失败，共 ${failCount} 张。`;
-        setError(reason ? `${summary} 原因：${reason}` : summary);
+          ? tCommon('uploadPartial', { successCount, failCount })
+          : tCommon('uploadFailedCount', { failCount });
+        setError(reason ? `${summary} ${tCommon('uploadReason', { reason })}` : summary);
       }
     } catch {
       setError(tCommon('uploadFailedRetry'));

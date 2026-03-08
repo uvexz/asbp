@@ -3,7 +3,6 @@ import { db } from '@/lib/db';
 import { posts, comments, tags, postsTags, media, navItems, settings } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { eq } from 'drizzle-orm';
 import { revalidateImportedContent } from '@/lib/import-revalidation';
 
 // Helper to convert date strings to Date objects
@@ -11,6 +10,17 @@ function parseDate(value: string | Date | null | undefined): Date | null {
   if (!value) return null;
   if (value instanceof Date) return value;
   return new Date(value);
+}
+
+interface ImportCountResult {
+  attempted: number;
+  inserted: number;
+  skipped: number;
+}
+
+interface SettingsImportResult {
+  imported: boolean;
+  action?: 'created' | 'updated';
 }
 
 interface ImportData {
@@ -66,16 +76,33 @@ interface ImportData {
   };
 }
 
+function createCountResult(): ImportCountResult {
+  return {
+    attempted: 0,
+    inserted: 0,
+    skipped: 0,
+  };
+}
+
+function recordImportAttempt(result: ImportCountResult, inserted: boolean) {
+  result.attempted += 1;
+  if (inserted) {
+    result.inserted += 1;
+  } else {
+    result.skipped += 1;
+  }
+}
+
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  
+
   if (!session?.user || session.user.role !== 'admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const importData: ImportData = await request.json();
-    
+
     if (!importData.data) {
       return NextResponse.json({ error: 'Invalid import data' }, { status: 400 });
     }
@@ -83,25 +110,34 @@ export async function POST(request: Request) {
     const currentUserId = session.user.id;
 
     const results = {
-      posts: 0,
-      comments: 0,
-      tags: 0,
-      postsTags: 0,
-      navItems: 0,
-      media: 0,
-      settings: false,
+      posts: createCountResult(),
+      comments: createCountResult(),
+      tags: createCountResult(),
+      postsTags: createCountResult(),
+      navItems: createCountResult(),
+      media: createCountResult(),
+      settings: { imported: false } as SettingsImportResult,
     };
+
+    const insertedPosts: NonNullable<ImportData['data']['posts']> = [];
+    const insertedComments: NonNullable<ImportData['data']['comments']> = [];
+    const insertedTags: NonNullable<ImportData['data']['tags']> = [];
 
     // Import tags first (posts depend on them)
     if (importData.data.tags?.length) {
       for (const tag of importData.data.tags) {
         try {
-          await db.insert(tags).values({
+          const insertedRows = await db.insert(tags).values({
             id: tag.id,
             name: tag.name,
             slug: tag.slug,
-          }).onConflictDoNothing();
-          results.tags++;
+          }).onConflictDoNothing().returning({ id: tags.id });
+
+          const inserted = insertedRows.length > 0;
+          recordImportAttempt(results.tags, inserted);
+          if (inserted) {
+            insertedTags.push(tag);
+          }
         } catch { /* skip duplicates */ }
       }
     }
@@ -110,19 +146,24 @@ export async function POST(request: Request) {
     if (importData.data.posts?.length) {
       for (const post of importData.data.posts) {
         try {
-          await db.insert(posts).values({
+          const insertedRows = await db.insert(posts).values({
             id: post.id,
             title: post.title,
             slug: post.slug,
             content: post.content,
             published: post.published ?? false,
             postType: post.postType as 'post' | 'page' | 'memo' | null,
-            authorId: currentUserId, // Use current user ID
+            authorId: currentUserId,
             publishedAt: parseDate(post.publishedAt),
             createdAt: parseDate(post.createdAt) || new Date(),
             updatedAt: parseDate(post.updatedAt) || new Date(),
-          }).onConflictDoNothing();
-          results.posts++;
+          }).onConflictDoNothing().returning({ id: posts.id });
+
+          const inserted = insertedRows.length > 0;
+          recordImportAttempt(results.posts, inserted);
+          if (inserted) {
+            insertedPosts.push(post);
+          }
         } catch { /* skip duplicates */ }
       }
     }
@@ -131,11 +172,12 @@ export async function POST(request: Request) {
     if (importData.data.postsTags?.length) {
       for (const pt of importData.data.postsTags) {
         try {
-          await db.insert(postsTags).values({
+          const insertedRows = await db.insert(postsTags).values({
             postId: pt.postId,
             tagId: pt.tagId,
-          }).onConflictDoNothing();
-          results.postsTags++;
+          }).onConflictDoNothing().returning({ postId: postsTags.postId });
+
+          recordImportAttempt(results.postsTags, insertedRows.length > 0);
         } catch { /* skip duplicates */ }
       }
     }
@@ -144,19 +186,24 @@ export async function POST(request: Request) {
     if (importData.data.comments?.length) {
       for (const comment of importData.data.comments) {
         try {
-          await db.insert(comments).values({
+          const insertedRows = await db.insert(comments).values({
             id: comment.id,
             content: comment.content,
             postId: comment.postId,
-            userId: comment.userId ? currentUserId : null, // Map to current user
+            userId: comment.userId ? currentUserId : null,
             parentId: comment.parentId,
             guestName: comment.guestName,
             guestEmail: comment.guestEmail,
             guestWebsite: comment.guestWebsite,
             status: comment.status,
             createdAt: parseDate(comment.createdAt) || new Date(),
-          }).onConflictDoNothing();
-          results.comments++;
+          }).onConflictDoNothing().returning({ id: comments.id });
+
+          const inserted = insertedRows.length > 0;
+          recordImportAttempt(results.comments, inserted);
+          if (inserted) {
+            insertedComments.push(comment);
+          }
         } catch { /* skip duplicates */ }
       }
     }
@@ -165,15 +212,16 @@ export async function POST(request: Request) {
     if (importData.data.navItems?.length) {
       for (const nav of importData.data.navItems) {
         try {
-          await db.insert(navItems).values({
+          const insertedRows = await db.insert(navItems).values({
             id: nav.id,
             label: nav.label,
             url: nav.url,
             openInNewTab: nav.openInNewTab ?? false,
             sortOrder: nav.sortOrder,
             createdAt: parseDate(nav.createdAt) || new Date(),
-          }).onConflictDoNothing();
-          results.navItems++;
+          }).onConflictDoNothing().returning({ id: navItems.id });
+
+          recordImportAttempt(results.navItems, insertedRows.length > 0);
         } catch { /* skip duplicates */ }
       }
     }
@@ -182,36 +230,55 @@ export async function POST(request: Request) {
     if (importData.data.media?.length) {
       for (const m of importData.data.media) {
         try {
-          await db.insert(media).values({
+          const insertedRows = await db.insert(media).values({
             id: m.id,
             url: m.url,
             filename: m.filename,
             mimeType: m.mimeType,
             size: m.size,
             createdAt: parseDate(m.createdAt) || new Date(),
-          }).onConflictDoNothing();
-          results.media++;
+          }).onConflictDoNothing().returning({ id: media.id });
+
+          recordImportAttempt(results.media, insertedRows.length > 0);
         } catch { /* skip duplicates */ }
       }
     }
 
-    // Import settings (update existing)
+    // Import settings with singleton upsert
     if (importData.data.settings) {
       const { siteTitle, siteDescription, allowRegistration } = importData.data.settings;
-      await db.update(settings).set({
-        ...(siteTitle && { siteTitle }),
-        ...(siteDescription && { siteDescription }),
-        ...(allowRegistration !== undefined && { allowRegistration }),
-      }).where(eq(settings.id, 1));
-      results.settings = true;
+      const settingsUpdate = {
+        ...(siteTitle !== undefined && { siteTitle: siteTitle ?? null }),
+        ...(siteDescription !== undefined && { siteDescription: siteDescription ?? null }),
+        ...(allowRegistration !== undefined && { allowRegistration: allowRegistration ?? null }),
+      };
+
+      if (Object.keys(settingsUpdate).length > 0) {
+        const existingSettings = await db.query.settings.findFirst({
+          columns: { id: true },
+        });
+
+        await db.insert(settings).values({
+          id: 1,
+          ...settingsUpdate,
+        }).onConflictDoUpdate({
+          target: settings.id,
+          set: settingsUpdate,
+        });
+
+        results.settings = {
+          imported: true,
+          action: existingSettings ? 'updated' : 'created',
+        };
+      }
     }
 
     await revalidateImportedContent({
-      posts: importData.data.posts,
-      comments: importData.data.comments,
-      tags: importData.data.tags,
-      navItemsImported: (importData.data.navItems?.length || 0) > 0,
-      settingsImported: results.settings,
+      posts: insertedPosts,
+      comments: insertedComments,
+      tags: insertedTags,
+      navItemsImported: results.navItems.inserted > 0,
+      settingsImported: results.settings.imported,
     });
 
     return NextResponse.json({ success: true, results });

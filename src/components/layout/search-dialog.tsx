@@ -11,6 +11,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Search, FileText, Loader2, Command } from 'lucide-react';
 import { searchPosts, type SearchResult } from '@/app/actions/search';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface SearchDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const [isPending, startTransition] = useTransition();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
+  const tBlog = useTranslations('blog');
 
   const navigateTo = useCallback((slug: string) => {
     onOpenChange(false);
@@ -76,7 +78,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
         <VisuallyHidden>
-          <DialogTitle>搜索文章</DialogTitle>
+          <DialogTitle>{tBlog('searchDialogTitle')}</DialogTitle>
         </VisuallyHidden>
         {/* Search Input */}
         <div className="flex items-center border-b px-3">
@@ -86,7 +88,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="搜索文章..."
+            placeholder={tBlog('searchPostsPlaceholder')}
             className="flex-1 h-12 px-3 bg-transparent outline-none text-sm placeholder:text-muted-foreground"
             autoFocus
           />
@@ -97,7 +99,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         <div className="max-h-80 overflow-y-auto">
           {query.length >= 2 && results.length === 0 && !isPending && (
             <div className="p-8 text-center text-muted-foreground text-sm">
-              未找到相关文章
+              {tBlog('searchNoResults')}
             </div>
           )}
 
@@ -132,7 +134,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
           {query.length < 2 && (
             <div className="p-8 text-center text-muted-foreground text-sm">
-              输入至少 2 个字符开始搜索
+              {tBlog('searchMinCharacters')}
             </div>
           )}
         </div>
@@ -141,13 +143,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         <div className="border-t px-3 py-2 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">↑↓</kbd>
-            <span>导航</span>
+            <span>{tBlog('searchNavigate')}</span>
             <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Enter</kbd>
-            <span>打开</span>
+            <span>{tBlog('searchOpen')}</span>
           </div>
           <div className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Esc</kbd>
-            <span>关闭</span>
+            <span>{tBlog('searchClose')}</span>
           </div>
         </div>
       </DialogContent>
@@ -165,6 +167,7 @@ interface SearchTriggerProps {
  */
 export function SearchTrigger({ className, variant = 'default' }: SearchTriggerProps) {
   const [open, setOpen] = useState(false);
+  const tCommon = useTranslations('common');
 
   // Global keyboard shortcut: Cmd+K / Ctrl+K
   useEffect(() => {
@@ -211,7 +214,7 @@ export function SearchTrigger({ className, variant = 'default' }: SearchTriggerP
         )}
       >
         <Search className="h-4 w-4" />
-        <span className="hidden sm:inline">搜索</span>
+        <span className="hidden sm:inline">{tCommon('search')}</span>
         <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-muted rounded text-[10px]">
           <Command className="h-3 w-3" />K
         </kbd>

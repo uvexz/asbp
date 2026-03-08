@@ -48,8 +48,11 @@ interface PostsTableProps {
         post: string;
         page: string;
         memo: string;
-        search?: string;
-        searchPlaceholder?: string;
+        search: string;
+        searchPlaceholder: string;
+        searchResults: string;
+        deleteContentTitle: string;
+        deleteContentDescription: (title: string) => string;
     };
 }
 
@@ -97,7 +100,7 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="text"
-                        placeholder={labels.searchPlaceholder || '搜索标题或内容...'}
+                        placeholder={labels.searchPlaceholder}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-9 pr-9"
@@ -114,14 +117,14 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
                     )}
                 </div>
                 <Button type="submit" variant="secondary" disabled={isPending}>
-                    {labels.search || '搜索'}
+                    {labels.search}
                 </Button>
             </form>
 
             {/* Results info */}
             {searchQuery && (
                 <p className="text-sm text-muted-foreground">
-                    搜索 &quot;{searchQuery}&quot; 找到 {totalResults ?? posts.length} 条结果
+                    {labels.searchResults.replace('{query}', searchQuery).replace('{count}', String(totalResults ?? posts.length))}
                 </p>
             )}
 
@@ -147,8 +150,8 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
                                             onDelete={async () => {
                                                 await deletePost(post.id);
                                             }}
-                                            title="删除内容"
-                                            description={`确定要删除「${isMemo ? post.content.slice(0, 20) : post.title}」吗？此操作无法撤销。`}
+                                            title={labels.deleteContentTitle}
+                                            description={labels.deleteContentDescription(isMemo ? post.content.slice(0, 20) : post.title)}
                                         />
                                     </div>
                                 </div>
@@ -210,8 +213,8 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
                                                 onDelete={async () => {
                                                     await deletePost(post.id);
                                                 }}
-                                                title="删除内容"
-                                                description={`确定要删除「${isMemo ? post.content.slice(0, 20) : post.title}」吗？此操作无法撤销。`}
+                                                title={labels.deleteContentTitle}
+                                                description={labels.deleteContentDescription(isMemo ? post.content.slice(0, 20) : post.title)}
                                             />
                                         </div>
                                     </TableCell>

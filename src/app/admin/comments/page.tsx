@@ -30,6 +30,11 @@ export default async function AdminCommentsPage({ searchParams }: { searchParams
                         deletedPost: t('deletedPost'),
                         noCommentsFound: t('noCommentsFound'),
                         addToWhitelist: t('addToWhitelist'),
+                        commentApproved: t('commentApproved'),
+                        commentApprovedWhitelisted: t('commentApprovedWhitelisted'),
+                        deleteCommentTitle: t('deleteCommentTitle'),
+                        deleteCommentDescription: t('deleteCommentDescription'),
+                        approveTitle: t('approve'),
                     }}
                 />
                 {totalPages > 1 && (

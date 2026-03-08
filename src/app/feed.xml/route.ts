@@ -1,8 +1,20 @@
 import { Feed } from 'feed';
 import { getCachedFeedPosts, getCachedSettings } from '@/lib/cache-layer';
+import { defaultLocale, locales, type Locale } from '@/i18n/config';
+import { getLocale } from 'next-intl/server';
 
 export const dynamic = 'force-static';
 export const revalidate = 300;
+
+const FEED_LANGUAGE_BY_LOCALE: Record<Locale, string> = {
+  en: 'en-US',
+  zh: 'zh-CN',
+};
+
+function getFeedLanguage(locale: string) {
+  const resolvedLocale = locales.includes(locale as Locale) ? (locale as Locale) : defaultLocale;
+  return FEED_LANGUAGE_BY_LOCALE[resolvedLocale];
+}
 
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
@@ -21,12 +33,14 @@ export async function GET() {
     posts = [];
   }
 
+  const locale = await getLocale();
+
   const feed = new Feed({
     title: settings.siteTitle || 'Blog',
     description: settings.siteDescription || '',
     id: baseUrl,
     link: baseUrl,
-    language: 'zh-CN',
+    language: getFeedLanguage(locale),
     favicon: `${baseUrl}/favicon-32x32.png`,
     copyright: `All rights reserved ${new Date().getFullYear()}`,
     feedLinks: {

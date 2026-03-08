@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { isAdminAuthorized } from '@/lib/server-utils';
+import { getTranslations } from 'next-intl/server';
 
 async function requireAdmin() {
     const session = await auth.api.getSession({
@@ -84,7 +85,8 @@ export async function deleteUser(id: string) {
     
     // Prevent deleting yourself
     if (session?.user?.id === id) {
-        throw new Error('Cannot delete your own account');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('cannotDeleteOwnAccount'));
     }
     
     await db.delete(users).where(eq(users.id, id));

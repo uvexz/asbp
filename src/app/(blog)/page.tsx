@@ -2,8 +2,8 @@ import Link from "next/link";
 import { getPublishedPosts } from "@/app/actions/posts";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
-import { formatDate } from "@/lib/date-utils";
-import { getTranslations } from "next-intl/server";
+import { formatLocalizedDate } from "@/lib/date-utils";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Calendar, Tag } from "lucide-react";
 
 interface HomePageProps {
@@ -14,7 +14,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const currentPage = Math.max(1, parseInt(params.page || "1", 10) || 1);
   const pageSize = 10;
-  const t = await getTranslations("blog");
+  const [t, locale] = await Promise.all([
+    getTranslations("blog"),
+    getLocale(),
+  ]);
 
   const { posts, totalPages } = await getPublishedPosts(currentPage, pageSize);
 
@@ -35,7 +38,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <p className="text-muted-foreground text-sm font-normal leading-none flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {formatDate(post.publishedAt || post.createdAt)}
+                {formatLocalizedDate(post.publishedAt || post.createdAt, locale)}
               </p>
               {post.tags.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">

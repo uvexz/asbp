@@ -167,10 +167,10 @@ A `settingsSchema` exists but is not used in the settings update path. Operation
 Settings writes should validate structured input through the existing schema (or an updated schema) before persisting data.
 
 ### Acceptance criteria
-- [ ] Settings update path uses schema-based runtime validation
-- [ ] Invalid settings inputs return clear validation errors
-- [ ] URL-like fields and other structured settings are validated consistently
-- [ ] Tests cover valid and invalid settings submissions
+- [x] Settings update path uses schema-based runtime validation
+- [x] Invalid settings inputs return clear validation errors
+- [x] URL-like fields and other structured settings are validated consistently
+- [x] Tests cover valid and invalid settings submissions
 
 ---
 
@@ -188,10 +188,10 @@ The import flow increments result counters after `onConflictDoNothing()` inserts
 Import summary counts should reflect actual inserted/updated rows, not attempted inserts.
 
 ### Acceptance criteria
-- [ ] Import results distinguish attempted vs inserted vs skipped/conflicted rows
-- [ ] Result counts match actual database changes
-- [ ] Conflict/no-op cases are reported accurately
-- [ ] Add regression tests for duplicate/conflict import scenarios
+- [x] Import results distinguish attempted vs inserted vs skipped/conflicted rows
+- [x] Result counts match actual database changes
+- [x] Conflict/no-op cases are reported accurately
+- [x] Add regression tests for duplicate/conflict import scenarios
 
 ---
 
@@ -210,10 +210,10 @@ The first-user/admin bootstrap logic checks user existence by loading the full u
 First-user bootstrap should use an efficient existence check and an atomic/robust approach to first-admin assignment.
 
 ### Acceptance criteria
-- [ ] User existence checks use `count`, `exists`, or `limit(1)` instead of full-table reads
-- [ ] First-user admin assignment is safe under concurrent signups
-- [ ] Registration closing behavior is consistent and deterministic
-- [ ] Add regression coverage for first-user bootstrap behavior
+- [x] User existence checks use `count`, `exists`, or `limit(1)` instead of full-table reads
+- [x] First-user admin assignment is safe under concurrent signups
+- [x] Registration closing behavior is consistent and deterministic
+- [x] Add regression coverage for first-user bootstrap behavior
 
 ---
 
@@ -231,10 +231,10 @@ Redis cache invalidation uses `KEYS` for wildcard patterns. This is operationall
 Wildcard invalidation should use a safer pattern such as tracked keys, tag sets, or cursor-based scanning instead of `KEYS`.
 
 ### Acceptance criteria
-- [ ] Wildcard invalidation no longer uses `KEYS`
-- [ ] Replacement invalidation works for current cache groups
-- [ ] Existing cache behavior remains correct after the change
-- [ ] Add coverage or operational notes for the new invalidation approach
+- [x] Wildcard invalidation no longer uses `KEYS`
+- [x] Replacement invalidation works for current cache groups
+- [x] Existing cache behavior remains correct after the change
+- [x] Add coverage or operational notes for the new invalidation approach
 
 ---
 
@@ -254,10 +254,10 @@ The app supports both `en` and `zh`, but some formatting and content paths are h
 Locale-sensitive formatting and user-facing strings should honor the active locale consistently.
 
 ### Acceptance criteria
-- [ ] Date formatting respects the current locale
-- [ ] Feed metadata language is not hard-coded incorrectly
-- [ ] Remaining user-visible hard-coded Chinese strings are localized
-- [ ] Add regression checks for both supported locales where practical
+- [x] Date formatting respects the current locale
+- [x] Feed metadata language is not hard-coded incorrectly
+- [x] Remaining user-visible hard-coded Chinese strings are localized
+- [x] Add regression checks for both supported locales where practical
 
 ---
 
@@ -297,9 +297,9 @@ Current lint output is dominated by warnings from a minified vendor asset, which
 Lint output should be actionable and primarily reflect issues in maintained source code.
 
 ### Acceptance criteria
-- [ ] Vendor/minified assets are excluded from inappropriate lint rules
-- [ ] Real source warnings are addressed or intentionally tracked
-- [ ] `bun run lint` produces clean or low-noise output
+- [x] Vendor/minified assets are excluded from inappropriate lint rules
+- [x] Real source warnings are addressed or intentionally tracked
+- [x] `bun run lint` produces clean or low-noise output
 
 ---
 
@@ -319,6 +319,6 @@ Repository guidance and actual project artifacts indicate Bun is the intended wo
 Repository docs should consistently reflect the intended package manager and command workflow.
 
 ### Acceptance criteria
-- [ ] README and project guidance consistently use Bun commands
-- [ ] Any npm examples are either removed or clearly marked as alternatives
-- [ ] Setup and development instructions match the current repository workflow
+- [x] README and project guidance consistently use Bun commands
+- [x] Any npm examples are either removed or clearly marked as alternatives
+- [x] Setup and development instructions match the current repository workflow

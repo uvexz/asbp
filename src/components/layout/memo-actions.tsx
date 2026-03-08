@@ -60,7 +60,7 @@ export function MemoActions({ memoId, content: initialContent, hasS3 = false }: 
                 setError(result.error);
             }
         } catch {
-            setError('更新失败，请重试');
+            setError(tCommon('updateFailedRetry'));
         } finally {
             setIsSubmitting(false);
         }
@@ -78,7 +78,7 @@ export function MemoActions({ memoId, content: initialContent, hasS3 = false }: 
                 setError(result.error);
             }
         } catch {
-            setError('删除失败，请重试');
+            setError(tCommon('deleteFailedRetry'));
         } finally {
             setIsDeleting(false);
         }
@@ -116,9 +116,9 @@ export function MemoActions({ memoId, content: initialContent, hasS3 = false }: 
                 const failCount = errors.length;
                 const reason = errors[0];
                 const summary = successCount > 0
-                    ? `已上传 ${successCount} 张，${failCount} 张失败。`
-                    : `上传失败，共 ${failCount} 张。`;
-                setError(reason ? `${summary} 原因：${reason}` : summary);
+                    ? tCommon('uploadPartial', { successCount, failCount })
+                    : tCommon('uploadFailedCount', { failCount });
+                setError(reason ? `${summary} ${tCommon('uploadReason', { reason })}` : summary);
             }
         } catch {
             setError(tCommon('uploadFailedRetry'));
@@ -287,7 +287,7 @@ export function MemoActions({ memoId, content: initialContent, hasS3 = false }: 
                     <AlertDialogHeader>
                         <AlertDialogTitle>{t('deleteConfirm')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            此操作无法撤销，确定要删除这条随笔吗？
+                            {t('deleteMemoDescription')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

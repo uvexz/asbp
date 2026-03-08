@@ -18,10 +18,10 @@ import { getSettingsUncached, updateSettings } from "@/app/actions/settings";
 import { getTranslations } from 'next-intl/server';
 import { Globe, FileText, BarChart3, Download, Upload } from "lucide-react";
 
-export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
+export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
     const settings = await getSettingsUncached();
     const t = await getTranslations('admin');
-    const { saved } = await searchParams;
+    const { saved, error } = await searchParams;
 
     return (
         <div className="flex flex-col h-full">
@@ -33,6 +33,11 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 {saved && (
                     <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-md">
                         {t('settingsSaved')}
+                    </div>
+                )}
+                {error && (
+                    <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded-md">
+                        {error}
                     </div>
                 )}
                 <form action={updateSettings} className="space-y-8 max-w-2xl">
@@ -249,9 +254,14 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                             postsImported: t('postsImported'),
                             commentsImported: t('commentsImported'),
                             tagsImported: t('tagsImported'),
+                            postTagLinksImported: t('postTagLinksImported'),
                             navItemsImported: t('navItemsImported'),
                             mediaImported: t('mediaImported'),
-                            settingsImported: t('settingsImported'),
+                            attemptedLabel: t('attemptedLabel'),
+                            insertedLabel: t('insertedLabel'),
+                            skippedLabel: t('skippedLabel'),
+                            settingsCreated: t('settingsCreated'),
+                            settingsUpdated: t('settingsUpdated'),
                         }}
                     />
                 </section>

@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { getCachedNavItems, invalidateNavigationCache } from '@/lib/cache-layer';
+import { getTranslations } from 'next-intl/server';
 
 export type NavItem = {
     id: string;
@@ -46,7 +47,8 @@ export async function createNavItem(formData: FormData) {
     const sortOrder = parseInt(formData.get('sortOrder') as string) || 0;
 
     if (!label || !url) {
-        throw new Error('Label and URL are required');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('labelAndUrlRequired'));
     }
 
     await db.insert(navItems).values({
@@ -76,7 +78,8 @@ export async function updateNavItem(id: string, formData: FormData) {
     const sortOrder = parseInt(formData.get('sortOrder') as string) || 0;
 
     if (!label || !url) {
-        throw new Error('Label and URL are required');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('labelAndUrlRequired'));
     }
 
     await db.update(navItems)

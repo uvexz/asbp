@@ -38,7 +38,12 @@ interface CommentsTableProps {
         guest: string;
         deletedPost: string;
         noCommentsFound: string;
-        addToWhitelist?: string;
+        addToWhitelist: string;
+        commentApproved: string;
+        commentApprovedWhitelisted: string;
+        deleteCommentTitle: string;
+        deleteCommentDescription: string;
+        approveTitle: string;
     };
 }
 
@@ -48,7 +53,7 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
     const handleApprove = (id: string, addToWhitelist: boolean = false) => {
         startTransition(async () => {
             await approveComment(id, addToWhitelist);
-            toast.success(addToWhitelist ? '评论已通过并加入白名单' : '评论已通过审核');
+            toast.success(addToWhitelist ? labels.commentApprovedWhitelisted : labels.commentApproved);
         });
     };
 
@@ -86,7 +91,7 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                                                 className="h-8 w-8 text-green-600 hover:bg-green-50"
                                                 onClick={() => handleApprove(comment.id, false)}
                                                 disabled={isPending}
-                                                title="通过"
+                                                title={labels.approveTitle}
                                             >
                                                 <Check className="h-4 w-4" />
                                             </Button>
@@ -96,7 +101,7 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                                                 className="h-8 w-8 text-blue-600 hover:bg-blue-50"
                                                 onClick={() => handleApprove(comment.id, true)}
                                                 disabled={isPending}
-                                                title={labels.addToWhitelist || '通过并加入白名单'}
+                                                title={labels.addToWhitelist}
                                             >
                                                 <UserCheck className="h-4 w-4" />
                                             </Button>
@@ -106,8 +111,8 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                                         onDelete={async () => {
                                             await deleteComment(comment.id);
                                         }}
-                                        title="删除评论"
-                                        description="确定要删除这条评论吗？此操作无法撤销。"
+                                        title={labels.deleteCommentTitle}
+                                        description={labels.deleteCommentDescription}
                                     />
                                 </div>
                             </div>
@@ -156,7 +161,7 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                                                     className="text-green-600 hover:bg-green-50"
                                                     onClick={() => handleApprove(comment.id, false)}
                                                     disabled={isPending}
-                                                    title="通过"
+                                                    title={labels.approveTitle}
                                                 >
                                                     <Check className="h-4 w-4" />
                                                 </Button>
@@ -166,7 +171,7 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                                                     className="text-blue-600 hover:bg-blue-50"
                                                     onClick={() => handleApprove(comment.id, true)}
                                                     disabled={isPending}
-                                                    title={labels.addToWhitelist || '通过并加入白名单'}
+                                                    title={labels.addToWhitelist}
                                                 >
                                                     <UserCheck className="h-4 w-4" />
                                                 </Button>
@@ -176,8 +181,8 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                                             onDelete={async () => {
                                                 await deleteComment(comment.id);
                                             }}
-                                            title="删除评论"
-                                            description="确定要删除这条评论吗？此操作无法撤销。"
+                                            title={labels.deleteCommentTitle}
+                                            description={labels.deleteCommentDescription}
                                         />
                                     </div>
                                 </TableCell>

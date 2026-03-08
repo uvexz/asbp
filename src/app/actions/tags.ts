@@ -6,7 +6,8 @@ import { eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { tagSchema } from '@/lib/validations';
+import { formatValidationIssues, tagSchema } from '@/lib/validations';
+import { getTranslations } from 'next-intl/server';
 import { generateSlug } from '@/lib/server-utils';
 import { getCachedTags, getCachedPostsByTag, invalidatePostCache, invalidatePostsListCache, invalidateTagsCache } from '@/lib/cache-layer';
 
@@ -62,16 +63,15 @@ export async function createTag(formData: FormData): Promise<TagActionResult> {
   const validationResult = tagSchema.safeParse({ name });
 
   if (!validationResult.success) {
-    const errorMessages = validationResult.error.issues
-      .map(issue => issue.message)
-      .join(', ');
-    return { success: false, error: errorMessages };
+    const tErrors = await getTranslations('errors');
+    return { success: false, error: formatValidationIssues(validationResult.error.issues, tErrors) };
   }
 
   const slug = generateSlug(validationResult.data.name);
 
   if (!slug) {
-    return { success: false, error: '无法生成有效的slug，请使用包含字母或数字的标签名' };
+    const tErrors = await getTranslations('errors');
+    return { success: false, error: tErrors('invalidTagSlug') };
   }
 
   try {
@@ -82,7 +82,8 @@ export async function createTag(formData: FormData): Promise<TagActionResult> {
   } catch (error) {
     // Handle unique constraint violation
     if (error instanceof Error && error.message.includes('unique')) {
-      return { success: false, error: '标签名或slug已存在' };
+      const tErrors = await getTranslations('errors');
+      return { success: false, error: tErrors('tagExists') };
     }
     throw error;
   }
@@ -103,16 +104,15 @@ export async function createTagInline(name: string): Promise<CreateTagResult> {
   const validationResult = tagSchema.safeParse({ name });
 
   if (!validationResult.success) {
-    const errorMessages = validationResult.error.issues
-      .map(issue => issue.message)
-      .join(', ');
-    return { success: false, error: errorMessages };
+    const tErrors = await getTranslations('errors');
+    return { success: false, error: formatValidationIssues(validationResult.error.issues, tErrors) };
   }
 
   const slug = generateSlug(validationResult.data.name);
 
   if (!slug) {
-    return { success: false, error: '无法生成有效的slug，请使用包含字母或数字的标签名' };
+    const tErrors = await getTranslations('errors');
+    return { success: false, error: tErrors('invalidTagSlug') };
   }
 
   try {
@@ -127,7 +127,8 @@ export async function createTagInline(name: string): Promise<CreateTagResult> {
   } catch (error) {
     // Handle unique constraint violation
     if (error instanceof Error && error.message.includes('unique')) {
-      return { success: false, error: '标签名或slug已存在' };
+      const tErrors = await getTranslations('errors');
+      return { success: false, error: tErrors('tagExists') };
     }
     throw error;
   }
@@ -143,16 +144,15 @@ export async function updateTag(id: string, name: string): Promise<TagActionResu
   const validationResult = tagSchema.safeParse({ name });
 
   if (!validationResult.success) {
-    const errorMessages = validationResult.error.issues
-      .map(issue => issue.message)
-      .join(', ');
-    return { success: false, error: errorMessages };
+    const tErrors = await getTranslations('errors');
+    return { success: false, error: formatValidationIssues(validationResult.error.issues, tErrors) };
   }
 
   const slug = generateSlug(validationResult.data.name);
 
   if (!slug) {
-    return { success: false, error: '无法生成有效的slug，请使用包含字母或数字的标签名' };
+    const tErrors = await getTranslations('errors');
+    return { success: false, error: tErrors('invalidTagSlug') };
   }
 
   try {
@@ -161,7 +161,8 @@ export async function updateTag(id: string, name: string): Promise<TagActionResu
       .where(eq(tags.id, id));
   } catch (error) {
     if (error instanceof Error && error.message.includes('unique')) {
-      return { success: false, error: '标签名或slug已存在' };
+      const tErrors = await getTranslations('errors');
+      return { success: false, error: tErrors('tagExists') };
     }
     throw error;
   }

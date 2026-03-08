@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -18,19 +18,50 @@ interface ImportSettingsProps {
     postsImported: string;
     commentsImported: string;
     tagsImported: string;
+    postTagLinksImported: string;
     navItemsImported: string;
     mediaImported: string;
-    settingsImported: string;
+    attemptedLabel: string;
+    insertedLabel: string;
+    skippedLabel: string;
+    settingsCreated: string;
+    settingsUpdated: string;
   };
 }
 
+interface ImportCountResult {
+  attempted: number;
+  inserted: number;
+  skipped: number;
+}
+
 interface ImportResults {
-  posts: number;
-  comments: number;
-  tags: number;
-  navItems: number;
-  media: number;
-  settings: boolean;
+  posts: ImportCountResult;
+  comments: ImportCountResult;
+  tags: ImportCountResult;
+  postsTags: ImportCountResult;
+  navItems: ImportCountResult;
+  media: ImportCountResult;
+  settings: {
+    imported: boolean;
+    action?: 'created' | 'updated';
+  };
+}
+
+function CountSummary({
+  label,
+  result,
+  t,
+}: {
+  label: string;
+  result: ImportCountResult;
+  t: ImportSettingsProps['translations'];
+}) {
+  return (
+    <li>
+      {label}: {t.insertedLabel} {result.inserted} / {t.attemptedLabel} {result.attempted} / {t.skippedLabel} {result.skipped}
+    </li>
+  );
 }
 
 export function ImportSettings({ translations: t }: ImportSettingsProps) {
@@ -142,13 +173,17 @@ export function ImportSettings({ translations: t }: ImportSettingsProps) {
               <CheckCircle className="h-4 w-4" />
               <span className="font-medium">{t.importSuccess}</span>
             </div>
-            <ul className="text-sm space-y-1 ml-6">
-              {results.posts > 0 && <li>{t.postsImported}: {results.posts}</li>}
-              {results.comments > 0 && <li>{t.commentsImported}: {results.comments}</li>}
-              {results.tags > 0 && <li>{t.tagsImported}: {results.tags}</li>}
-              {results.navItems > 0 && <li>{t.navItemsImported}: {results.navItems}</li>}
-              {results.media > 0 && <li>{t.mediaImported}: {results.media}</li>}
-              {results.settings && <li>{t.settingsImported}</li>}
+            <p className="text-sm font-medium ml-6">{t.importResults}</p>
+            <ul className="text-sm space-y-1 ml-6 list-disc">
+              {results.posts.attempted > 0 && <CountSummary label={t.postsImported} result={results.posts} t={t} />}
+              {results.comments.attempted > 0 && <CountSummary label={t.commentsImported} result={results.comments} t={t} />}
+              {results.tags.attempted > 0 && <CountSummary label={t.tagsImported} result={results.tags} t={t} />}
+              {results.postsTags.attempted > 0 && <CountSummary label={t.postTagLinksImported} result={results.postsTags} t={t} />}
+              {results.navItems.attempted > 0 && <CountSummary label={t.navItemsImported} result={results.navItems} t={t} />}
+              {results.media.attempted > 0 && <CountSummary label={t.mediaImported} result={results.media} t={t} />}
+              {results.settings.imported && (
+                <li>{results.settings.action === 'created' ? t.settingsCreated : t.settingsUpdated}</li>
+              )}
             </ul>
           </div>
         )}

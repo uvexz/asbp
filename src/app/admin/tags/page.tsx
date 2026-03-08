@@ -69,7 +69,7 @@ export default function AdminTagsPage() {
             const result = await createTag(formData);
             if (result.success) {
                 setNewTagName('');
-                toast.success('标签创建成功');
+                toast.success(t('tagCreated'));
                 await refreshTags();
             } else {
                 setError(result.error);
@@ -104,7 +104,7 @@ export default function AdminTagsPage() {
         startTransition(async () => {
             const result = await updateTag(id, editingName.trim());
             if (result.success) {
-                toast.success('标签更新成功');
+                toast.success(t('tagUpdated'));
                 setEditingId(null);
                 setEditingName('');
                 await refreshTags();
@@ -215,8 +215,8 @@ export default function AdminTagsPage() {
                                                     </Button>
                                                     <DeleteButton
                                                         onDelete={() => handleDeleteTag(tag.id)}
-                                                        title="删除标签"
-                                                        description={`确定要删除标签「${tag.name}」吗？关联的文章将取消此标签。`}
+                                                        title={t('deleteTagTitle')}
+                                                        description={t('deleteTagDescription', { name: tag.name })}
                                                     />
                                                 </>
                                             )}

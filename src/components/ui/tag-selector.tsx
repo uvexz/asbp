@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, ChevronDown, Plus, Loader2 } from 'lucide-react';
 import { createTagInline } from '@/app/actions/tags';
+import { useTranslations } from 'next-intl';
 
 interface Tag {
   id: string;
@@ -26,6 +27,8 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
   const [newTagName, setNewTagName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const tAdmin = useTranslations('admin');
+  const tCommon = useTranslations('common');
 
   useEffect(() => {
     setSelectedIds(initialSelectedIds);
@@ -63,7 +66,7 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
         setError(result.error);
       }
     } catch {
-      setError('创建标签失败');
+      setError(tCommon('createFailedRetry'));
     } finally {
       setIsCreating(false);
     }
@@ -79,7 +82,7 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
       {/* Selected tags display */}
       <div className="flex flex-wrap gap-2 min-h-[32px]">
         {selectedTags.length === 0 ? (
-          <span className="text-sm text-muted-foreground">未选择标签</span>
+          <span className="text-sm text-muted-foreground">{tAdmin('noTagsSelected')}</span>
         ) : (
           selectedTags.map(tag => (
             <Badge key={tag.id} variant="secondary" className="flex items-center gap-1">
@@ -105,7 +108,7 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
           onClick={() => setIsOpen(!isOpen)}
           className="w-full justify-between"
         >
-          <span>{unselectedTags.length === 0 ? '创建新标签...' : '选择或创建标签...'}</span>
+          <span>{tAdmin('selectOrCreateTag')}</span>
           <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </Button>
 
@@ -116,7 +119,7 @@ export function TagSelector({ availableTags: initialTags, selectedTagIds: initia
               <div className="flex gap-2">
                 <Input
                   type="text"
-                  placeholder="输入新标签名..."
+                  placeholder={tAdmin('enterTagName')}
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   onKeyDown={(e) => {

@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { uploadMedia } from '@/app/actions/media';
 import { MediaPicker } from '@/components/media/media-picker';
+import { useTranslations } from 'next-intl';
 
 interface MarkdownEditorProps {
   value: string;
@@ -21,7 +22,7 @@ interface MarkdownEditorProps {
 export function MarkdownEditor({
   value,
   onChange,
-  placeholder = '使用 Markdown 编写内容...',
+  placeholder,
   className = '',
   minHeight = '400px',
   hasS3 = false,
@@ -30,6 +31,7 @@ export function MarkdownEditor({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tCommon = useTranslations('common');
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -61,13 +63,13 @@ export function MarkdownEditor({
         const failCount = errors.length;
         const reason = errors[0];
         const summary = successCount > 0
-          ? `已上传 ${successCount} 张，${failCount} 张失败。`
-          : `上传失败，共 ${failCount} 张。`;
-        setUploadError(reason ? `${summary} 原因：${reason}` : summary);
+          ? tCommon('uploadPartial', { successCount, failCount })
+          : tCommon('uploadFailedCount', { failCount });
+        setUploadError(reason ? `${summary} ${tCommon('uploadReason', { reason })}` : summary);
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      setUploadError('上传失败，请重试');
+      setUploadError(tCommon('uploadFailedRetry'));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -87,7 +89,7 @@ export function MarkdownEditor({
             onClick={() => setIsPreview(false)}
           >
             <Edit className="h-4 w-4 mr-1" />
-            编辑
+            {tCommon('edit')}
           </Button>
           <Button
             type="button"
@@ -96,7 +98,7 @@ export function MarkdownEditor({
             onClick={() => setIsPreview(true)}
           >
             <Eye className="h-4 w-4 mr-1" />
-            预览
+            {tCommon('preview')}
           </Button>
         </div>
         {hasS3 && (
@@ -121,7 +123,7 @@ export function MarkdownEditor({
               ) : (
                 <ImagePlus className="h-4 w-4" />
               )}
-              <span className="ml-1">上传</span>
+              <span className="ml-1">{tCommon('upload')}</span>
             </Button>
             <MediaPicker
               multiple
@@ -138,7 +140,7 @@ export function MarkdownEditor({
               trigger={
                 <Button type="button" variant="outline" size="sm">
                   <FolderOpen className="h-4 w-4" />
-                  <span className="ml-1">媒体库</span>
+                  <span className="ml-1">{tCommon('mediaLibrary')}</span>
                 </Button>
               }
             />
@@ -158,14 +160,14 @@ export function MarkdownEditor({
           {value ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
           ) : (
-            <p className="text-muted-foreground italic">暂无内容</p>
+            <p className="text-muted-foreground italic">{tCommon('noContent')}</p>
           )}
         </div>
       ) : (
         <Textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={placeholder ?? tCommon('writeWithMarkdown')}
           className="bg-gray-50 dark:bg-white/5 border-gray-300 dark:border-white/20 font-mono"
           style={{ minHeight }}
         />

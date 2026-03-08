@@ -81,6 +81,9 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
                         memo: t('memo'),
                         search: tCommon('search'),
                         searchPlaceholder: t('searchPlaceholder'),
+                        searchResults: t('searchResults', { query: '{query}', count: '{count}' }),
+                        deleteContentTitle: t('deleteContentTitle'),
+                        deleteContentDescription: (title: string) => t('deleteContentDescription', { title }),
                     }}
                 />
                 {totalPages > 1 && (

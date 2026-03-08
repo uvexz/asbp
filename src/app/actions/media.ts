@@ -10,6 +10,7 @@ import { getS3Client } from '@/lib/s3';
 import { getSettings } from './settings';
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { ulid } from 'ulid';
+import { getTranslations } from 'next-intl/server';
 
 export type ActionResult<T = void> = 
   | { success: true; data?: T }
@@ -55,14 +56,15 @@ export async function uploadMedia(formData: FormData): Promise<ActionResult<{ ur
   }
 
   const file = formData.get('file') as File | null;
+  const tErrors = await getTranslations('errors');
 
   if (!file) {
-    return { success: false, error: 'No file provided' };
+    return { success: false, error: tErrors('noFileProvided') };
   }
 
   // Validate file
   if (file.size === 0) {
-    return { success: false, error: 'File is empty' };
+    return { success: false, error: tErrors('emptyFile') };
   }
 
   // Get S3 client and settings
@@ -70,7 +72,7 @@ export async function uploadMedia(formData: FormData): Promise<ActionResult<{ ur
   const settings = await getSettings();
 
   if (!s3Client || !settings.s3Bucket) {
-    return { success: false, error: 'S3 storage is not configured' };
+    return { success: false, error: tErrors('s3ConfigRequired') };
   }
 
   try {
@@ -116,9 +118,9 @@ export async function uploadMedia(formData: FormData): Promise<ActionResult<{ ur
     };
   } catch (error) {
     console.error('Failed to upload media:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to upload file' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : tErrors('uploadFailed')
     };
   }
 }
@@ -140,7 +142,8 @@ export async function deleteMedia(id: string): Promise<ActionResult> {
   const [mediaRecord] = await db.select().from(media).where(eq(media.id, id)).limit(1);
 
   if (!mediaRecord) {
-    return { success: false, error: 'Media not found' };
+    const tErrors = await getTranslations('errors');
+    return { success: false, error: tErrors('mediaNotFound') };
   }
 
   // Get S3 client and settings

@@ -16,7 +16,7 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { Loader2, Upload, ArrowLeft } from "lucide-react";
 import Link from 'next/link';
-import { checkRegistrationStatus, postRegistrationCleanup } from "@/app/actions/auth-helpers";
+import { checkRegistrationStatus } from "@/app/actions/auth-helpers";
 import { useTranslations } from 'next-intl';
 
 interface ImportUser {
@@ -71,8 +71,7 @@ export default function SignUp() {
             name,
             fetchOptions: {
                 onSuccess: async () => {
-                    await postRegistrationCleanup(email);
-                    router.push("/admin");
+                    router.push(isFirstUser ? "/admin" : "/sign-in");
                 },
                 onError: (ctx) => {
                     alert(ctx.error.message);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition, useRef, useMemo } from 'react';
+import { useState, useEffect, useTransition, useRef, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import { Upload, Image as ImageIcon, Loader2, Check } from "lucide-react";
 import { getMedia, uploadMedia, type Media } from "@/app/actions/media";
 import { hasS3Config } from "@/app/actions/settings";
 import { cn } from "@/lib/utils";
+import { useTranslations } from 'next-intl';
 
 interface MediaPickerProps {
   onSelect: (url: string, alt?: string) => void;
@@ -24,6 +25,8 @@ interface MediaPickerProps {
 
 export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, multiple = false }: MediaPickerProps) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations('admin');
+  const tCommon = useTranslations('common');
   const [mediaList, setMediaList] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasS3, setHasS3] = useState(false);
@@ -33,21 +36,13 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedIds = useMemo(() => new Set(selectedMedia.map((media) => media.id)), [selectedMedia]);
 
-  useEffect(() => {
-    if (open) {
-      loadData();
-    } else {
-      setSelectedMedia([]);
-    }
-  }, [open]);
-
-  async function loadData(): Promise<Media[]> {
+  const loadData = useCallback(async (): Promise<Media[]> => {
     setIsLoading(true);
     setError(null);
     try {
       const s3Configured = await hasS3Config();
       setHasS3(s3Configured);
-      
+
       if (!s3Configured) {
         setMediaList([]);
         return [];
@@ -57,12 +52,20 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
       setMediaList(data);
       return data;
     } catch {
-      setError('Failed to load media');
+      setError(tCommon('loadFailedRetry'));
       return [];
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [tCommon]);
+
+  useEffect(() => {
+    if (open) {
+      loadData();
+    } else {
+      setSelectedMedia([]);
+    }
+  }, [open, loadData]);
 
   function handleUploadClick() {
     fileInputRef.current?.click();
@@ -111,9 +114,9 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
         const failCount = errors.length;
         const reason = errors[0];
         const summary = successCount > 0
-          ? `已上传 ${successCount} 张，${failCount} 张失败。`
-          : `上传失败，共 ${failCount} 张。`;
-        setError(reason ? `${summary} 原因：${reason}` : summary);
+          ? tCommon('uploadPartial', { successCount, failCount })
+          : tCommon('uploadFailedCount', { failCount });
+        setError(reason ? `${summary} ${tCommon('uploadReason', { reason })}` : summary);
       }
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -165,13 +168,13 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
         {trigger || (
           <Button variant="outline" size="sm" className={className}>
             <ImageIcon className="h-4 w-4 mr-2" />
-            插入图片
+            {tCommon('insertSelectedImages')}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>选择媒体文件</DialogTitle>
+          <DialogTitle>{t('mediaLibraryTitle')}</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
@@ -181,8 +184,8 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
         ) : !hasS3 ? (
           <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
             <ImageIcon className="h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-2">S3 存储未配置</p>
-            <p className="text-sm text-gray-400">请先在设置中配置 S3 存储</p>
+            <p className="text-gray-500 mb-2">{t('s3Required')}</p>
+            <p className="text-sm text-gray-400">{t('s3RequiredDesc')}</p>
           </div>
         ) : (
           <>
@@ -212,7 +215,7 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
                 ) : (
                   <Upload className="h-4 w-4 mr-2" />
                 )}
-                上传新图片
+                {t('uploadNewMedia')}
               </Button>
             </div>
 
@@ -220,7 +223,7 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
               {mediaList.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <ImageIcon className="h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-gray-500">暂无媒体文件</p>
+                  <p className="text-gray-500">{t('noMediaFiles')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-4 gap-3">
@@ -255,14 +258,14 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
 
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setOpen(false)}>
-                取消
+                {tCommon('cancel')}
               </Button>
               <Button
                 onClick={handleSelect}
                 disabled={selectedMedia.length === 0}
                 className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90"
               >
-                插入选中图片{multiple && selectedMedia.length > 0 ? ` (${selectedMedia.length})` : ''}
+                {tCommon('insertSelectedImages')}{multiple && selectedMedia.length > 0 ? ` (${selectedMedia.length})` : ''}
               </Button>
             </div>
           </>

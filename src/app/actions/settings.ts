@@ -9,6 +9,8 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getCachedSettings, invalidateSettingsCache } from '@/lib/cache-layer';
 import { resolveSecretFieldValue } from '@/lib/settings-secrets';
+import { formatValidationIssues, settingsSchema, type SettingsInput } from '@/lib/validations';
+import { getTranslations } from 'next-intl/server';
 
 /**
  * Get settings with caching
@@ -86,6 +88,47 @@ export async function hasS3Config(): Promise<boolean> {
     return !!(data.s3Endpoint && data.s3Region && data.s3AccessKey && data.s3SecretKey && data.s3Bucket);
 }
 
+function getTrimmedString(formData: FormData, key: string): string {
+    const value = formData.get(key);
+    return typeof value === 'string' ? value.trim() : '';
+}
+
+function getOptionalString(formData: FormData, key: string): string | null {
+    const value = getTrimmedString(formData, key);
+    return value.length > 0 ? value : null;
+}
+
+function getBoolean(formData: FormData, key: string): boolean {
+    return formData.get(key) === 'on';
+}
+
+function getSettingsFormValues(formData: FormData): SettingsInput {
+    return {
+        siteTitle: getTrimmedString(formData, 'siteTitle'),
+        siteDescription: getTrimmedString(formData, 'siteDescription'),
+        allowRegistration: getBoolean(formData, 'allowRegistration'),
+        faviconUrl: getOptionalString(formData, 'faviconUrl'),
+        s3Bucket: getOptionalString(formData, 's3Bucket'),
+        s3Region: getOptionalString(formData, 's3Region'),
+        s3AccessKey: getOptionalString(formData, 's3AccessKey'),
+        s3SecretKey: getOptionalString(formData, 's3SecretKey'),
+        s3Endpoint: getOptionalString(formData, 's3Endpoint'),
+        s3CdnUrl: getOptionalString(formData, 's3CdnUrl'),
+        resendApiKey: getOptionalString(formData, 'resendApiKey'),
+        resendFromEmail: getOptionalString(formData, 'resendFromEmail'),
+        aiBaseUrl: getOptionalString(formData, 'aiBaseUrl'),
+        aiApiKey: getOptionalString(formData, 'aiApiKey'),
+        aiModel: getOptionalString(formData, 'aiModel'),
+        umamiEnabled: getBoolean(formData, 'umamiEnabled'),
+        umamiCloud: getBoolean(formData, 'umamiCloud'),
+        umamiHostUrl: getOptionalString(formData, 'umamiHostUrl'),
+        umamiWebsiteId: getOptionalString(formData, 'umamiWebsiteId'),
+        umamiApiKey: getOptionalString(formData, 'umamiApiKey'),
+        umamiApiUserId: getOptionalString(formData, 'umamiApiUserId'),
+        umamiApiSecret: getOptionalString(formData, 'umamiApiSecret'),
+    };
+}
+
 export async function updateSettings(formData: FormData) {
     const session = await auth.api.getSession({
         headers: await headers()
@@ -96,112 +139,69 @@ export async function updateSettings(formData: FormData) {
     }
 
     const [currentSettings] = await db.select().from(settings).where(eq(settings.id, 1)).limit(1);
+    const validationResult = settingsSchema.safeParse(getSettingsFormValues(formData));
 
-    const siteTitle = (formData.get('siteTitle') as string) || '';
-    const siteDescription = (formData.get('siteDescription') as string) || '';
-    const allowRegistration = formData.get('allowRegistration') === 'on';
-    const faviconUrl = (formData.get('faviconUrl') as string) || null;
-    const s3Bucket = (formData.get('s3Bucket') as string) || null;
-    const s3Region = (formData.get('s3Region') as string) || null;
-    const s3Endpoint = (formData.get('s3Endpoint') as string) || null;
-    const s3CdnUrl = (formData.get('s3CdnUrl') as string) || null;
-    const resendFromEmail = (formData.get('resendFromEmail') as string) || null;
-    const aiBaseUrl = (formData.get('aiBaseUrl') as string) || null;
-    const aiModel = (formData.get('aiModel') as string) || null;
+    if (!validationResult.success) {
+        const tErrors = await getTranslations('errors');
+        const errorMessages = formatValidationIssues(validationResult.error.issues, tErrors);
+        redirect(`/admin/settings?error=${encodeURIComponent(errorMessages)}`);
+    }
 
-    // Umami settings
-    const umamiEnabled = formData.get('umamiEnabled') === 'on';
-    const umamiCloud = formData.get('umamiCloud') === 'on';
-    const umamiHostUrl = (formData.get('umamiHostUrl') as string) || null;
-    const umamiWebsiteId = (formData.get('umamiWebsiteId') as string) || null;
-    const umamiApiUserId = (formData.get('umamiApiUserId') as string) || null;
+    const validatedSettings = validationResult.data;
 
     const s3AccessKey = resolveSecretFieldValue({
         currentValue: currentSettings?.s3AccessKey,
-        submittedValue: formData.get('s3AccessKey'),
+        submittedValue: validatedSettings.s3AccessKey,
         clearRequested: formData.get('clearS3AccessKey') === 'on',
     });
     const s3SecretKey = resolveSecretFieldValue({
         currentValue: currentSettings?.s3SecretKey,
-        submittedValue: formData.get('s3SecretKey'),
+        submittedValue: validatedSettings.s3SecretKey,
         clearRequested: formData.get('clearS3SecretKey') === 'on',
     });
     const resendApiKey = resolveSecretFieldValue({
         currentValue: currentSettings?.resendApiKey,
-        submittedValue: formData.get('resendApiKey'),
+        submittedValue: validatedSettings.resendApiKey,
         clearRequested: formData.get('clearResendApiKey') === 'on',
     });
     const aiApiKey = resolveSecretFieldValue({
         currentValue: currentSettings?.aiApiKey,
-        submittedValue: formData.get('aiApiKey'),
+        submittedValue: validatedSettings.aiApiKey,
         clearRequested: formData.get('clearAiApiKey') === 'on',
     });
     const umamiApiKey = resolveSecretFieldValue({
         currentValue: currentSettings?.umamiApiKey,
-        submittedValue: formData.get('umamiApiKey'),
+        submittedValue: validatedSettings.umamiApiKey,
         clearRequested: formData.get('clearUmamiApiKey') === 'on',
     });
     const umamiApiSecret = resolveSecretFieldValue({
         currentValue: currentSettings?.umamiApiSecret,
-        submittedValue: formData.get('umamiApiSecret'),
+        submittedValue: validatedSettings.umamiApiSecret,
         clearRequested: formData.get('clearUmamiApiSecret') === 'on',
     });
+
+    const nextSettings = {
+        ...validatedSettings,
+        s3AccessKey,
+        s3SecretKey,
+        resendApiKey,
+        aiApiKey,
+        umamiApiKey,
+        umamiApiSecret,
+    };
 
     try {
         await db.insert(settings).values({
             id: 1,
-            siteTitle,
-            siteDescription,
-            allowRegistration,
-            faviconUrl,
-            s3Bucket,
-            s3Region,
-            s3AccessKey,
-            s3SecretKey,
-            s3Endpoint,
-            s3CdnUrl,
-            resendApiKey,
-            resendFromEmail,
-            aiBaseUrl,
-            aiApiKey,
-            aiModel,
-            umamiEnabled,
-            umamiCloud,
-            umamiHostUrl,
-            umamiWebsiteId,
-            umamiApiKey,
-            umamiApiUserId,
-            umamiApiSecret,
+            ...nextSettings,
         }).onConflictDoUpdate({
             target: settings.id,
-            set: {
-                siteTitle,
-                siteDescription,
-                allowRegistration,
-                faviconUrl,
-                s3Bucket,
-                s3Region,
-                s3AccessKey,
-                s3SecretKey,
-                s3Endpoint,
-                s3CdnUrl,
-                resendApiKey,
-                resendFromEmail,
-                aiBaseUrl,
-                aiApiKey,
-                aiModel,
-                umamiEnabled,
-                umamiCloud,
-                umamiHostUrl,
-                umamiWebsiteId,
-                umamiApiKey,
-                umamiApiUserId,
-                umamiApiSecret,
-            }
+            set: nextSettings,
         });
     } catch (error) {
         console.error('Failed to update settings:', error);
-        throw new Error('Failed to save settings');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('saveSettingsFailed'));
     }
 
     // Invalidate settings cache

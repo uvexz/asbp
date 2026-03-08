@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPostsByTag } from "@/app/actions/tags";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/date-utils";
-import { getTranslations } from "next-intl/server";
+import { formatLocalizedDate } from "@/lib/date-utils";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getSettings } from "@/app/actions/settings";
 import type { Metadata } from "next";
 import { Calendar, Tag } from "lucide-react";
@@ -34,8 +34,12 @@ export default async function TagPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { tag, posts } = await getPostsByTag(slug);
-  const t = await getTranslations("blog");
+  const [tagData, t, locale] = await Promise.all([
+    getPostsByTag(slug),
+    getTranslations("blog"),
+    getLocale(),
+  ]);
+  const { tag, posts } = tagData;
 
   if (!tag) {
     notFound();
@@ -70,7 +74,7 @@ export default async function TagPage({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <p className="text-neutral-500 text-sm font-normal leading-none flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {formatDate(post.publishedAt || post.createdAt)}
+                {formatLocalizedDate(post.publishedAt || post.createdAt, locale)}
               </p>
               <div className="flex items-center gap-2 flex-wrap">
                 {post.tags.map((postTag) => (

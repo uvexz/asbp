@@ -52,6 +52,13 @@ export const REDIS_KEYS = {
   FEED_POSTS: (limit: number) => `cache:feed:${limit}`,
 } as const;
 
+export const REDIS_WILDCARD_PATTERNS = {
+  POSTS_LIST: 'cache:posts:*',
+  MEMOS_LIST: 'cache:memos:*',
+  TAG_POSTS: 'cache:tag:*',
+  FEED_POSTS: 'cache:feed:*',
+} as const;
+
 // Default TTL in seconds
 export const REDIS_TTL = {
   SETTINGS: 3600,      // 1 hour

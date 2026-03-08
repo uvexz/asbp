@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { createComment, deleteComment, type CommentActionResult } from '@/app/actions/comments';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { md5 } from '@/lib/hash';
 import { cn } from '@/lib/utils';
 import { MessageCircle, Reply, User, Mail, Globe, Send, X, Trash2 } from 'lucide-react';
@@ -54,8 +54,8 @@ function getGravatarUrl(email: string): string {
     return `https://weavatar.com/avatar/${hash}?d=mp`;
 }
 
-function formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('zh-CN', {
+export function formatDate(date: Date, locale: string): string {
+    return new Intl.DateTimeFormat(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -103,13 +103,15 @@ function CommentItem({
     onReply,
     onDelete,
     isAdmin,
-    t 
-}: { 
-    comment: Comment; 
+    t,
+    locale,
+}: {
+    comment: Comment;
     onReply: (commentId: string, authorName: string) => void;
     onDelete?: (commentId: string) => void;
     isAdmin?: boolean;
     t: ReturnType<typeof useTranslations<'blog'>>;
+    locale: string;
 }) {
     const [isDeleting, setIsDeleting] = useState(false);
     const isUserComment = comment.user;
@@ -154,7 +156,7 @@ function CommentItem({
                         ) : (
                             <span className="font-semibold text-foreground">{authorName}</span>
                         )}
-                        <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt, locale)}</span>
                     </div>
                     {authorBio && (
                         <p className="text-xs text-muted-foreground mt-0.5">{authorBio}</p>
@@ -389,6 +391,7 @@ export function CommentSection({ postId, comments: initialComments, user, isAdmi
     const [comments, setComments] = useState(initialComments);
     const router = useRouter();
     const t = useTranslations('blog');
+    const locale = useLocale();
     const { data: session } = useSession({ enabled: !user });
     const effectiveUser = session?.user ?? user ?? null;
     const effectiveIsAdmin = session?.isAdmin ?? isAdmin ?? false;
@@ -448,6 +451,7 @@ export function CommentSection({ postId, comments: initialComments, user, isAdmi
                                     onDelete={handleDelete}
                                     isAdmin={effectiveIsAdmin}
                                     t={t}
+                                    locale={locale}
                                 />
                                 {/* 回复列表 */}
                                 {replies.length > 0 && (
@@ -460,6 +464,7 @@ export function CommentSection({ postId, comments: initialComments, user, isAdmi
                                                 onDelete={handleDelete}
                                                 isAdmin={effectiveIsAdmin}
                                                 t={t}
+                                    locale={locale}
                                             />
                                         ))}
                                     </div>

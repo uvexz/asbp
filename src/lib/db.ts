@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 import * as schema from '../db/schema';
 
 // Connection pool configuration optimized for serverless/edge environments
-const pool = new Pool({
+export const pool = new Pool({
     connectionString: process.env.DATABASE_URL!,
     // Pool size settings
     max: parseInt(process.env.DB_POOL_MAX || '10'), // Maximum connections

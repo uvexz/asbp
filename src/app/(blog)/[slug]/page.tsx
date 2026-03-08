@@ -5,8 +5,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPostComments } from "@/app/actions/comments";
 import { CommentSection } from "@/components/layout/comment-section";
-import { formatDate } from "@/lib/date-utils";
+import { formatLocalizedDate } from "@/lib/date-utils";
 import { getSettings } from "@/app/actions/settings";
+import { getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { Calendar, CircleUser, Tag } from "lucide-react";
 import { ArticleJsonLd } from "@/components/seo/json-ld";
@@ -76,9 +77,11 @@ export default async function ArticleDetailPage({
     notFound();
   }
 
-  const comments = await getPostComments(post.id);
-
-  const settings = await getSettings();
+  const [comments, settings, locale] = await Promise.all([
+    getPostComments(post.id),
+    getSettings(),
+    getLocale(),
+  ]);
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000";
 
   return (
@@ -104,7 +107,7 @@ export default async function ArticleDetailPage({
                 <CircleUser className="h-3 w-3" />
                 {post.author.name}
                 <Calendar className="ms-2 h-3 w-3" />
-                {formatDate(post.publishedAt || post.createdAt)}
+                {formatLocalizedDate(post.publishedAt || post.createdAt, locale)}
               </p>
               {post.tags.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">

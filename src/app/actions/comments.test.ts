@@ -5,6 +5,8 @@ const {
   headersMock,
   verifyMathCaptchaTokenMock,
   safeParseMock,
+  formatValidationIssuesMock,
+  getTranslationsMock,
   invalidateCommentsCacheMock,
   revalidatePathMock,
   insertReturningMock,
@@ -21,6 +23,8 @@ const {
     headersMock: vi.fn(),
     verifyMathCaptchaTokenMock: vi.fn(),
     safeParseMock: vi.fn(),
+    formatValidationIssuesMock: vi.fn(),
+    getTranslationsMock: vi.fn(),
     invalidateCommentsCacheMock: vi.fn(),
     revalidatePathMock: vi.fn(),
     insertValuesMock,
@@ -58,10 +62,15 @@ vi.mock('@/lib/crypto', () => ({
   verifyMathCaptchaToken: verifyMathCaptchaTokenMock,
 }));
 
+vi.mock('next-intl/server', () => ({
+  getTranslations: getTranslationsMock,
+}));
+
 vi.mock('@/lib/validations', () => ({
   commentSchema: {
     safeParse: safeParseMock,
   },
+  formatValidationIssues: formatValidationIssuesMock,
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -86,6 +95,8 @@ describe('createComment', () => {
     vi.clearAllMocks();
     headersMock.mockResolvedValue(new Headers());
     getSessionMock.mockResolvedValue(null);
+    getTranslationsMock.mockResolvedValue(vi.fn((key: string) => key));
+    formatValidationIssuesMock.mockReturnValue('Formatted validation error');
     verifyMathCaptchaTokenMock.mockReturnValue(true);
     safeParseMock.mockReturnValue({
       success: true,
@@ -137,5 +148,51 @@ describe('createComment', () => {
     expect(dbInsertMock).toHaveBeenCalledTimes(1);
     expect(invalidateCommentsCacheMock).toHaveBeenCalledWith('post-1');
     expect(revalidatePathMock).toHaveBeenCalledWith('/admin/comments');
+  });
+
+  it('returns translated required-content errors for logged-in users', async () => {
+    getSessionMock.mockResolvedValue({
+      user: { id: 'user-1', role: 'user' },
+    });
+    getTranslationsMock.mockResolvedValue(vi.fn((key: string) => key === 'contentRequired' ? 'Content is required' : key));
+
+    const formData = new FormData();
+    formData.set('content', '   ');
+
+    await expect(createComment('post-1', formData)).resolves.toEqual({
+      success: false,
+      error: 'Content is required',
+    });
+
+    expect(dbInsertMock).not.toHaveBeenCalled();
+  });
+
+  it('formats guest validation issues through the translation helper', async () => {
+    safeParseMock.mockReturnValue({
+      success: false,
+      error: {
+        issues: [{ code: 'too_small', minimum: 1, origin: 'string' }],
+      },
+    });
+    formatValidationIssuesMock.mockReturnValue('This field is required');
+
+    const formData = new FormData();
+    formData.set('content', 'Hello world');
+    formData.set('guestName', '');
+    formData.set('guestEmail', 'guest@example.com');
+    formData.set('captchaToken', 'valid-token');
+    formData.set('captchaResponse', '5');
+
+    await expect(createComment('post-1', formData)).resolves.toEqual({
+      success: false,
+      error: 'This field is required',
+    });
+
+    expect(formatValidationIssuesMock).toHaveBeenCalledWith(
+      [{ code: 'too_small', minimum: 1, origin: 'string' }],
+      expect.any(Function)
+    );
+    expect(spamCheckMock).not.toHaveBeenCalled();
+    expect(dbInsertMock).not.toHaveBeenCalled();
   });
 });

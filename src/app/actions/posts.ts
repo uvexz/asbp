@@ -7,7 +7,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { postSchema } from '@/lib/validations';
+import { formatValidationIssues, postSchema } from '@/lib/validations';
+import { getTranslations } from 'next-intl/server';
 import {
   getCachedPostBySlug,
   getCachedPublishedPosts,
@@ -171,10 +172,8 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     const validationResult = postSchema.safeParse({ title, slug, content, published, publishedAt });
 
     if (!validationResult.success) {
-        const errorMessages = validationResult.error.issues
-            .map(issue => issue.message)
-            .join(', ');
-        return { success: false, error: errorMessages };
+        const tErrors = await getTranslations('errors');
+        return { success: false, error: formatValidationIssues(validationResult.error.issues, tErrors) };
     }
 
     const authorId = session.user.id;
@@ -239,10 +238,8 @@ export async function updatePost(id: string, formData: FormData): Promise<Action
     const validationResult = postSchema.safeParse({ title, slug, content, published, publishedAt });
 
     if (!validationResult.success) {
-        const errorMessages = validationResult.error.issues
-            .map(issue => issue.message)
-            .join(', ');
-        return { success: false, error: errorMessages };
+        const tErrors = await getTranslations('errors');
+        return { success: false, error: formatValidationIssues(validationResult.error.issues, tErrors) };
     }
 
     // Get old slug before update for cache invalidation
@@ -317,13 +314,14 @@ export async function createQuickMemo(content: string): Promise<ActionResult> {
     const session = await auth.api.getSession({
         headers: await headers()
     });
+    const tErrors = await getTranslations('errors');
 
     if (!session || session.user.role !== 'admin') {
-        return { success: false, error: '需要管理员权限' };
+        return { success: false, error: tErrors('adminRequired') };
     }
 
     if (!content.trim()) {
-        return { success: false, error: '内容不能为空' };
+        return { success: false, error: tErrors('contentRequired') };
     }
 
     const timestamp = Date.now();
@@ -354,13 +352,14 @@ export async function updateMemo(id: string, content: string): Promise<ActionRes
     const session = await auth.api.getSession({
         headers: await headers()
     });
+    const tErrors = await getTranslations('errors');
 
     if (!session || session.user.role !== 'admin') {
-        return { success: false, error: '需要管理员权限' };
+        return { success: false, error: tErrors('adminRequired') };
     }
 
     if (!content.trim()) {
-        return { success: false, error: '内容不能为空' };
+        return { success: false, error: tErrors('contentRequired') };
     }
 
     // Verify the memo exists and is a memo type
@@ -369,7 +368,7 @@ export async function updateMemo(id: string, content: string): Promise<ActionRes
     });
 
     if (!memo) {
-        return { success: false, error: '随笔不存在' };
+        return { success: false, error: tErrors('memoNotFound') };
     }
 
     await db.update(posts)
@@ -393,9 +392,10 @@ export async function deleteMemo(id: string): Promise<ActionResult> {
     const session = await auth.api.getSession({
         headers: await headers()
     });
+    const tErrors = await getTranslations('errors');
 
     if (!session || session.user.role !== 'admin') {
-        return { success: false, error: '需要管理员权限' };
+        return { success: false, error: tErrors('adminRequired') };
     }
 
     // Verify the memo exists and is a memo type
@@ -404,7 +404,7 @@ export async function deleteMemo(id: string): Promise<ActionResult> {
     });
 
     if (!memo) {
-        return { success: false, error: '随笔不存在' };
+        return { success: false, error: tErrors('memoNotFound') };
     }
 
     await db.delete(posts).where(eq(posts.id, id));

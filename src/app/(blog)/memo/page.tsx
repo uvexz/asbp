@@ -2,8 +2,9 @@ import { getPublishedMemos } from '@/app/actions/posts';
 import { Pagination } from '@/components/ui/pagination';
 import { MemoContent } from '@/components/ui/memo-content';
 import { MemoActionsAdminGate, MemoQuickPostAdminGate } from '@/components/layout/memo-admin-controls';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { getSettings } from '@/app/actions/settings';
+import { formatLocalizedDateTime } from '@/lib/date-utils';
 import { Calendar } from 'lucide-react';
 import type { Metadata } from 'next';
 
@@ -25,7 +26,10 @@ export default async function MemoPage({ searchParams }: MemoPageProps) {
     const params = await searchParams;
     const currentPage = Math.max(1, parseInt(params.page || '1', 10) || 1);
     const pageSize = 20;
-    const t = await getTranslations('blog');
+    const [t, locale] = await Promise.all([
+        getTranslations('blog'),
+        getLocale(),
+    ]);
 
     const { memos, totalPages } = await getPublishedMemos(currentPage, pageSize);
 
@@ -44,13 +48,7 @@ export default async function MemoPage({ searchParams }: MemoPageProps) {
                         <div className="flex items-center justify-between mt-4">
                             <p className="text-neutral-400 text-sm flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                {new Date(memo.createdAt).toLocaleDateString('zh-CN', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
+                                {formatLocalizedDateTime(memo.createdAt, locale)}
                             </p>
                             <MemoActionsAdminGate memoId={memo.id} content={memo.content} />
                         </div>

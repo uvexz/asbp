@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -26,22 +27,23 @@ interface DeleteButtonProps {
 
 export function DeleteButton({
     onDelete,
-    title = '确认删除',
-    description = '此操作无法撤销，确定要删除吗？',
+    title,
+    description,
     variant = 'icon',
-    buttonText = '删除',
+    buttonText,
 }: DeleteButtonProps) {
     const [open, setOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const tCommon = useTranslations('common');
 
     const handleDelete = () => {
         startTransition(async () => {
             try {
                 await onDelete();
-                toast.success('删除成功');
+                toast.success(tCommon('deleteSuccess'));
                 setOpen(false);
             } catch {
-                toast.error('删除失败，请重试');
+                toast.error(tCommon('deleteFailedRetry'));
             }
         });
     };
@@ -56,24 +58,24 @@ export function DeleteButton({
                 ) : (
                     <Button variant="destructive" size="sm">
                         <Trash2 className="h-4 w-4 mr-2" />
-                        {buttonText}
+                        {buttonText || tCommon('delete')}
                     </Button>
                 )}
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{title}</AlertDialogTitle>
-                    <AlertDialogDescription>{description}</AlertDialogDescription>
+                    <AlertDialogTitle>{title || tCommon('confirmDelete')}</AlertDialogTitle>
+                    <AlertDialogDescription>{description || tCommon('confirmDeleteDescription')}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isPending}>取消</AlertDialogCancel>
+                    <AlertDialogCancel disabled={isPending}>{tCommon('cancel')}</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={handleDelete}
                         disabled={isPending}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
                         {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                        确认删除
+                        {buttonText || tCommon('delete')}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

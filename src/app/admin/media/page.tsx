@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition, useRef } from 'react';
+import { useState, useEffect, useTransition, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Upload, AlertTriangle, Trash2, Image as ImageIcon, FileText, Loader2, Copy, Check } from "lucide-react";
 import { getMedia, uploadMedia, deleteMedia, type Media } from "@/app/actions/media";
@@ -37,36 +37,37 @@ export default function AdminMediaPage() {
             setCopiedId(media.id);
             setTimeout(() => setCopiedId(null), 2000);
         } catch {
-            setError('Failed to copy link');
+            setError(tCommon('copyFailedRetry'));
         }
     }
 
+    const loadData = useCallback(async () => {
+        try {
+            const settingsData = await getSettings();
+            setSettings(settingsData);
+
+            if (settingsData.s3Bucket) {
+                const mediaData = await getMedia();
+                setMediaList(mediaData);
+            }
+        } catch {
+            setError(tCommon('loadFailedRetry'));
+        } finally {
+            setIsLoading(false);
+        }
+    }, [tCommon]);
+
     // Load settings and media on mount
     useEffect(() => {
-        async function loadData() {
-            try {
-                const settingsData = await getSettings();
-                setSettings(settingsData);
-                
-                if (settingsData.s3Bucket) {
-                    const mediaData = await getMedia();
-                    setMediaList(mediaData);
-                }
-            } catch {
-                setError('Failed to load data');
-            } finally {
-                setIsLoading(false);
-            }
-        }
         loadData();
-    }, []);
+    }, [loadData]);
 
     async function refreshMedia() {
         try {
             const mediaData = await getMedia();
             setMediaList(mediaData);
         } catch {
-            setError('Failed to refresh media');
+            setError(tCommon('refreshFailedRetry'));
         }
     }
 
@@ -87,7 +88,7 @@ export default function AdminMediaPage() {
         startTransition(async () => {
             const result = await uploadMedia(formData);
             if (result.success) {
-                setSuccessMessage(`Successfully uploaded: ${file.name}`);
+                setSuccessMessage(tCommon('uploadSuccessFile', { name: file.name }));
                 await refreshMedia();
             } else {
                 setError(result.error);
@@ -112,7 +113,7 @@ export default function AdminMediaPage() {
         startTransition(async () => {
             const result = await deleteMedia(mediaToDelete.id);
             if (result.success) {
-                setSuccessMessage(`Successfully deleted: ${mediaToDelete.filename}`);
+                setSuccessMessage(tCommon('deleteSuccessFile', { name: mediaToDelete.filename }));
                 await refreshMedia();
             } else {
                 setError(result.error);
@@ -127,7 +128,7 @@ export default function AdminMediaPage() {
     }
 
     function formatFileSize(bytes: number | null): string {
-        if (bytes === null) return 'Unknown size';
+        if (bytes === null) return tCommon('unknownSize');
         if (bytes < 1024) return `${bytes} B`;
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

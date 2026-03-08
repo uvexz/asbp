@@ -8,7 +8,7 @@ import { db } from './db';
 import { settings, navItems, tags, posts, postsTags } from '@/db/schema';
 import { eq, asc, and, desc, count } from 'drizzle-orm';
 import { decrypt } from './crypto';
-import { getRedis, isRedisEnabled, REDIS_KEYS, REDIS_TTL } from './redis';
+import { getRedis, isRedisEnabled, REDIS_KEYS, REDIS_TTL, REDIS_WILDCARD_PATTERNS } from './redis';
 
 // Cache tags for Next.js invalidation (fallback mode)
 export const CACHE_TAGS = {
@@ -22,6 +22,8 @@ export const CACHE_TAGS = {
 
 // Default cache options
 const DEFAULT_REVALIDATE = 3600; // 1 hour
+const REDIS_SCAN_COUNT = 100;
+const REDIS_DELETE_BATCH_SIZE = 100;
 
 // ============================================
 // Redis Cache Helpers
@@ -51,15 +53,47 @@ async function setToRedis<T>(key: string, value: T, ttl: number): Promise<void> 
   }
 }
 
+export function chunkKeys(keys: string[], chunkSize: number): string[][] {
+  if (chunkSize <= 0) {
+    return [keys];
+  }
+
+  const chunks: string[][] = [];
+  for (let index = 0; index < keys.length; index += chunkSize) {
+    chunks.push(keys.slice(index, index + chunkSize));
+  }
+  return chunks;
+}
+
+async function scanRedisKeys(pattern: string): Promise<string[]> {
+  const redis = getRedis();
+  if (!redis) return [];
+
+  const keys: string[] = [];
+  let cursor = '0';
+
+  do {
+    const [nextCursor, batch] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', REDIS_SCAN_COUNT);
+    cursor = nextCursor;
+    if (batch.length > 0) {
+      keys.push(...batch);
+    }
+  } while (cursor !== '0');
+
+  return keys;
+}
+
 async function deleteFromRedis(pattern: string): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
 
   try {
     if (pattern.includes('*')) {
-      const keys = await redis.keys(pattern);
-      if (keys.length > 0) {
-        await redis.del(...keys);
+      const keys = await scanRedisKeys(pattern);
+      for (const batch of chunkKeys(keys, REDIS_DELETE_BATCH_SIZE)) {
+        if (batch.length > 0) {
+          await redis.del(...batch);
+        }
       }
     } else {
       await redis.del(pattern);
@@ -546,11 +580,11 @@ export function invalidatePostCache(slug: string) {
 
 export function invalidatePostsListCache() {
   if (isRedisEnabled()) {
-    deleteFromRedis('cache:posts:*');
-    deleteFromRedis('cache:memos:*');
-    deleteFromRedis('cache:tag:*');
+    deleteFromRedis(REDIS_WILDCARD_PATTERNS.POSTS_LIST);
+    deleteFromRedis(REDIS_WILDCARD_PATTERNS.MEMOS_LIST);
+    deleteFromRedis(REDIS_WILDCARD_PATTERNS.TAG_POSTS);
     deleteFromRedis(REDIS_KEYS.SITEMAP_POSTS);
-    deleteFromRedis('cache:feed:*');
+    deleteFromRedis(REDIS_WILDCARD_PATTERNS.FEED_POSTS);
   }
   revalidateTag(CACHE_TAGS.POSTS_LIST, CACHE_PROFILE);
 }

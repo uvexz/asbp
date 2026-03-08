@@ -1,11 +1,13 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { getTranslations } from 'next-intl/server';
 import { type Locale, locales, defaultLocale } from '@/i18n/config';
 
 export async function setLocale(locale: Locale) {
   if (!locales.includes(locale)) {
-    return { error: 'Invalid locale' };
+    const tErrors = await getTranslations('errors');
+    return { error: tErrors('invalidLocale') };
   }
   
   const cookieStore = await cookies();

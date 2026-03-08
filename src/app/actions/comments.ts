@@ -6,7 +6,8 @@ import { desc, eq, count } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { commentSchema } from '@/lib/validations';
+import { commentSchema, formatValidationIssues } from '@/lib/validations';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { isAdminAuthorized } from '@/lib/server-utils';
 import { getCachedPostComments, invalidateCommentsCache } from '@/lib/cache-layer';
 import { createMathCaptchaChallenge, verifyMathCaptchaToken } from '@/lib/crypto';
@@ -14,6 +15,23 @@ import { createMathCaptchaChallenge, verifyMathCaptchaToken } from '@/lib/crypto
 export type CommentActionResult =
     | { success: true; autoApproved?: boolean }
     | { success: false; error: string };
+
+function sanitizeEmailHeaderValue(value: string): string {
+    return value.replace(/[\r\n]+/g, ' ').trim();
+}
+
+function escapeHtml(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function escapeHtmlWithLineBreaks(value: string): string {
+    return escapeHtml(value).replace(/\r?\n/g, '<br />');
+}
 
 export async function getCommentCaptchaChallenge() {
     return createMathCaptchaChallenge();
@@ -116,7 +134,8 @@ export async function createComment(postId: string, formData: FormData, parentId
     if (session?.user) {
         // Logged in user - skip guest validation, auto-approve
         if (!content || content.trim().length === 0) {
-            return { success: false, error: 'Comment content is required' };
+            const tErrors = await getTranslations('errors');
+            return { success: false, error: tErrors('contentRequired') };
         }
 
         const result = await db.insert(comments).values({
@@ -142,10 +161,8 @@ export async function createComment(postId: string, formData: FormData, parentId
         const validationResult = commentSchema.safeParse({ content, guestName, guestEmail, guestWebsite });
 
         if (!validationResult.success) {
-            const errorMessages = validationResult.error.issues
-                .map(issue => issue.message)
-                .join(', ');
-            return { success: false, error: errorMessages };
+            const tErrors = await getTranslations('errors');
+            return { success: false, error: formatValidationIssues(validationResult.error.issues, tErrors) };
         }
 
         // Check spam using AI
@@ -210,9 +227,11 @@ async function sendReplyNotification(parentCommentId: string, newCommentId: stri
     const { getResendClient } = await import('@/lib/resend');
     const { getSettings } = await import('@/app/actions/settings');
 
-    const [resend, settings] = await Promise.all([
+    const locale = await getLocale();
+    const [resend, settings, tEmails] = await Promise.all([
         getResendClient(),
-        getSettings()
+        getSettings(),
+        getTranslations({ locale, namespace: 'emails' }),
     ]);
 
     if (!resend || !settings.resendFromEmail) {
@@ -245,23 +264,26 @@ async function sendReplyNotification(parentCommentId: string, newCommentId: stri
 
     if (!post) return;
 
-    const replierName = newComment.user?.name || newComment.guestName || '匿名用户';
+    const replierName = newComment.user?.name || newComment.guestName || tEmails('anonymousUser');
     const siteTitle = settings.siteTitle || 'Blog';
 
     try {
         await resend.emails.send({
             from: settings.resendFromEmail,
             to: recipientEmail,
-            subject: `${replierName} 回复了你的评论 - ${siteTitle}`,
+            subject: sanitizeEmailHeaderValue(tEmails('replySubject', { replierName, siteTitle })),
             html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #333;">你的评论收到了新回复</h2>
-                    <p style="color: #666;">在文章《${post.title}》中，${replierName} 回复了你的评论：</p>
+                    <h2 style="color: #333;">${tEmails('replyHeading')}</h2>
+                    <p style="color: #666;">${tEmails('replyBody', {
+                        postTitle: escapeHtml(post.title),
+                        replierName: escapeHtml(replierName),
+                    })}</p>
                     <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                        <p style="color: #333; margin: 0;">${newComment.content}</p>
+                        <p style="color: #333; margin: 0;">${escapeHtmlWithLineBreaks(newComment.content)}</p>
                     </div>
                     <p style="color: #999; font-size: 14px;">
-                        此邮件由 ${siteTitle} 自动发送，请勿直接回复。
+                        ${tEmails('autoMessageNoReply', { siteTitle: escapeHtml(siteTitle) })}
                     </p>
                 </div>
             `
@@ -283,9 +305,11 @@ async function sendAdminNotification(commentId: string, postId: string) {
     const { getSettings } = await import('@/app/actions/settings');
     const { users } = await import('@/db/schema');
 
-    const [resend, settings] = await Promise.all([
+    const locale = await getLocale();
+    const [resend, settings, tEmails] = await Promise.all([
         getResendClient(),
-        getSettings()
+        getSettings(),
+        getTranslations({ locale, namespace: 'emails' }),
     ]);
 
     if (!resend || !settings.resendFromEmail) {
@@ -316,28 +340,31 @@ async function sendAdminNotification(commentId: string, postId: string) {
     if (!post) return;
 
     const siteTitle = settings.siteTitle || 'Blog';
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
-    const commenterName = comment.guestName || '匿名用户';
+    const reviewUrl = escapeHtml(`${process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/admin/comments`);
+    const commenterName = comment.guestName || tEmails('anonymousUser');
 
     try {
         await resend.emails.send({
             from: settings.resendFromEmail,
             to: adminUser.email,
-            subject: `新评论待审核 - ${siteTitle}`,
+            subject: sanitizeEmailHeaderValue(tEmails('adminPendingSubject', { siteTitle })),
             html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #333;">收到新评论</h2>
-                    <p style="color: #666;">文章《${post.title}》收到了来自 <strong>${commenterName}</strong> 的新评论：</p>
+                    <h2 style="color: #333;">${tEmails('adminPendingHeading')}</h2>
+                    <p style="color: #666;">${tEmails('adminPendingBody', {
+                        postTitle: escapeHtml(post.title),
+                        commenterName: escapeHtml(commenterName),
+                    })}</p>
                     <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                        <p style="color: #333; margin: 0;">${comment.content}</p>
+                        <p style="color: #333; margin: 0;">${escapeHtmlWithLineBreaks(comment.content)}</p>
                     </div>
                     <p style="margin-top: 16px;">
-                        <a href="${baseUrl}/admin/comments" style="background: #4cdf20; color: #000; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold;">
-                            审核评论
+                        <a href="${reviewUrl}" style="background: #4cdf20; color: #000; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                            ${tEmails('reviewComment')}
                         </a>
                     </p>
                     <p style="color: #999; font-size: 14px; margin-top: 24px;">
-                        此邮件由 ${siteTitle} 自动发送。
+                        ${tEmails('autoMessage', { siteTitle: escapeHtml(siteTitle) })}
                     </p>
                 </div>
             `
