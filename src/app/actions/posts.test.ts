@@ -52,6 +52,7 @@ vi.mock('@/lib/cache-layer', () => ({
   getCachedPublishedMemos: vi.fn(),
   invalidatePostCache: vi.fn(),
   invalidatePostsListCache: vi.fn(),
+  isPubliclyVisiblePost: vi.fn(),
 }));
 
 describe('getPosts', () => {

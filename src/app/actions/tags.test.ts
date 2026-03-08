@@ -6,6 +6,7 @@ const revalidatePathMock = vi.fn();
 const invalidatePostCacheMock = vi.fn();
 const invalidatePostsListCacheMock = vi.fn();
 const invalidateTagsCacheMock = vi.fn();
+const isPubliclyVisiblePostMock = vi.fn();
 
 const postsTagsFindManyMock = vi.fn();
 const postsFindFirstMock = vi.fn();
@@ -37,6 +38,7 @@ vi.mock('@/lib/cache-layer', () => ({
   invalidatePostCache: invalidatePostCacheMock,
   invalidatePostsListCache: invalidatePostsListCacheMock,
   invalidateTagsCache: invalidateTagsCacheMock,
+  isPubliclyVisiblePost: isPubliclyVisiblePostMock,
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -79,10 +81,11 @@ describe('updatePostTags', () => {
     postsTagsFindManyMock.mockResolvedValue([
       { tagId: 'old-tag', tag: { slug: 'old-slug' } },
     ]);
-    postsFindFirstMock.mockResolvedValue({ slug: 'post-slug' });
+    postsFindFirstMock.mockResolvedValue({ slug: 'post-slug', postType: 'post', published: true });
     tagsFindManyMock.mockResolvedValue([{ slug: 'new-slug' }]);
     deleteWhereMock.mockResolvedValue(undefined);
     insertValuesMock.mockResolvedValue(undefined);
+    isPubliclyVisiblePostMock.mockReturnValue(true);
   });
 
   it('invalidates public post and tag caches when tags are updated', async () => {

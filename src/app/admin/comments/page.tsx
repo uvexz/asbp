@@ -35,6 +35,11 @@ export default async function AdminCommentsPage({ searchParams }: { searchParams
                         deleteCommentTitle: t('deleteCommentTitle'),
                         deleteCommentDescription: t('deleteCommentDescription'),
                         approveTitle: t('approve'),
+                        statusLabels: {
+                            approved: t('commentStatusApproved'),
+                            pending: t('commentStatusPending'),
+                            unknown: t('commentStatusUnknown'),
+                        },
                     }}
                 />
                 {totalPages > 1 && (

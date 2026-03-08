@@ -35,6 +35,10 @@ vi.mock('@/lib/cache-layer', () => ({
   invalidateNavigationCache: vi.fn(),
 }));
 
+vi.mock('@/lib/public-revalidation', () => ({
+  revalidatePublicShell: vi.fn(),
+}));
+
 vi.mock('@/lib/db', () => ({
   db: {
     select: vi.fn(() => ({ from: vi.fn() })),
@@ -59,7 +63,7 @@ describe('navigation actions', () => {
     headersMock.mockResolvedValue(new Headers());
     getSessionMock.mockResolvedValue({ user: { role: 'admin' } });
     getTranslationsMock.mockResolvedValue(vi.fn((key: string) => ({
-      labelAndUrlRequired: 'Label and URL are required',
+      labelAndUrlRequired: 'Display Name and Link URL are required',
     }[key] ?? key)));
   });
 
@@ -70,7 +74,7 @@ describe('navigation actions', () => {
     formData.set('label', '');
     formData.set('url', '');
 
-    await expect(createNavItem(formData)).rejects.toThrow('Label and URL are required');
+    await expect(createNavItem(formData)).rejects.toThrow('Display Name and Link URL are required');
   });
 
   it('throws a translated error when updating a nav item without required fields', async () => {
@@ -80,6 +84,6 @@ describe('navigation actions', () => {
     formData.set('label', '');
     formData.set('url', '');
 
-    await expect(updateNavItem('nav-1', formData)).rejects.toThrow('Label and URL are required');
+    await expect(updateNavItem('nav-1', formData)).rejects.toThrow('Display Name and Link URL are required');
   });
 });

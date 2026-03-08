@@ -57,6 +57,10 @@ vi.mock('@/lib/cache-layer', () => ({
   invalidateCommentsCache: invalidateCommentsCacheMock,
 }));
 
+vi.mock('@/lib/public-revalidation', () => ({
+  revalidatePublicPostRouteById: vi.fn(),
+}));
+
 vi.mock('@/lib/crypto', () => ({
   createMathCaptchaChallenge: vi.fn(() => ({ prompt: '1 + 1 =', token: 'token' })),
   verifyMathCaptchaToken: verifyMathCaptchaTokenMock,
@@ -64,6 +68,7 @@ vi.mock('@/lib/crypto', () => ({
 
 vi.mock('next-intl/server', () => ({
   getTranslations: getTranslationsMock,
+  getLocale: vi.fn(),
 }));
 
 vi.mock('@/lib/validations', () => ({

@@ -68,6 +68,10 @@ vi.mock('@/lib/cache-layer', () => ({
   invalidateSettingsCache: invalidateSettingsCacheMock,
 }));
 
+vi.mock('@/lib/public-revalidation', () => ({
+  revalidatePublicShell: vi.fn(),
+}));
+
 vi.mock('@/lib/settings-secrets', () => ({
   resolveSecretFieldValue: resolveSecretFieldValueMock,
 }));
@@ -284,7 +288,7 @@ describe('updateSettings', () => {
   it('throws a translated save error when persistence fails', async () => {
     const { updateSettings } = await import('./settings');
 
-    getTranslationsMock.mockResolvedValue(vi.fn((key: string) => key === 'saveSettingsFailed' ? 'Failed to save settings' : key));
+    getTranslationsMock.mockResolvedValue(vi.fn((key: string) => key === 'saveSettingsFailed' ? "We couldn't save your settings. Please try again." : key));
     insertOnConflictDoUpdateMock.mockRejectedValueOnce(new Error('db failed'));
 
     const formData = new FormData();
@@ -293,7 +297,7 @@ describe('updateSettings', () => {
     formData.set('faviconUrl', 'https://example.com/favicon.ico');
     formData.set('resendFromEmail', 'admin@example.com');
 
-    await expect(updateSettings(formData)).rejects.toThrow('Failed to save settings');
+    await expect(updateSettings(formData)).rejects.toThrow("We couldn't save your settings. Please try again.");
 
     expect(consoleErrorMock).toHaveBeenCalledWith('Failed to update settings:', expect.any(Error));
   });

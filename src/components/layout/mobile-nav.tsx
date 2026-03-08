@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, Home, ScrollText, Newspaper } from "lucide-react";
+import { Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -11,7 +11,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { SearchTrigger } from "./search-dialog";
 
 export type NavItemData = {
@@ -49,24 +48,21 @@ export function MobileNav({ navItems = [], translations }: MobileNavProps) {
         <SheetHeader className="px-0">
           <SheetTitle>{translations.menu}</SheetTitle>
         </SheetHeader>
-        <nav className="flex flex-col gap-1 mt-4 px-0">
+        <nav className="mt-6 flex flex-col gap-1 px-0 text-sm">
           <Link
             href="/"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 text-neutral-700 text-base font-medium py-2 px-3 rounded-md hover:text-black hover:bg-neutral-100 transition-colors"
+            className="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-muted"
           >
-            <Home className="h-4 w-4" />
             {translations.home}
           </Link>
           <Link
             href="/memo"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 text-neutral-700 text-base font-medium py-2 px-3 rounded-md hover:text-black hover:bg-neutral-100 transition-colors"
+            className="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-muted"
           >
-            <ScrollText className="h-4 w-4" />
             {translations.memos}
           </Link>
-          <Separator className="my-4" />
           {navItems.map((item) => (
             <Link
               key={item.id}
@@ -74,9 +70,8 @@ export function MobileNav({ navItems = [], translations }: MobileNavProps) {
               target={item.openInNewTab ? "_blank" : undefined}
               rel={item.openInNewTab ? "noopener noreferrer" : undefined}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 text-neutral-700 text-base font-medium py-2 px-3 rounded-md hover:text-black hover:bg-neutral-100 transition-colors"
+              className="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-muted"
             >
-              <Newspaper className="h-4 w-4" />
               {item.label}
             </Link>
           ))}

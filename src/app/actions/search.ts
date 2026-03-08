@@ -15,7 +15,7 @@ export interface SearchResult {
 }
 
 /**
- * Search published posts by title and content
+ * Search published content by title and body text
  * Uses PostgreSQL ILIKE for case-insensitive search
  */
 export async function searchPosts(query: string, limit: number = 10): Promise<SearchResult[]> {

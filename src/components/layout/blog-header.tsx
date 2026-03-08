@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { MobileNav, type NavItemData } from "./mobile-nav";
-import { NavIconLink } from "./nav-icon-link";
 import { getTranslations } from "next-intl/server";
-import { Home, ScrollText } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { SearchTrigger } from "./search-dialog";
+import { SearchDialogProvider, SearchTrigger } from "./search-dialog";
 
 export type { NavItemData };
 
@@ -26,40 +23,40 @@ export async function BlogHeader({
   };
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap sm:mt-20 mt-5 px-4 sm:px-8 py-4">
-      <div className="flex items-center gap-4 text-foreground">
-        <h2 className="text-foreground text-lg font-bold leading-tight tracking-[-0.015em]">
+    <SearchDialogProvider>
+      <header className="flex items-center justify-between gap-6 border-b border-border/60 py-6 md:py-10">
+        <Link
+          href="/"
+          className="min-w-0 truncate text-lg font-semibold tracking-tight text-foreground transition-colors hover:text-foreground/70"
+        >
           {siteTitle}
-        </h2>
-      </div>
+        </Link>
 
-      {/* Desktop Navigation */}
-      <div className="hidden sm:flex flex-1 justify-end gap-8">
-        <nav className="flex items-center gap-4">
-          <NavIconLink href="/" label={t("home")}>
-            <Home className="h-4 w-4" />
-          </NavIconLink>
-          <NavIconLink href="/memo" label={t("memos")}>
-            <ScrollText className="h-4 w-4" />
-          </NavIconLink>
-          <SearchTrigger variant="icon" />
-          <Separator orientation="vertical" />
-          {navItems.map((item) => (
-            <Link
-              key={item.id}
-              href={item.url}
-              target={item.openInNewTab ? "_blank" : undefined}
-              rel={item.openInNewTab ? "noopener noreferrer" : undefined}
-              className="text-muted-foreground text-sm font-medium leading-normal hover:text-foreground transition-colors"
-            >
-              {item.label}
+        <div className="hidden items-center gap-6 sm:flex">
+          <nav className="flex items-center gap-5 text-sm text-muted-foreground">
+            <Link href="/" className="transition-colors hover:text-foreground">
+              {t("home")}
             </Link>
-          ))}
-        </nav>
-      </div>
+            <Link href="/memo" className="transition-colors hover:text-foreground">
+              {t("memos")}
+            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.url}
+                target={item.openInNewTab ? "_blank" : undefined}
+                rel={item.openInNewTab ? "noopener noreferrer" : undefined}
+                className="transition-colors hover:text-foreground"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <SearchTrigger variant="default" />
+        </div>
 
-      {/* Mobile Navigation */}
-      <MobileNav navItems={navItems} translations={mobileTranslations} />
-    </header>
+        <MobileNav navItems={navItems} translations={mobileTranslations} />
+      </header>
+    </SearchDialogProvider>
   );
 }

@@ -45,6 +45,11 @@ interface CommentsTableProps {
         deleteCommentTitle: string;
         deleteCommentDescription: string;
         approveTitle: string;
+        statusLabels: {
+            approved: string;
+            pending: string;
+            unknown: string;
+        };
     };
 }
 
@@ -52,6 +57,15 @@ function getStatusBadgeVariant(status: string | null): 'default' | 'secondary' |
     if (status === 'approved') return 'default';
     if (status === 'pending') return 'secondary';
     return 'outline';
+}
+
+function getStatusLabel(
+    status: string | null,
+    statusLabels: CommentsTableProps['labels']['statusLabels'],
+) {
+    if (status === 'approved') return statusLabels.approved;
+    if (status === 'pending') return statusLabels.pending;
+    return statusLabels.unknown;
 }
 
 export function CommentsTable({ comments, labels }: CommentsTableProps) {
@@ -83,8 +97,8 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                             <div className="min-w-0 flex-1">
                                 <div className="mb-1 flex items-center gap-2">
                                     <span className="text-sm font-medium text-foreground">{comment.author || labels.guest}</span>
-                                    <Badge variant={getStatusBadgeVariant(comment.status)} className="capitalize shadow-none">
-                                        {comment.status ?? '-'}
+                                    <Badge variant={getStatusBadgeVariant(comment.status)} className="shadow-none">
+                                        {getStatusLabel(comment.status, labels.statusLabels)}
                                     </Badge>
                                 </div>
                                 <p className="line-clamp-2 text-sm text-muted-foreground">{comment.content}</p>
@@ -150,8 +164,8 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                         {comments.map((comment) => (
                             <TableRow key={comment.id}>
                                 <TableCell>
-                                    <Badge variant={getStatusBadgeVariant(comment.status)} className="capitalize shadow-none">
-                                        {comment.status ?? '-'}
+                                    <Badge variant={getStatusBadgeVariant(comment.status)} className="shadow-none">
+                                        {getStatusLabel(comment.status, labels.statusLabels)}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="font-medium text-foreground">{comment.author || labels.guest}</TableCell>

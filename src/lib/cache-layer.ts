@@ -6,7 +6,7 @@
 import { unstable_cache, revalidateTag } from 'next/cache';
 import { db } from './db';
 import { settings, navItems, tags, posts, postsTags } from '@/db/schema';
-import { eq, asc, and, desc, count } from 'drizzle-orm';
+import { eq, asc, and, desc, count, inArray } from 'drizzle-orm';
 import { decrypt } from './crypto';
 import { getRedis, isRedisEnabled, REDIS_KEYS, REDIS_TTL, REDIS_WILDCARD_PATTERNS } from './redis';
 
@@ -374,26 +374,33 @@ async function fetchPostsByTag(tagSlug: string) {
     return { tag: null, posts: [] };
   }
 
-  const postTagAssociations = await db.query.postsTags.findMany({
+  const taggedPosts = await db.query.postsTags.findMany({
     where: eq(postsTags.tagId, tag.id),
+    columns: { postId: true },
+  });
+
+  const postIds = taggedPosts.map((association) => association.postId);
+
+  if (postIds.length === 0) {
+    return { tag, posts: [] };
+  }
+
+  const publishedPosts = await db.query.posts.findMany({
+    where: and(
+      inArray(posts.id, postIds),
+      eq(posts.published, true),
+      eq(posts.postType, 'post'),
+    ),
+    orderBy: [desc(posts.publishedAt), desc(posts.createdAt)],
     with: {
-      post: {
+      author: true,
+      tags: {
         with: {
-          author: true,
-          tags: {
-            with: {
-              tag: true,
-            },
-          },
+          tag: true,
         },
       },
     },
   });
-
-  const publishedPosts = postTagAssociations
-    .map(pt => pt.post)
-    .filter(post => post.published === true)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return { tag, posts: publishedPosts };
 }

@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { getCachedNavItems, invalidateNavigationCache } from '@/lib/cache-layer';
 import { getTranslations } from 'next-intl/server';
+import { revalidatePublicShell } from '@/lib/public-revalidation';
 
 export type NavItem = {
     id: string;
@@ -38,7 +39,8 @@ export async function createNavItem(formData: FormData) {
     });
 
     if (!session || session.user.role !== 'admin') {
-        throw new Error('Unauthorized');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('adminRequired'));
     }
 
     const label = formData.get('label') as string;
@@ -59,7 +61,7 @@ export async function createNavItem(formData: FormData) {
     });
 
     invalidateNavigationCache();
-    revalidatePath('/');
+    revalidatePublicShell();
     revalidatePath('/admin/navigation');
 }
 
@@ -69,7 +71,8 @@ export async function updateNavItem(id: string, formData: FormData) {
     });
 
     if (!session || session.user.role !== 'admin') {
-        throw new Error('Unauthorized');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('adminRequired'));
     }
 
     const label = formData.get('label') as string;
@@ -87,7 +90,7 @@ export async function updateNavItem(id: string, formData: FormData) {
         .where(eq(navItems.id, id));
 
     invalidateNavigationCache();
-    revalidatePath('/');
+    revalidatePublicShell();
     revalidatePath('/admin/navigation');
 }
 
@@ -97,13 +100,14 @@ export async function deleteNavItem(id: string) {
     });
 
     if (!session || session.user.role !== 'admin') {
-        throw new Error('Unauthorized');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('adminRequired'));
     }
 
     await db.delete(navItems).where(eq(navItems.id, id));
-    
+
     invalidateNavigationCache();
-    revalidatePath('/');
+    revalidatePublicShell();
     revalidatePath('/admin/navigation');
 }
 
@@ -113,17 +117,19 @@ export async function reorderNavItems(orderedIds: string[]) {
     });
 
     if (!session || session.user.role !== 'admin') {
-        throw new Error('Unauthorized');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('adminRequired'));
     }
 
-    // Update sort order for each item
-    for (let i = 0; i < orderedIds.length; i++) {
-        await db.update(navItems)
-            .set({ sortOrder: i })
-            .where(eq(navItems.id, orderedIds[i]));
-    }
+    await Promise.all(
+        orderedIds.map((id, index) =>
+            db.update(navItems)
+                .set({ sortOrder: index })
+                .where(eq(navItems.id, id))
+        )
+    );
 
     invalidateNavigationCache();
-    revalidatePath('/');
+    revalidatePublicShell();
     revalidatePath('/admin/navigation');
 }

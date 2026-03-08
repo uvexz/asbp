@@ -15,7 +15,13 @@ import {
   getCachedPublishedMemos,
   invalidatePostCache,
   invalidatePostsListCache,
+  isPubliclyVisiblePost,
 } from '@/lib/cache-layer';
+import {
+  getPostTagSlugs,
+  getTagSlugsByIds,
+  revalidatePublicPostMutation,
+} from '@/lib/public-revalidation';
 
 export type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -149,7 +155,8 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     });
 
     if (!session || session.user.role !== 'admin') {
-        throw new Error('Unauthorized');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('adminRequired'));
     }
 
     let title = formData.get('title') as string;
@@ -161,14 +168,12 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     const publishedAtStr = formData.get('publishedAt') as string;
     const publishedAt = publishedAtStr ? new Date(publishedAtStr) : (published ? new Date() : null);
 
-    // Auto-generate title/slug for memos if empty
     if (postType === 'memo' && (!title || !slug)) {
         const timestamp = Date.now();
         title = title || `memo-${timestamp}`;
         slug = slug || `memo-${timestamp}`;
     }
 
-    // Validate input using postSchema
     const validationResult = postSchema.safeParse({ title, slug, content, published, publishedAt });
 
     if (!validationResult.success) {
@@ -188,7 +193,6 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
         publishedAt: validationResult.data.publishedAt,
     }).returning({ id: posts.id });
 
-    // Add tags if any were selected (only for posts, not memos)
     if (tagIds.length > 0 && newPost && postType !== 'memo') {
         const { postsTags } = await import('@/db/schema');
         await db.insert(postsTags).values(
@@ -199,12 +203,19 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
         );
     }
 
-    // Invalidate caches
     invalidatePostsListCache();
-    invalidatePostCache(validationResult.data.slug);
+    if (isPubliclyVisiblePost({ published: validationResult.data.published, postType })) {
+        invalidatePostCache(validationResult.data.slug);
+    }
 
-    revalidatePath('/');
-    revalidatePath('/memo');
+    const publicTagSlugs = postType === 'memo' ? [] : await getTagSlugsByIds(tagIds);
+    revalidatePublicPostMutation({
+        slug: validationResult.data.slug,
+        postType,
+        published: validationResult.data.published,
+        tagSlugs: publicTagSlugs,
+    });
+
     revalidatePath('/admin/posts');
     redirect('/admin/posts');
 }
@@ -223,7 +234,8 @@ export async function updatePost(id: string, formData: FormData): Promise<Action
     });
 
     if (!session || session.user.role !== 'admin') {
-        throw new Error('Unauthorized');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('adminRequired'));
     }
 
     const title = formData.get('title') as string;
@@ -234,7 +246,6 @@ export async function updatePost(id: string, formData: FormData): Promise<Action
     const publishedAtStr = formData.get('publishedAt') as string;
     const publishedAt = publishedAtStr ? new Date(publishedAtStr) : null;
 
-    // Validate input using postSchema
     const validationResult = postSchema.safeParse({ title, slug, content, published, publishedAt });
 
     if (!validationResult.success) {
@@ -242,10 +253,9 @@ export async function updatePost(id: string, formData: FormData): Promise<Action
         return { success: false, error: formatValidationIssues(validationResult.error.issues, tErrors) };
     }
 
-    // Get old slug before update for cache invalidation
-    const oldPost = await db.query.posts.findFirst({
+    const existingPost = await db.query.posts.findFirst({
         where: eq(posts.id, id),
-        columns: { slug: true }
+        columns: { slug: true, postType: true, published: true }
     });
 
     await db.update(posts)
@@ -260,15 +270,33 @@ export async function updatePost(id: string, formData: FormData): Promise<Action
         })
         .where(eq(posts.id, id));
 
-    // Invalidate caches (both old and new slug if changed)
     invalidatePostsListCache();
-    invalidatePostCache(validationResult.data.slug);
-    if (oldPost && oldPost.slug !== validationResult.data.slug) {
-        invalidatePostCache(oldPost.slug);
+    if (isPubliclyVisiblePost({ published: validationResult.data.published, postType })) {
+        invalidatePostCache(validationResult.data.slug);
+    }
+    if (
+        existingPost &&
+        existingPost.slug !== validationResult.data.slug &&
+        isPubliclyVisiblePost(existingPost)
+    ) {
+        invalidatePostCache(existingPost.slug);
     }
 
+    const affectedTagSlugs = postType === 'memo' && existingPost?.postType === 'memo'
+        ? []
+        : await getPostTagSlugs(id);
+
+    revalidatePublicPostMutation({
+        slug: validationResult.data.slug,
+        previousSlug: existingPost?.slug,
+        postType,
+        previousPostType: existingPost?.postType,
+        published: validationResult.data.published,
+        previousPublished: existingPost?.published,
+        tagSlugs: affectedTagSlugs,
+    });
+
     revalidatePath('/admin/posts');
-    revalidatePath('/memo');
     revalidatePath(`/admin/posts/edit?id=${id}`);
     redirect('/admin/posts');
 }
@@ -279,27 +307,33 @@ export async function deletePost(id: string) {
     });
 
     if (!session || session.user.role !== 'admin') {
-        throw new Error('Unauthorized');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('adminRequired'));
     }
 
-    // Get slug before deletion for cache invalidation
     const post = await db.query.posts.findFirst({
         where: eq(posts.id, id),
-        columns: { slug: true }
+        columns: { slug: true, postType: true, published: true }
     });
+    const tagSlugs = post && post.postType !== 'memo' ? await getPostTagSlugs(id) : [];
 
-    // 级联删除关联数据
     const { postsTags, comments } = await import('@/db/schema');
     await db.delete(postsTags).where(eq(postsTags.postId, id));
     await db.delete(comments).where(eq(comments.postId, id));
 
-    // 删除文章
     await db.delete(posts).where(eq(posts.id, id));
 
-    // Invalidate caches
     invalidatePostsListCache();
     if (post) {
-        invalidatePostCache(post.slug);
+        if (isPubliclyVisiblePost(post)) {
+            invalidatePostCache(post.slug);
+        }
+        revalidatePublicPostMutation({
+            previousSlug: post.slug,
+            previousPostType: post.postType,
+            previousPublished: post.published,
+            tagSlugs,
+        });
     }
 
     revalidatePath('/admin/posts');
@@ -339,7 +373,11 @@ export async function createQuickMemo(content: string): Promise<ActionResult> {
     });
 
     invalidatePostsListCache();
-    revalidatePath('/memo');
+    revalidatePublicPostMutation({
+        slug,
+        postType: 'memo',
+        published: true,
+    });
     revalidatePath('/admin/posts');
     return { success: true };
 }
@@ -362,9 +400,9 @@ export async function updateMemo(id: string, content: string): Promise<ActionRes
         return { success: false, error: tErrors('contentRequired') };
     }
 
-    // Verify the memo exists and is a memo type
     const memo = await db.query.posts.findFirst({
         where: and(eq(posts.id, id), eq(posts.postType, 'memo')),
+        columns: { slug: true, postType: true },
     });
 
     if (!memo) {
@@ -379,7 +417,11 @@ export async function updateMemo(id: string, content: string): Promise<ActionRes
         .where(eq(posts.id, id));
 
     invalidatePostsListCache();
-    revalidatePath('/memo');
+    revalidatePublicPostMutation({
+        slug: memo.slug,
+        postType: memo.postType,
+        published: true,
+    });
     revalidatePath('/admin/posts');
     return { success: true };
 }
@@ -398,9 +440,9 @@ export async function deleteMemo(id: string): Promise<ActionResult> {
         return { success: false, error: tErrors('adminRequired') };
     }
 
-    // Verify the memo exists and is a memo type
     const memo = await db.query.posts.findFirst({
         where: and(eq(posts.id, id), eq(posts.postType, 'memo')),
+        columns: { slug: true, postType: true },
     });
 
     if (!memo) {
@@ -410,7 +452,11 @@ export async function deleteMemo(id: string): Promise<ActionResult> {
     await db.delete(posts).where(eq(posts.id, id));
 
     invalidatePostsListCache();
-    revalidatePath('/memo');
+    revalidatePublicPostMutation({
+        previousSlug: memo.slug,
+        previousPostType: memo.postType,
+        previousPublished: true,
+    });
     revalidatePath('/admin/posts');
     return { success: true };
 }

@@ -1,62 +1,39 @@
-'use client';
-
-import { useMemo } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownContent } from './markdown-content';
 import { ImageLightbox } from './image-lightbox';
 
 interface MemoContentProps {
   content: string;
 }
 
-// Extract image URLs from markdown content
 function extractImages(content: string): string[] {
-  const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  const images: string[] = [];
-  let match;
-  while ((match = imageRegex.exec(content)) !== null) {
-    images.push(match[2]);
-  }
-  return images;
+  const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
+  return Array.from(content.matchAll(imageRegex), (match) => match[1]);
 }
 
-// Remove image markdown from content
 function removeImages(content: string): string {
-  return content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '').trim();
+  return content.replace(/!\[[^\]]*\]\([^)]+\)/g, '').trim();
 }
 
 export function MemoContent({ content }: MemoContentProps) {
-  const { textContent, images } = useMemo(() => ({
-    textContent: removeImages(content),
-    images: extractImages(content),
-  }), [content]);
+  const textContent = removeImages(content);
+  const images = extractImages(content);
 
   return (
-    <div>
+    <div className="space-y-3">
       {textContent && (
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            table: ({ children, ...props }) => (
-              <div className="overflow-x-auto w-full my-4">
-                <table className="w-full border-collapse" {...props}>
-                  {children}
-                </table>
-              </div>
-            ),
-          }}
-        >
-          {textContent}
-        </ReactMarkdown>
+        <MarkdownContent
+          content={textContent}
+          className="prose-sm md:prose-base prose-p:my-0 prose-ul:my-2 prose-ol:my-2 prose-blockquote:my-3"
+        />
       )}
       {images.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-1">
+        <div className="mt-1 flex flex-wrap gap-2">
           {images.map((src, index) => (
             <ImageLightbox
-              key={index}
+              key={`${src}-${index}`}
               src={src}
               alt={`Image ${index + 1}`}
-              className="w-24 h-24 object-cover rounded-lg border not-prose"
+              className="not-prose h-24 w-24 rounded-md border border-border/60 object-cover"
             />
           ))}
         </div>

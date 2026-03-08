@@ -63,13 +63,17 @@ export function CommentForm({ postId, user }: CommentFormProps) {
             
             {result?.success && (
                 <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
-                    {user ? t('commentPublished') : t('commentPending')}
+                    {result.autoApproved ? t('commentPublished') : t('commentPending')}
                 </div>
             )}
             
             {result && !result.success && (
                 <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
-                    {result.error}
+                    {result.error === 'spam_rejected'
+                        ? t('spamRejected')
+                        : result.error === 'captcha_invalid'
+                            ? t('captchaRequired')
+                            : result.error}
                 </div>
             )}
             
@@ -86,8 +90,9 @@ export function CommentForm({ postId, user }: CommentFormProps) {
                         </div>
                     </div>
                 ) : (
-                    <div className="p-3 bg-neutral-50 rounded-lg text-sm text-neutral-600">
-                        <Link href="/sign-in" className="text-blue-600 hover:underline">{tAuth('signIn')}</Link> {t('loginForAutoApprove')}
+                    <div className="space-y-1 p-3 bg-neutral-50 rounded-lg text-sm text-neutral-600">
+                        <Link href="/sign-in" className="inline-flex w-fit text-blue-600 hover:underline">{tAuth('signIn')}</Link>
+                        <p>{t('loginForAutoApprove')}</p>
                     </div>
                 )}
                 

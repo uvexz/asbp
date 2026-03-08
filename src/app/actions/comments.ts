@@ -11,6 +11,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { isAdminAuthorized } from '@/lib/server-utils';
 import { getCachedPostComments, invalidateCommentsCache } from '@/lib/cache-layer';
 import { createMathCaptchaChallenge, verifyMathCaptchaToken } from '@/lib/crypto';
+import { revalidatePublicPostRouteById } from '@/lib/public-revalidation';
 
 export type CommentActionResult =
     | { success: true; autoApproved?: boolean }
@@ -43,7 +44,8 @@ async function requireAdmin() {
     });
 
     if (!isAdminAuthorized(session)) {
-        throw new Error('Unauthorized');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('adminRequired'));
     }
 
     return session;
@@ -55,7 +57,6 @@ export async function getComments(page: number = 1, pageSize: number = 20) {
     const validPageSize = Math.max(1, Math.min(100, pageSize));
     const offset = (validPage - 1) * validPageSize;
 
-    // Get total count
     const [totalResult] = await db.select({ count: count() }).from(comments);
     const total = totalResult?.count ?? 0;
     const totalPages = Math.ceil(total / validPageSize);
@@ -98,6 +99,7 @@ export async function approveComment(id: string, addToWhitelistFlag: boolean = f
     await db.update(comments).set({ status: 'approved' }).where(eq(comments.id, id));
     if (comment?.postId) {
         invalidateCommentsCache(comment.postId);
+        await revalidatePublicPostRouteById(comment.postId);
     }
     revalidatePath('/admin/comments');
 }
@@ -111,6 +113,7 @@ export async function deleteComment(id: string) {
     await db.delete(comments).where(eq(comments.id, id));
     if (comment?.postId) {
         invalidateCommentsCache(comment.postId);
+        await revalidatePublicPostRouteById(comment.postId);
     }
     revalidatePath('/admin/comments');
 }
@@ -124,7 +127,6 @@ export async function createComment(postId: string, formData: FormData, parentId
     const captchaToken = formData.get('captchaToken');
     const captchaResponse = formData.get('captchaResponse');
 
-    // Check if user is logged in
     const session = await auth.api.getSession({
         headers: await headers()
     });
@@ -132,7 +134,6 @@ export async function createComment(postId: string, formData: FormData, parentId
     let newCommentId: string | undefined;
 
     if (session?.user) {
-        // Logged in user - skip guest validation, auto-approve
         if (!content || content.trim().length === 0) {
             const tErrors = await getTranslations('errors');
             return { success: false, error: tErrors('contentRequired') };
@@ -143,10 +144,11 @@ export async function createComment(postId: string, formData: FormData, parentId
             postId,
             userId: session.user.id,
             parentId: parentId || null,
-            status: 'approved', // Auto-approve for logged in users
+            status: 'approved',
         }).returning({ id: comments.id });
         newCommentId = result[0]?.id;
         invalidateCommentsCache(postId);
+        await revalidatePublicPostRouteById(postId);
     } else {
         const hasValidCaptcha =
             typeof captchaToken === 'string' &&
@@ -157,7 +159,6 @@ export async function createComment(postId: string, formData: FormData, parentId
             return { success: false, error: 'captcha_invalid' };
         }
 
-        // Guest user - validate guest fields
         const validationResult = commentSchema.safeParse({ content, guestName, guestEmail, guestWebsite });
 
         if (!validationResult.success) {
@@ -165,7 +166,6 @@ export async function createComment(postId: string, formData: FormData, parentId
             return { success: false, error: formatValidationIssues(validationResult.error.issues, tErrors) };
         }
 
-        // Check spam using AI
         const { checkCommentSpam } = await import('@/lib/spam-detector');
         const spamResult = await checkCommentSpam(
             validationResult.data.content,
@@ -174,13 +174,12 @@ export async function createComment(postId: string, formData: FormData, parentId
             validationResult.data.guestWebsite
         );
 
-        // Reject high-risk spam
         if (spamResult.isSpam) {
             return { success: false, error: 'spam_rejected' };
         }
 
-        // Determine status based on spam check
         const status = spamResult.autoApproved ? 'approved' : 'pending';
+        const isPubliclyVisible = status === 'approved';
 
         const result = await db.insert(comments).values({
             content: validationResult.data.content,
@@ -192,15 +191,15 @@ export async function createComment(postId: string, formData: FormData, parentId
             status,
         }).returning({ id: comments.id });
         newCommentId = result[0]?.id;
-        invalidateCommentsCache(postId);
+        if (isPubliclyVisible) {
+            invalidateCommentsCache(postId);
+            await revalidatePublicPostRouteById(postId);
+        }
 
-        // Send email notifications
         if (newCommentId) {
-            // Only notify admin for pending comments (not auto-approved)
             if (!spamResult.autoApproved) {
                 sendAdminNotification(newCommentId, postId).catch(console.error);
             }
-            // Notify parent comment author if this is a reply
             if (parentId) {
                 sendReplyNotification(parentId, newCommentId, postId).catch(console.error);
             }
@@ -210,9 +209,7 @@ export async function createComment(postId: string, formData: FormData, parentId
         return { success: true, autoApproved: spamResult.autoApproved };
     }
 
-    // Send email notifications for logged-in users
     if (newCommentId) {
-        // Notify parent comment author if this is a reply
         if (parentId) {
             sendReplyNotification(parentId, newCommentId, postId).catch(console.error);
         }
@@ -235,10 +232,9 @@ async function sendReplyNotification(parentCommentId: string, newCommentId: stri
     ]);
 
     if (!resend || !settings.resendFromEmail) {
-        return; // Email not configured
+        return;
     }
 
-    // Get parent comment to find recipient email
     const parentComment = await db.query.comments.findFirst({
         where: eq(comments.id, parentCommentId),
         with: { user: true }
@@ -249,7 +245,6 @@ async function sendReplyNotification(parentCommentId: string, newCommentId: stri
     const recipientEmail = parentComment.user?.email || parentComment.guestEmail;
     if (!recipientEmail) return;
 
-    // Get new comment details
     const newComment = await db.query.comments.findFirst({
         where: eq(comments.id, newCommentId),
         with: { user: true }
@@ -257,7 +252,6 @@ async function sendReplyNotification(parentCommentId: string, newCommentId: stri
 
     if (!newComment) return;
 
-    // Get post details
     const post = await db.query.posts.findFirst({
         where: eq(posts.id, postId)
     });
@@ -313,10 +307,9 @@ async function sendAdminNotification(commentId: string, postId: string) {
     ]);
 
     if (!resend || !settings.resendFromEmail) {
-        return; // Email not configured
+        return;
     }
 
-    // Get admin email
     const adminUser = await db.query.users.findFirst({
         where: eq(users.role, 'admin'),
         columns: { email: true, name: true }
@@ -324,14 +317,12 @@ async function sendAdminNotification(commentId: string, postId: string) {
 
     if (!adminUser?.email) return;
 
-    // Get comment details
     const comment = await db.query.comments.findFirst({
         where: eq(comments.id, commentId),
     });
 
     if (!comment) return;
 
-    // Get post details
     const post = await db.query.posts.findFirst({
         where: eq(posts.id, postId),
         columns: { title: true, slug: true }

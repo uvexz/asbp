@@ -9,8 +9,21 @@ import { formatLocalizedDate } from "@/lib/date-utils";
 import { getSettings } from "@/app/actions/settings";
 import { getLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import { Calendar, CircleUser, Tag } from "lucide-react";
 import { ArticleJsonLd } from "@/components/seo/json-ld";
+import { cache } from "react";
+
+const loadPost = cache(async (slug: string) => getPostBySlug(slug));
+const loadSettings = cache(async () => getSettings());
+
+function getPostDescription(content: string) {
+  return (
+    content
+      .replace(/[#*`>\[\]()!]/g, "")
+      .replace(/\n+/g, " ")
+      .trim()
+      .slice(0, 160) + (content.length > 160 ? "..." : "")
+  );
+}
 
 export async function generateMetadata({
   params,
@@ -18,8 +31,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPostBySlug(slug);
-  const settings = await getSettings();
+  const [post, settings] = await Promise.all([loadPost(slug), loadSettings()]);
   const siteTitle = settings.siteTitle || "ASBP";
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000";
 
@@ -27,15 +39,7 @@ export async function generateMetadata({
     return { title: `Not Found - ${siteTitle}` };
   }
 
-  // Extract description from content (first 160 chars)
-  const description =
-    post.content
-      .replace(/[#*`>\[\]()!]/g, "")
-      .replace(/\n+/g, " ")
-      .trim()
-      .slice(0, 160) + (post.content.length > 160 ? "..." : "");
-
-  // Extract keywords from tags
+  const description = getPostDescription(post.content);
   const keywords = post.tags.map((pt) => pt.tag.name);
 
   return {
@@ -71,7 +75,7 @@ export default async function ArticleDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = await getPostBySlug(slug);
+  const post = await loadPost(slug);
 
   if (!post) {
     notFound();
@@ -79,7 +83,7 @@ export default async function ArticleDetailPage({
 
   const [comments, settings, locale] = await Promise.all([
     getPostComments(post.id),
-    getSettings(),
+    loadSettings(),
     getLocale(),
   ]);
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000";
@@ -88,7 +92,7 @@ export default async function ArticleDetailPage({
     <>
       <ArticleJsonLd
         title={post.title}
-        description={post.content.replace(/[#*`>\[\]()!]/g, "").slice(0, 160)}
+        description={getPostDescription(post.content)}
         url={`${baseUrl}/${post.slug}`}
         datePublished={new Date(post.publishedAt || post.createdAt).toISOString()}
         dateModified={new Date(post.updatedAt).toISOString()}
@@ -96,47 +100,38 @@ export default async function ArticleDetailPage({
         siteName={settings.siteTitle || "My Blog"}
         tags={post.tags.map((pt) => pt.tag.name)}
       />
-      <div className="space-y-16 py-6 md:py-16 w-full overflow-x-hidden">
-        <article className="space-y-8 overflow-hidden">
-          <header className="space-y-4">
-            <h1 className="text-foreground text-2xl md:text-3xl font-black leading-tight tracking-[-0.033em] uppercase">
-              {post.title}
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <p className="text-muted-foreground text-sm font-normal leading-none flex items-center gap-1">
-                <CircleUser className="h-3 w-3" />
-                {post.author.name}
-                <Calendar className="ms-2 h-3 w-3" />
-                {formatLocalizedDate(post.publishedAt || post.createdAt, locale)}
+      <div className="space-y-14 py-4 md:py-8">
+        <article className="space-y-8">
+          <header className="space-y-4 border-b border-border/60 pb-8">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                {post.author.name} · {formatLocalizedDate(post.publishedAt || post.createdAt, locale)}
               </p>
-              {post.tags.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  {post.tags.map((postTag) => (
-                    <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
-                      <Badge
-                        variant="secondary"
-                        className="hover:bg-muted transition-colors leading-none"
-                      >
-                        <Tag className="h-3 w-3 text-muted-foreground" />{" "}
-                        {postTag.tag.name}
-                      </Badge>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+                {post.title}
+              </h1>
             </div>
+            {post.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {post.tags.map((postTag) => (
+                  <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full border border-border/60 bg-transparent px-2.5 py-0.5 text-xs font-normal text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      {postTag.tag.name}
+                    </Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
           </header>
           <MarkdownContent
             content={post.content}
-            className="prose prose-neutral prose-base md:prose-lg max-w-none prose-headings:font-bold prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-lg prose-img:shadow-md prose-img:border prose-img:border-neutral-200 dark:prose-img:border-neutral-800 prose-pre:bg-neutral-900 prose-pre:text-neutral-50 prose-pre:p-4 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-code:bg-neutral-900 prose-code:text-neutral-50 prose-code:font-light prose-code:text-sm prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-table:w-full prose-table:table-auto prose-table:border-collapse prose-thead:w-full prose-thead:table-auto prose-thead:min-w-max prose-th:border prose-th:border-neutral-200 dark:prose-th:border-neutral-800 prose-th:p-2 prose-td:border prose-td:border-neutral-200 dark:prose-td:border-neutral-800 prose-td:p-2 [&_pre]:max-w-full"
+            className="prose-p:leading-8 prose-li:leading-8 prose-blockquote:text-foreground/80"
           />
         </article>
-        <div className="border-t border-border pt-12">
-          <CommentSection
-            postId={post.id}
-            comments={comments}
-          />
-        </div>
+        <CommentSection postId={post.id} comments={comments} />
       </div>
     </>
   );

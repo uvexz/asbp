@@ -11,6 +11,7 @@ import { getCachedSettings, invalidateSettingsCache } from '@/lib/cache-layer';
 import { resolveSecretFieldValue } from '@/lib/settings-secrets';
 import { formatValidationIssues, settingsSchema, type SettingsInput } from '@/lib/validations';
 import { getTranslations } from 'next-intl/server';
+import { revalidatePublicShell } from '@/lib/public-revalidation';
 
 /**
  * Get settings with caching
@@ -61,7 +62,6 @@ export async function getSettingsUncached() {
 
     const row = data[0];
 
-    // Keep secret values server-side; the admin UI only needs to know whether one is already stored.
     return {
         ...row,
         faviconUrl: row.faviconUrl || '',
@@ -135,7 +135,8 @@ export async function updateSettings(formData: FormData) {
     });
 
     if (!session || session.user.role !== 'admin') {
-        throw new Error('Unauthorized');
+        const tErrors = await getTranslations('errors');
+        throw new Error(tErrors('adminRequired'));
     }
 
     const [currentSettings] = await db.select().from(settings).where(eq(settings.id, 1)).limit(1);
@@ -204,8 +205,8 @@ export async function updateSettings(formData: FormData) {
         throw new Error(tErrors('saveSettingsFailed'));
     }
 
-    // Invalidate settings cache
     invalidateSettingsCache();
+    revalidatePublicShell();
 
     revalidatePath('/');
     revalidatePath('/admin/settings');

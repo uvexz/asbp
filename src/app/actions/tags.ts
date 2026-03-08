@@ -9,7 +9,8 @@ import { headers } from 'next/headers';
 import { formatValidationIssues, tagSchema } from '@/lib/validations';
 import { getTranslations } from 'next-intl/server';
 import { generateSlug } from '@/lib/server-utils';
-import { getCachedTags, getCachedPostsByTag, invalidatePostCache, invalidatePostsListCache, invalidateTagsCache } from '@/lib/cache-layer';
+import { getCachedTags, getCachedPostsByTag, invalidatePostCache, invalidatePostsListCache, invalidateTagsCache, isPubliclyVisiblePost } from '@/lib/cache-layer';
+import { getPublicPostRoutesByTagId, revalidatePublicPostList, revalidatePublicPostRoute, revalidateTagRoutes } from '@/lib/public-revalidation';
 
 export type TagActionResult =
   | { success: true }
@@ -25,7 +26,8 @@ async function requireAdmin() {
   });
 
   if (!session || session.user.role !== 'admin') {
-    throw new Error('Unauthorized');
+    const tErrors = await getTranslations('errors');
+    throw new Error(tErrors('adminRequired'));
   }
 
   return session;
@@ -59,7 +61,6 @@ export async function createTag(formData: FormData): Promise<TagActionResult> {
 
   const name = formData.get('name') as string;
 
-  // Validate input using tagSchema
   const validationResult = tagSchema.safeParse({ name });
 
   if (!validationResult.success) {
@@ -80,7 +81,6 @@ export async function createTag(formData: FormData): Promise<TagActionResult> {
       slug,
     });
   } catch (error) {
-    // Handle unique constraint violation
     if (error instanceof Error && error.message.includes('unique')) {
       const tErrors = await getTranslations('errors');
       return { success: false, error: tErrors('tagExists') };
@@ -100,7 +100,6 @@ export async function createTag(formData: FormData): Promise<TagActionResult> {
 export async function createTagInline(name: string): Promise<CreateTagResult> {
   await requireAdmin();
 
-  // Validate input using tagSchema
   const validationResult = tagSchema.safeParse({ name });
 
   if (!validationResult.success) {
@@ -125,7 +124,6 @@ export async function createTagInline(name: string): Promise<CreateTagResult> {
     revalidatePath('/admin/tags');
     return { success: true, tag: newTag };
   } catch (error) {
-    // Handle unique constraint violation
     if (error instanceof Error && error.message.includes('unique')) {
       const tErrors = await getTranslations('errors');
       return { success: false, error: tErrors('tagExists') };
@@ -140,13 +138,20 @@ export async function createTagInline(name: string): Promise<CreateTagResult> {
 export async function updateTag(id: string, name: string): Promise<TagActionResult> {
   await requireAdmin();
 
-  // Validate input using tagSchema
   const validationResult = tagSchema.safeParse({ name });
 
   if (!validationResult.success) {
     const tErrors = await getTranslations('errors');
     return { success: false, error: formatValidationIssues(validationResult.error.issues, tErrors) };
   }
+
+  const [existingTag, affectedPosts] = await Promise.all([
+    db.query.tags.findFirst({
+      where: eq(tags.id, id),
+      columns: { slug: true },
+    }),
+    getPublicPostRoutesByTagId(id),
+  ]);
 
   const slug = generateSlug(validationResult.data.name);
 
@@ -168,8 +173,24 @@ export async function updateTag(id: string, name: string): Promise<TagActionResu
   }
 
   invalidateTagsCache();
+  invalidatePostsListCache();
+
+  for (const post of affectedPosts) {
+    if (isPubliclyVisiblePost(post)) {
+      invalidatePostCache(post.slug);
+    }
+  }
+
   revalidatePath('/admin/tags');
-  revalidatePath('/');
+  revalidatePublicPostList();
+  revalidateTagRoutes([existingTag?.slug, slug]);
+
+  for (const post of affectedPosts) {
+    if (isPubliclyVisiblePost(post)) {
+      revalidatePath(`/${post.slug}`);
+    }
+  }
+
   return { success: true };
 }
 
@@ -180,14 +201,36 @@ export async function updateTag(id: string, name: string): Promise<TagActionResu
 export async function deleteTag(id: string): Promise<TagActionResult> {
   await requireAdmin();
 
-  // First, delete all post-tag associations (cascade)
-  await db.delete(postsTags).where(eq(postsTags.tagId, id));
+  const [existingTag, affectedPosts] = await Promise.all([
+    db.query.tags.findFirst({
+      where: eq(tags.id, id),
+      columns: { slug: true },
+    }),
+    getPublicPostRoutesByTagId(id),
+  ]);
 
-  // Then delete the tag itself
+  await db.delete(postsTags).where(eq(postsTags.tagId, id));
   await db.delete(tags).where(eq(tags.id, id));
 
   invalidateTagsCache();
+  invalidatePostsListCache();
+
+  for (const post of affectedPosts) {
+    if (isPubliclyVisiblePost(post)) {
+      invalidatePostCache(post.slug);
+    }
+  }
+
   revalidatePath('/admin/tags');
+  revalidatePublicPostList();
+  revalidateTagRoutes([existingTag?.slug]);
+
+  for (const post of affectedPosts) {
+    if (isPubliclyVisiblePost(post)) {
+      revalidatePath(`/${post.slug}`);
+    }
+  }
+
   return { success: true };
 }
 
@@ -224,14 +267,12 @@ export async function updatePostTags(postId: string, tagIds: string[]): Promise<
     }),
     db.query.posts.findFirst({
       where: eq(posts.id, postId),
-      columns: { slug: true },
+      columns: { slug: true, postType: true, published: true },
     }),
   ]);
 
-  // Delete existing associations
   await db.delete(postsTags).where(eq(postsTags.postId, postId));
 
-  // Insert new associations
   if (tagIds.length > 0) {
     await db.insert(postsTags).values(
       tagIds.map(tagId => ({
@@ -251,9 +292,9 @@ export async function updatePostTags(postId: string, tagIds: string[]): Promise<
   invalidatePostsListCache();
   invalidateTagsCache();
 
-  if (postRecord?.slug) {
+  if (postRecord?.slug && isPubliclyVisiblePost(postRecord)) {
     invalidatePostCache(postRecord.slug);
-    revalidatePath(`/${postRecord.slug}`);
+    revalidatePublicPostRoute(postRecord.slug, postRecord.postType, postRecord.published);
   }
 
   const affectedTagSlugs = new Set([
@@ -261,9 +302,7 @@ export async function updatePostTags(postId: string, tagIds: string[]): Promise<
     ...newTags.map((tag) => tag.slug),
   ]);
 
-  for (const slug of affectedTagSlugs) {
-    revalidatePath(`/tag/${slug}`);
-  }
+  revalidateTagRoutes(affectedTagSlugs);
 
   revalidatePath('/admin/posts');
   return { success: true };

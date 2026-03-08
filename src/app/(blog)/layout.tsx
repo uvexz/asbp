@@ -9,30 +9,21 @@ export default async function BlogLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const settings = await getSettings();
-  const navItems = await getNavItems();
+  const [settings, navItems] = await Promise.all([getSettings(), getNavItems()]);
   const siteTitle = settings.siteTitle || "My Blog";
 
   return (
-    <div className="bg-white dark:bg-gray-950 font-sans">
+    <div className="min-h-screen bg-background font-sans text-foreground">
       <UmamiScript
         enabled={settings.umamiEnabled ?? false}
         isCloud={settings.umamiCloud ?? false}
         hostUrl={settings.umamiHostUrl}
         websiteId={settings.umamiWebsiteId}
       />
-      <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
-        <div className="layout-container flex h-full grow flex-col">
-          <div className="px-4 md:px-6 flex flex-1 justify-center py-5">
-            <div className="layout-content-container flex flex-col max-w-[768px] flex-1 min-w-0 w-full">
-              <BlogHeader siteTitle={siteTitle} navItems={navItems} />
-              <main className="flex-1 px-4 sm:px-6 md:px-8 py-10 space-y-12">
-                {children}
-              </main>
-              <BlogFooter siteTitle={siteTitle} />
-            </div>
-          </div>
-        </div>
+      <div className="mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 sm:px-6 md:px-8">
+        <BlogHeader siteTitle={siteTitle} navItems={navItems} />
+        <main className="flex-1 py-10 md:py-12">{children}</main>
+        <BlogFooter siteTitle={siteTitle} />
       </div>
     </div>
   );
