@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { useState } from 'react';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 interface ImageLightboxProps {
@@ -13,64 +13,39 @@ interface ImageLightboxProps {
 
 export function ImageLightbox({ src, alt, className }: ImageLightboxProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setTimeout(() => setMounted(true), 0);
-  }, []);
-
-  const openLightbox = useCallback(() => setIsOpen(true), []);
-  const closeLightbox = useCallback(() => setIsOpen(false), []);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeLightbox();
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, closeLightbox]);
-
-  const lightboxContent = isOpen && mounted ? createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
-      onClick={closeLightbox}
-    >
-      <button
-        onClick={closeLightbox}
-        className="absolute top-4 right-4 p-2 text-white/80 hover:text-white transition-colors"
-        aria-label="Close"
-      >
-        <X className="h-6 w-6" />
-      </button>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={alt || ''}
-        className="max-h-[90vh] max-w-[90vw] object-contain"
-        onClick={(e) => e.stopPropagation()}
-      />
-    </div>,
-    document.body
-  ) : null;
+  const imageLabel = alt?.trim() || 'Image preview';
 
   return (
     <>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={alt || ''}
-        className={cn('cursor-zoom-in', className)}
-        onClick={openLightbox}
-      />
-      {lightboxContent}
+      <button
+        type="button"
+        className={cn(
+          'block cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          className
+        )}
+        onClick={() => setIsOpen(true)}
+        aria-label={imageLabel}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt || ''}
+          className="block max-w-full"
+        />
+      </button>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="max-w-[90vw] border-none bg-black/90 p-4 shadow-none" closeLabel="Close image preview">
+          <VisuallyHidden>
+            <DialogTitle>{imageLabel}</DialogTitle>
+          </VisuallyHidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt={alt || ''}
+            className="mx-auto max-h-[85vh] max-w-full object-contain"
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

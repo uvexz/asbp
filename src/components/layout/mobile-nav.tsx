@@ -39,7 +39,7 @@ export function MobileNav({ navItems = [], translations }: MobileNavProps) {
       <div className="flex items-center gap-1 sm:hidden">
         <SearchTrigger variant="icon" />
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label={translations.menu}>
             <Menu className="h-5 w-5" />
             <span className="sr-only">{translations.menu}</span>
           </Button>

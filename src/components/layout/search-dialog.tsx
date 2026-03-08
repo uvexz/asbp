@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useTransition } from 'react';
+import { useState, useEffect, useCallback, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -23,8 +23,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isPending, startTransition] = useTransition();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const latestQueryRef = useRef('');
   const router = useRouter();
   const tBlog = useTranslations('blog');
+  const showResults = query.length >= 2 && open;
 
   const navigateTo = useCallback((slug: string) => {
     onOpenChange(false);
@@ -33,32 +35,24 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
   // Debounced search
   useEffect(() => {
-    if (!query || query.length < 2) {
-      setTimeout(() => setResults([]), 0);
+    latestQueryRef.current = query;
+
+    if (!showResults) {
       return;
     }
 
+    const currentQuery = query;
     const timer = setTimeout(() => {
       startTransition(async () => {
-        const data = await searchPosts(query);
+        const data = await searchPosts(currentQuery);
+        if (latestQueryRef.current !== currentQuery) return;
         setResults(data);
         setSelectedIndex(0);
       });
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query]);
-
-  // Reset on close
-  useEffect(() => {
-    if (!open) {
-      setTimeout(() => {
-        setQuery('');
-        setResults([]);
-        setSelectedIndex(0);
-      }, 0);
-    }
-  }, [open]);
+  }, [query, showResults]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -89,7 +83,8 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={tBlog('searchPostsPlaceholder')}
-            className="flex-1 h-12 px-3 bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+            aria-label={tBlog('searchDialogTitle')}
+            className="flex-1 h-12 px-3 bg-transparent text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             autoFocus
           />
           {isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
@@ -97,13 +92,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
         {/* Results */}
         <div className="max-h-80 overflow-y-auto">
-          {query.length >= 2 && results.length === 0 && !isPending && (
+          {showResults && results.length === 0 && !isPending && (
             <div className="p-8 text-center text-muted-foreground text-sm">
               {tBlog('searchNoResults')}
             </div>
           )}
 
-          {results.length > 0 && (
+          {showResults && results.length > 0 && (
             <div className="p-2">
               {results.map((result, index) => (
                 <button
@@ -132,7 +127,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             </div>
           )}
 
-          {query.length < 2 && (
+          {!showResults && (
             <div className="p-8 text-center text-muted-foreground text-sm">
               {tBlog('searchMinCharacters')}
             </div>
@@ -168,6 +163,7 @@ interface SearchTriggerProps {
 export function SearchTrigger({ className, variant = 'default' }: SearchTriggerProps) {
   const [open, setOpen] = useState(false);
   const tCommon = useTranslations('common');
+  const tBlog = useTranslations('blog');
 
   // Global keyboard shortcut: Cmd+K / Ctrl+K
   useEffect(() => {
@@ -189,9 +185,10 @@ export function SearchTrigger({ className, variant = 'default' }: SearchTriggerP
         <button
           type="button"
           onClick={() => setOpen(true)}
+          aria-label={tCommon('search')}
           className={cn(
-            'flex items-center justify-center text-neutral-500',
-            'hover:text-black transition-colors',
+            'flex h-11 w-11 items-center justify-center rounded-md text-neutral-500',
+            'hover:text-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             className
           )}
         >
@@ -207,9 +204,10 @@ export function SearchTrigger({ className, variant = 'default' }: SearchTriggerP
       <button
         type="button"
         onClick={() => setOpen(true)}
+        aria-label={tBlog('searchDialogTitle')}
         className={cn(
-          'flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground',
-          'border rounded-md hover:bg-muted transition-colors',
+          'flex min-h-11 items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground',
+          'border rounded-md hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           className
         )}
       >

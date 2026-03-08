@@ -178,19 +178,21 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
         </DialogHeader>
 
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+          <div className="flex flex-1 items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : !hasS3 ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
-            <ImageIcon className="h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-2">{t('s3Required')}</p>
-            <p className="text-sm text-gray-400">{t('s3RequiredDesc')}</p>
+          <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
+            <div className="mb-4 rounded-full bg-muted p-4 text-muted-foreground">
+              <ImageIcon className="h-12 w-12" />
+            </div>
+            <p className="mb-2 font-medium text-foreground">{t('s3Required')}</p>
+            <p className="text-sm text-muted-foreground">{t('s3RequiredDesc')}</p>
           </div>
         ) : (
           <>
             {error && (
-              <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -222,8 +224,10 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
             <div className="flex-1 overflow-auto">
               {mediaList.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <ImageIcon className="h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-gray-500">{t('noMediaFiles')}</p>
+                  <div className="mb-4 rounded-full bg-muted p-4 text-muted-foreground">
+                    <ImageIcon className="h-12 w-12" />
+                  </div>
+                  <p className="text-muted-foreground">{t('noMediaFiles')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-4 gap-3">
@@ -233,10 +237,10 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
                       type="button"
                       onClick={() => toggleSelect(media)}
                       className={cn(
-                        "aspect-square rounded-lg overflow-hidden border-2 transition-all relative",
+                        "relative aspect-square overflow-hidden rounded-lg border-2 bg-muted/40 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         selectedIds.has(media.id)
-                          ? "border-blue-500 ring-2 ring-blue-200"
-                          : "border-transparent hover:border-gray-300"
+                          ? "border-primary ring-2 ring-primary/20"
+                          : "border-transparent hover:border-border"
                       )}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -246,8 +250,8 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
                         className="w-full h-full object-cover"
                       />
                       {selectedIds.has(media.id) && (
-                        <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-1">
-                          <Check className="h-3 w-3 text-white" />
+                        <div className="absolute top-2 right-2 rounded-full bg-primary p-1 text-primary-foreground">
+                          <Check className="h-3 w-3" />
                         </div>
                       )}
                     </button>
@@ -263,7 +267,6 @@ export function MediaPicker({ onSelect, onSelectMultiple, trigger, className, mu
               <Button
                 onClick={handleSelect}
                 disabled={selectedMedia.length === 0}
-                className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90"
               >
                 {tCommon('insertSelectedImages')}{multiple && selectedMedia.length > 0 ? ` (${selectedMedia.length})` : ''}
               </Button>

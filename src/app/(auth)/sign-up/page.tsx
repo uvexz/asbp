@@ -19,6 +19,16 @@ import Link from 'next/link';
 import { checkRegistrationStatus } from "@/app/actions/auth-helpers";
 import { useTranslations } from 'next-intl';
 
+function AuthErrorMessage({ message }: { message: string | null }) {
+    if (!message) return null;
+
+    return (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert" aria-live="polite">
+            {message}
+        </div>
+    );
+}
+
 interface ImportUser {
     id: string;
     name: string;
@@ -41,7 +51,8 @@ export default function SignUp() {
     const [checking, setChecking] = useState(true);
     const [allowed, setAllowed] = useState(false);
     const [isFirstUser, setIsFirstUser] = useState(false);
-    
+    const [signUpError, setSignUpError] = useState<string | null>(null);
+
     // Import state
     const [showImport, setShowImport] = useState(false);
     const [importData, setImportData] = useState<unknown>(null);
@@ -51,7 +62,7 @@ export default function SignUp() {
     const [importLoading, setImportLoading] = useState(false);
     const [importError, setImportError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    
+
     const t = useTranslations('auth');
     const router = useRouter();
 
@@ -63,8 +74,10 @@ export default function SignUp() {
         });
     }, []);
 
-    const handleSignUp = async () => {
+    const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
         setLoading(true);
+        setSignUpError(null);
         await authClient.signUp.email({
             email,
             password,
@@ -74,7 +87,7 @@ export default function SignUp() {
                     router.push(isFirstUser ? "/admin" : "/sign-in");
                 },
                 onError: (ctx) => {
-                    alert(ctx.error.message);
+                    setSignUpError(ctx.error.message || t('signUpFailed'));
                     setLoading(false);
                 },
             },
@@ -100,7 +113,7 @@ export default function SignUp() {
 
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.error || 'Failed to parse import file');
+                throw new Error(err.error || t('importParseFailed'));
             }
 
             const preview = await response.json();
@@ -111,7 +124,7 @@ export default function SignUp() {
             const adminUser = preview.users.find((u: ImportUser) => u.role === 'admin');
             setSelectedUser(adminUser || preview.users[0]);
         } catch (err) {
-            setImportError(err instanceof Error ? err.message : 'Failed to parse file');
+            setImportError(err instanceof Error ? err.message : t('importParseFailed'));
         } finally {
             setImportLoading(false);
         }
@@ -137,7 +150,7 @@ export default function SignUp() {
 
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.error || 'Import failed');
+                throw new Error(err.error || t('importInitializeFailed'));
             }
 
             // Login with the new credentials
@@ -154,7 +167,7 @@ export default function SignUp() {
                 },
             });
         } catch (err) {
-            setImportError(err instanceof Error ? err.message : 'Import failed');
+            setImportError(err instanceof Error ? err.message : t('importInitializeFailed'));
             setImportLoading(false);
         }
     };
@@ -178,7 +191,7 @@ export default function SignUp() {
             <div className="flex h-screen w-full items-center justify-center px-4">
                 <Card className="w-full max-w-sm">
                     <CardHeader>
-                        <CardTitle className="text-2xl text-red-500">{t('registrationClosed')}</CardTitle>
+                        <CardTitle className="text-2xl text-destructive">{t('registrationClosed')}</CardTitle>
                         <CardDescription>
                             {t('registrationClosedDescription')}
                         </CardDescription>
@@ -212,6 +225,7 @@ export default function SignUp() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-4">
+                        <AuthErrorMessage message={importError} />
                         {!importPreview ? (
                             <div className="grid gap-4">
                                 <input
@@ -245,30 +259,45 @@ export default function SignUp() {
                                     </ul>
                                 </div>
 
-                                <div className="grid gap-2">
-                                    <Label>{t('selectUser')}</Label>
+                                <fieldset className="grid gap-2">
+                                    <Label asChild>
+                                        <legend>{t('selectUser')}</legend>
+                                    </Label>
                                     <div className="space-y-2">
-                                        {importPreview.users.map((user) => (
-                                            <div
-                                                key={user.id}
-                                                className={`p-3 border rounded-md cursor-pointer transition-colors ${
-                                                    selectedUser?.id === user.id
-                                                        ? 'border-primary bg-primary/5'
-                                                        : 'hover:border-muted-foreground/50'
-                                                }`}
-                                                onClick={() => setSelectedUser(user)}
-                                            >
-                                                <div className="font-medium">{user.name}</div>
-                                                <div className="text-sm text-muted-foreground">{user.email}</div>
-                                                {user.role === 'admin' && (
-                                                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded mt-1 inline-block">
-                                                        Admin
-                                                    </span>
-                                                )}
-                                            </div>
-                                        ))}
+                                        {importPreview.users.map((user) => {
+                                            const isSelected = selectedUser?.id === user.id;
+
+                                            return (
+                                                <label
+                                                    key={user.id}
+                                                    className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors ${
+                                                        isSelected
+                                                            ? 'border-primary bg-primary/5'
+                                                            : 'hover:border-muted-foreground/50'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="selectedUser"
+                                                        value={user.id}
+                                                        checked={isSelected}
+                                                        onChange={() => setSelectedUser(user)}
+                                                        className="mt-1"
+                                                    />
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="font-medium break-words">{user.name}</div>
+                                                        <div className="text-sm text-muted-foreground break-all">{user.email}</div>
+                                                        {user.role === 'admin' && (
+                                                            <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                                                Admin
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </label>
+                                            );
+                                        })}
                                     </div>
-                                </div>
+                                </fieldset>
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="importPassword">{t('setNewPassword')}</Label>
@@ -284,11 +313,6 @@ export default function SignUp() {
                             </div>
                         )}
 
-                        {importError && (
-                            <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">
-                                {importError}
-                            </div>
-                        )}
                     </CardContent>
                     {importPreview && (
                         <CardFooter>
@@ -316,74 +340,88 @@ export default function SignUp() {
                         {t('signUpDescription')}
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="name">{t('name')}</Label>
-                        <Input
-                            id="name"
-                            type="text"
-                            placeholder="John Doe"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="email">{t('email')}</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="m@example.com"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="password">{t('password')}</Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                    </div>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-2">
-                    <Button className="w-full" onClick={handleSignUp} disabled={loading}>
-                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {t('signUp')}
-                    </Button>
-                    
-                    {isFirstUser && (
-                        <>
-                            <div className="relative w-full my-2">
-                                <div className="absolute inset-0 flex items-center">
-                                    <span className="w-full border-t" />
+                <form onSubmit={handleSignUp} noValidate>
+                    <CardContent className="grid gap-4">
+                        <AuthErrorMessage message={signUpError} />
+                        <div className="grid gap-2">
+                            <Label htmlFor="name">{t('name')}</Label>
+                            <Input
+                                id="name"
+                                name="name"
+                                type="text"
+                                placeholder="John Doe"
+                                required
+                                autoComplete="name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                aria-invalid={!!signUpError}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">{t('email')}</Label>
+                            <Input
+                                id="email"
+                                name="email"
+                                type="email"
+                                placeholder="m@example.com"
+                                required
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                aria-invalid={!!signUpError}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">{t('password')}</Label>
+                            <Input
+                                id="password"
+                                name="password"
+                                type="password"
+                                required
+                                minLength={8}
+                                autoComplete="new-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                aria-invalid={!!signUpError}
+                            />
+                        </div>
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-2">
+                        <Button className="w-full" type="submit" disabled={loading}>
+                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            {t('signUp')}
+                        </Button>
+
+                        {isFirstUser && (
+                            <>
+                                <div className="relative w-full my-2">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <span className="w-full border-t" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-background px-2 text-muted-foreground">{t('or')}</span>
+                                    </div>
                                 </div>
-                                <div className="relative flex justify-center text-xs uppercase">
-                                    <span className="bg-background px-2 text-muted-foreground">{t('or')}</span>
-                                </div>
-                            </div>
-                            <Button 
-                                variant="outline" 
-                                className="w-full"
-                                onClick={() => setShowImport(true)}
-                            >
-                                <Upload className="mr-2 h-4 w-4" />
-                                {t('importFromBackup')}
-                            </Button>
-                        </>
-                    )}
-                    
-                    <div className="text-center text-sm">
-                        {t('hasAccount')}{" "}
-                        <Link href="/sign-in" className="underline">
-                            {t('signIn')}
-                        </Link>
-                    </div>
-                </CardFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => setShowImport(true)}
+                                >
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    {t('importFromBackup')}
+                                </Button>
+                            </>
+                        )}
+
+                        <div className="text-center text-sm">
+                            {t('hasAccount')}{" "}
+                            <Link href="/sign-in" className="underline">
+                                {t('signIn')}
+                            </Link>
+                        </div>
+                    </CardFooter>
+                </form>
             </Card>
         </div>
     );

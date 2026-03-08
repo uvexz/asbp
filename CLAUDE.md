@@ -97,3 +97,28 @@ This is a Next.js 16 App Router app using React 19, TypeScript, Drizzle ORM, Pos
 - Before adding auth guards, check the existing inline pattern using `auth.api.getSession({ headers: await headers() })`.
 - Import/export functionality already exists in `src/app/api/export/route.ts`, `src/app/api/import/route.ts`, and `src/app/api/init-import/route.ts`; reuse those flows instead of creating parallel content migration logic.
 - The current test footprint is small and Vitest-based; the checked-in test file is `src/lib/validations.property.test.ts`.
+
+## Design Context
+
+### Users
+- Primary audience: personal blog owners managing a lightweight self-hosted publishing site.
+- Core jobs: publish posts and memos, manage comments and settings, and maintain a clean reader-facing blog without unnecessary operational complexity.
+- Secondary context inferred from the product: technically comfortable owners/admins who may configure storage, email, analytics, and auth features themselves.
+
+### Brand Personality
+- Personality: calm, minimal, confident.
+- Emotional goal: make publishing and reading feel quiet, clear, and dependable rather than loud or hype-driven.
+- Voice should stay restrained and useful, with content taking priority over decorative UI.
+
+### Aesthetic Direction
+- Existing product direction is a content-first editorial blog paired with a simple utilitarian admin area.
+- Current visual system uses Geist typography, a mostly neutral grayscale palette, rounded surfaces, and a restrained lime accent (`#4cdf20`) used selectively for primary admin actions.
+- Prioritize light-mode quality first; dark mode exists, but future design decisions should be judged primarily by how well they work in light mode.
+- No external visual references were provided, so future design work should extend the current product language rather than introducing a new stylistic direction.
+
+### Design Principles
+1. Keep the reading experience primary: favor typography, spacing, and hierarchy that support content consumption over decorative chrome.
+2. Default to calm minimalism: remove unnecessary visual noise and avoid flashy gradients, gimmicky motion, or overly expressive SaaS styling.
+3. Use emphasis sparingly: reserve accent color and stronger visual weight for clear calls to action, important state changes, and navigation cues.
+4. Make admin tools feel efficient and dependable: clear labels, obvious actions, and dense-but-legible layouts are preferable to ornamental complexity.
+5. Optimize for light-mode clarity: preserve strong contrast, readable text, and clean surfaces in light mode before refining dark-mode treatments.

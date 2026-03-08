@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { createComment, deleteComment, type CommentActionResult } from '@/app/actions/comments';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
@@ -85,7 +86,7 @@ function InputGroupInput({ className, ...props }: React.ComponentProps<"input">)
     return (
         <input
             className={cn(
-                "flex-1 h-9 bg-transparent px-3 py-1 text-base outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+                "flex-1 h-11 min-w-0 bg-transparent px-3 py-1 text-base outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
                 className
             )}
             {...props}
@@ -162,7 +163,7 @@ function CommentItem({
                         <p className="text-xs text-muted-foreground mt-0.5">{authorBio}</p>
                     )}
                     <p className="text-foreground/90 mt-2 text-sm leading-relaxed">{comment.content}</p>
-                    <div className="mt-2 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="mt-2 flex items-center gap-3 opacity-100 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                         <button
                             type="button"
                             onClick={() => onReply(comment.id, authorName)}
@@ -301,20 +302,23 @@ function CommentForm({
 
                 {/* 评论内容输入 */}
                 <div className="relative">
-                    <Textarea 
+                    <Label htmlFor="comment-content" className="mb-2 block">{replyTo ? t('replyPlaceholder') : t('commentContent')}</Label>
+                    <Textarea
+                        id="comment-content"
                         name="content"
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
-                        className="min-h-24 pr-12 resize-none" 
-                        placeholder={replyTo ? t('replyPlaceholder') : t('commentPlaceholder')} 
-                        required 
+                        className="min-h-24 pr-16 resize-none"
+                        placeholder={replyTo ? t('replyPlaceholder') : t('commentPlaceholder')}
+                        required
                         disabled={isPending}
                     />
                     <Button
                         type="submit"
                         size="icon"
                         disabled={isPending || !canSubmit}
-                        className="absolute bottom-2 right-2 h-8 w-8 rounded-full"
+                        aria-label={replyTo ? t('reply') : t('submitComment')}
+                        className="absolute bottom-2 right-2 h-11 w-11 rounded-full"
                     >
                         <Send className="h-4 w-4" />
                     </Button>
@@ -322,61 +326,75 @@ function CommentForm({
 
                 {/* 访客验证码 */}
                 {needsCaptcha && (
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">{t('captchaLabel')}:</span>
-                        <Captcha key={captchaResetKey} onVerify={setCaptchaValid} />
-                    </div>
+                    <Captcha
+                        key={captchaResetKey}
+                        onVerify={setCaptchaValid}
+                        label={t('captchaLabel')}
+                        refreshLabel={t('refreshCaptcha')}
+                    />
                 )}
-                
+
                 {/* 访客信息输入 */}
                 {!user && (
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <InputGroup>
-                            <InputGroup.Prefix>
-                                <User className="h-4 w-4" />
-                            </InputGroup.Prefix>
-                            <InputGroup.Input
-                                name="guestName"
-                                placeholder={t('commentName')}
-                                required
-                                disabled={isPending}
-                            />
-                        </InputGroup>
-                        
-                        <InputGroup>
-                            <InputGroup.Prefix>
-                                <Mail className="h-4 w-4" />
-                            </InputGroup.Prefix>
-                            <InputGroup.Input
-                                name="guestEmail"
-                                type="email"
-                                placeholder={t('commentEmail')}
-                                required
-                                disabled={isPending}
-                                value={guestEmail}
-                                onChange={(e) => setGuestEmail(e.target.value)}
-                            />
-                            {gravatarUrl && (
-                                <span className="pr-2">
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src={gravatarUrl} />
-                                        <AvatarFallback className="text-xs">?</AvatarFallback>
-                                    </Avatar>
-                                </span>
-                            )}
-                        </InputGroup>
-                        
-                        <InputGroup className="sm:col-span-2">
-                            <InputGroup.Prefix>
-                                <Globe className="h-4 w-4" />
-                            </InputGroup.Prefix>
-                            <InputGroup.Input
-                                name="guestWebsite"
-                                type="url"
-                                placeholder={t('commentWebsite')}
-                                disabled={isPending}
-                            />
-                        </InputGroup>
+                        <div className="space-y-2">
+                            <Label htmlFor="guest-name">{t('commentName')}</Label>
+                            <InputGroup>
+                                <InputGroup.Prefix>
+                                    <User className="h-4 w-4" />
+                                </InputGroup.Prefix>
+                                <InputGroup.Input
+                                    id="guest-name"
+                                    name="guestName"
+                                    placeholder={t('commentName')}
+                                    required
+                                    disabled={isPending}
+                                />
+                            </InputGroup>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="guest-email">{t('commentEmail')}</Label>
+                            <InputGroup>
+                                <InputGroup.Prefix>
+                                    <Mail className="h-4 w-4" />
+                                </InputGroup.Prefix>
+                                <InputGroup.Input
+                                    id="guest-email"
+                                    name="guestEmail"
+                                    type="email"
+                                    placeholder={t('commentEmail')}
+                                    required
+                                    disabled={isPending}
+                                    value={guestEmail}
+                                    onChange={(e) => setGuestEmail(e.target.value)}
+                                />
+                                {gravatarUrl && (
+                                    <span className="pr-2">
+                                        <Avatar className="h-6 w-6">
+                                            <AvatarImage src={gravatarUrl} />
+                                            <AvatarFallback className="text-xs">?</AvatarFallback>
+                                        </Avatar>
+                                    </span>
+                                )}
+                            </InputGroup>
+                        </div>
+
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="guest-website">{t('commentWebsite')}</Label>
+                            <InputGroup className="sm:col-span-2">
+                                <InputGroup.Prefix>
+                                    <Globe className="h-4 w-4" />
+                                </InputGroup.Prefix>
+                                <InputGroup.Input
+                                    id="guest-website"
+                                    name="guestWebsite"
+                                    type="url"
+                                    placeholder={t('commentWebsite')}
+                                    disabled={isPending}
+                                />
+                            </InputGroup>
+                        </div>
                     </div>
                 )}
             </form>
