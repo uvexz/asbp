@@ -1,6 +1,7 @@
 import { getUserById, updateUser } from "@/app/actions/users";
 import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     InputGroup,
     InputGroupAddon,
@@ -33,11 +34,9 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
         notFound();
     }
 
-    // Check if current user is editing their own profile
     const session = await auth.api.getSession({ headers: await headers() });
     const isOwnProfile = session?.user?.id === id;
 
-    // Get passkeys if editing own profile
     let userPasskeys: { id: string; name: string | null; credentialID: string; deviceType: string; backedUp: boolean; createdAt: Date | null }[] = [];
     if (isOwnProfile) {
         userPasskeys = await db
@@ -68,43 +67,44 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex min-h-full flex-col">
             <header className="px-4 py-6 sm:px-6">
-                <Link href="/admin/users" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-4">
-                    <ArrowLeft className="h-4 w-4" />
-                    {t('backToUsers')}
-                </Link>
-                <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">{t('editUser')}</h1>
+                <div className="flex flex-col gap-4">
+                    <Link href="/admin/users" className="inline-flex w-fit items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+                        <ArrowLeft className="h-4 w-4" />
+                        {t('backToUsers')}
+                    </Link>
+                    <div className="space-y-2">
+                        <h1 className="text-4xl font-black leading-tight tracking-[-0.033em] text-foreground">{t('editUser')}</h1>
+                        <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('userManagementDesc')}</p>
+                    </div>
+                </div>
             </header>
-            <main className="flex-1 px-4 pb-6 sm:px-6 overflow-auto">
+
+            <main className="flex-1 overflow-auto px-4 pb-6 sm:px-6">
                 <div className="max-w-2xl space-y-8">
-                    {/* User Avatar & Info Header */}
-                    <div className="flex items-center gap-6 p-4 border rounded-lg bg-muted/30">
+                    <div className="flex items-center gap-6 rounded-xl border bg-muted/30 p-4">
                         <Avatar className="h-20 w-20">
                             <AvatarImage src={user.image || undefined} />
                             <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
                         </Avatar>
-                        <div className="space-y-1">
-                            <p className="text-xl font-bold">{user.name}</p>
-                            <p className="text-muted-foreground flex items-center gap-2">
+                        <div className="min-w-0 space-y-1">
+                            <p className="text-xl font-semibold text-foreground">{user.name}</p>
+                            <p className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Mail className="size-4" />
-                                {user.email}
+                                <span className="truncate">{user.email}</span>
                             </p>
-                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${user.role === 'admin'
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
-                                }`}>
+                            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                                 {user.role === 'admin' ? t('roleAdmin') : t('roleUser')}
-                            </span>
+                            </Badge>
                         </div>
                     </div>
 
-                    {/* User Info Form */}
                     <form action={handleSubmit} className="space-y-6">
                         <section className="space-y-4">
-                            <h2 className="text-lg font-semibold flex items-center gap-2">
-                                <User className="size-5" />
-                                {t('userInfo') || 'User Information'}
+                            <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+                                <User className="size-5 text-muted-foreground" />
+                                {t('userInfo')}
                             </h2>
                             <div className="space-y-3">
                                 <InputGroup>
@@ -145,8 +145,8 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                         </section>
 
                         <section className="space-y-4">
-                            <h2 className="text-lg font-semibold flex items-center gap-2">
-                                <FileText className="size-5" />
+                            <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+                                <FileText className="size-5 text-muted-foreground" />
                                 {t('bio')}
                             </h2>
                             <Textarea
@@ -160,8 +160,8 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                         </section>
 
                         <section className="space-y-4">
-                            <h2 className="text-lg font-semibold flex items-center gap-2">
-                                <Shield className="size-5" />
+                            <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+                                <Shield className="size-5 text-muted-foreground" />
                                 {t('role')}
                             </h2>
                             <Select name="role" defaultValue={user.role || 'user'}>
@@ -175,27 +175,23 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                             </Select>
                         </section>
 
-                        <div className="flex gap-4 pt-4">
-                            <Button type="submit" className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold">
-                                {t('saveChanges')}
-                            </Button>
+                        <div className="flex flex-wrap gap-3 pt-2">
+                            <Button type="submit">{t('saveChanges')}</Button>
                             <Link href="/admin/users">
                                 <Button type="button" variant="outline">{tCommon('cancel')}</Button>
                             </Link>
                         </div>
                     </form>
 
-                    {/* Security Section - Only show for own profile */}
                     {isOwnProfile && (
-                        <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-800">
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tAuth('security')}</h2>
-
-                            {/* Change Password */}
+                        <section className="space-y-6 border-t border-border pt-8">
+                            <div className="space-y-1">
+                                <h2 className="text-2xl font-bold tracking-tight text-foreground">{tAuth('security')}</h2>
+                                <p className="text-sm text-muted-foreground">{tAuth('passkeysDesc')}</p>
+                            </div>
                             <ChangePassword />
-
-                            {/* Passkey Management */}
                             <PasskeyManager initialPasskeys={userPasskeys} />
-                        </div>
+                        </section>
                     )}
                 </div>
             </main>

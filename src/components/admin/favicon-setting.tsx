@@ -45,13 +45,13 @@ export function FaviconSetting({ defaultUrl, translations }: FaviconSettingProps
                 <MediaPicker
                     onSelect={handleMediaSelect}
                     trigger={
-                        <button type="button" className="px-3 border-l hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                            <ImageIcon className="size-4 text-gray-500" />
+                        <button type="button" className="border-l px-3 transition-colors hover:bg-accent">
+                            <ImageIcon className="size-4 text-muted-foreground" />
                         </button>
                     }
                 />
             </InputGroup>
-            <p className="text-sm text-gray-500">{translations.faviconDesc}</p>
+            <p className="text-sm text-muted-foreground">{translations.faviconDesc}</p>
         </div>
     );
 }

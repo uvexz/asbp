@@ -39,7 +39,6 @@ export default function AdminTagsPage() {
     const t = useTranslations('admin');
     const tCommon = useTranslations('common');
 
-    // Load tags on mount
     useEffect(() => {
         async function loadTags() {
             const data = await getTags();
@@ -115,124 +114,127 @@ export default function AdminTagsPage() {
     }
 
     return (
-        <div className="flex flex-col h-full">
-            <header className="px-4 py-6 sm:px-6">
-                <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">{t('tagManagement')}</h1>
-                <p className="text-gray-500 text-base font-normal leading-normal mt-2">{t('tagManagementDesc')}</p>
+        <div className="flex min-h-full flex-col">
+            <header className="flex flex-col gap-2 px-4 py-6 sm:px-6">
+                <h1 className="text-4xl font-black leading-tight tracking-[-0.033em] text-foreground">{t('tagManagement')}</h1>
+                <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('tagManagementDesc')}</p>
             </header>
-            <main className="flex-1 px-4 pb-6 sm:px-6 overflow-auto">
-                {/* Create Tag Form */}
-                <div className="mb-8">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('createNewTag')}</h2>
-                    <form onSubmit={handleCreateTag} className="flex items-center gap-4 max-w-md">
-                        <InputGroup className="flex-1">
-                            <InputGroupAddon>
-                                <InputGroupText><TagIcon className="size-4" /></InputGroupText>
-                            </InputGroupAddon>
-                            <InputGroupInput
-                                type="text"
-                                placeholder={t('enterTagName')}
-                                value={newTagName}
-                                onChange={(e) => setNewTagName(e.target.value)}
-                                disabled={isPending}
-                            />
-                        </InputGroup>
-                        <Button
-                            type="submit"
-                            disabled={isPending}
-                            className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold"
-                        >
-                            <Plus className="mr-2 h-4 w-4" /> {t('addTag')}
-                        </Button>
-                    </form>
-                    {error && (
-                        <p className="text-red-500 text-sm mt-2">{error}</p>
-                    )}
-                </div>
 
-                {/* Tags Table */}
-                <div className="rounded-md border bg-white dark:bg-black">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>{tCommon('name')}</TableHead>
-                                <TableHead>{t('slug')}</TableHead>
-                                <TableHead className="text-right">{tCommon('actions')}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {tags.map((tag) => (
-                                <TableRow key={tag.id}>
-                                    <TableCell className="font-medium">
-                                        {editingId === tag.id ? (
-                                            <Input
-                                                value={editingName}
-                                                onChange={(e) => setEditingName(e.target.value)}
-                                                className="h-8 w-40"
-                                                autoFocus
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') handleUpdateTag(tag.id);
-                                                    if (e.key === 'Escape') cancelEditing();
-                                                }}
-                                            />
-                                        ) : (
-                                            tag.name
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-gray-500">{tag.slug}</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            {editingId === tag.id ? (
-                                                <>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="text-green-600 hover:bg-green-50"
-                                                        onClick={() => handleUpdateTag(tag.id)}
-                                                        disabled={isPending}
-                                                    >
-                                                        <Check className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="text-gray-500 hover:bg-gray-100"
-                                                        onClick={cancelEditing}
-                                                        disabled={isPending}
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="text-gray-500 hover:bg-gray-100"
-                                                        onClick={() => startEditing(tag)}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <DeleteButton
-                                                        onDelete={() => handleDeleteTag(tag.id)}
-                                                        title={t('deleteTagTitle')}
-                                                        description={t('deleteTagDescription', { name: tag.name })}
-                                                    />
-                                                </>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {tags.length === 0 && (
+            <main className="flex-1 overflow-auto px-4 pb-6 sm:px-6">
+                <div className="space-y-8">
+                    <section className="max-w-xl space-y-4">
+                        <h2 className="text-lg font-semibold tracking-tight text-foreground">{t('createNewTag')}</h2>
+                        <form onSubmit={handleCreateTag} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <InputGroup className="flex-1">
+                                <InputGroupAddon>
+                                    <InputGroupText><TagIcon className="size-4" /></InputGroupText>
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    type="text"
+                                    placeholder={t('enterTagName')}
+                                    value={newTagName}
+                                    onChange={(e) => setNewTagName(e.target.value)}
+                                    disabled={isPending}
+                                />
+                            </InputGroup>
+                            <Button type="submit" disabled={isPending}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                {t('addTag')}
+                            </Button>
+                        </form>
+                        {error && (
+                            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+                                {error}
+                            </div>
+                        )}
+                    </section>
+
+                    <div className="rounded-xl border bg-card">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24 text-gray-500">
-                                        {t('noTagsFound')}
-                                    </TableCell>
+                                    <TableHead>{tCommon('name')}</TableHead>
+                                    <TableHead>{t('slug')}</TableHead>
+                                    <TableHead className="text-right">{tCommon('actions')}</TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {tags.map((tag) => (
+                                    <TableRow key={tag.id}>
+                                        <TableCell className="font-medium text-foreground">
+                                            {editingId === tag.id ? (
+                                                <Input
+                                                    value={editingName}
+                                                    onChange={(e) => setEditingName(e.target.value)}
+                                                    className="h-8 w-40"
+                                                    autoFocus
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleUpdateTag(tag.id);
+                                                        if (e.key === 'Escape') cancelEditing();
+                                                    }}
+                                                />
+                                            ) : (
+                                                tag.name
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-sm text-muted-foreground">{tag.slug}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                {editingId === tag.id ? (
+                                                    <>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-foreground hover:bg-accent"
+                                                            onClick={() => handleUpdateTag(tag.id)}
+                                                            disabled={isPending}
+                                                        >
+                                                            <Check className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                            onClick={cancelEditing}
+                                                            disabled={isPending}
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                            onClick={() => startEditing(tag)}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <DeleteButton
+                                                            onDelete={() => handleDeleteTag(tag.id)}
+                                                            title={t('deleteTagTitle')}
+                                                            description={t('deleteTagDescription', { name: tag.name })}
+                                                        />
+                                                    </>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {tags.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                            {t('noTagsFound')}
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </div>
             </main>
         </div>

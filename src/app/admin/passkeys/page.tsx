@@ -22,16 +22,16 @@ export default async function PasskeysPage() {
         .orderBy(passkeys.createdAt);
 
     return (
-        <div className="flex flex-col h-full">
-            <header className="px-4 py-6 sm:px-6">
-                <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">
+        <div className="flex min-h-full flex-col">
+            <header className="flex flex-col gap-2 px-4 py-6 sm:px-6">
+                <h1 className="text-4xl font-black leading-tight tracking-[-0.033em] text-foreground">
                     {t('passkeys')}
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
                     {t('passkeysDesc')}
                 </p>
             </header>
-            <main className="flex-1 px-4 pb-6 sm:px-6 overflow-auto">
+            <main className="flex-1 overflow-auto px-4 pb-6 sm:px-6">
                 <PasskeyManager initialPasskeys={userPasskeys} />
             </main>
         </div>

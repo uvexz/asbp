@@ -62,7 +62,7 @@ export function ChangePassword() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <KeyRound className="h-5 w-5" />
+                    <KeyRound className="h-5 w-5 text-muted-foreground" />
                     {t('changePassword')}
                 </CardTitle>
                 <CardDescription>{t('changePasswordDesc')}</CardDescription>
@@ -70,12 +70,12 @@ export function ChangePassword() {
             <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {error && (
-                        <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md text-red-800 dark:text-red-200 text-sm">
+                        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
                             {error}
                         </div>
                     )}
                     {success && (
-                        <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-md text-green-800 dark:text-green-200 text-sm">
+                        <div className="rounded-lg border border-primary/20 bg-primary/10 p-3 text-sm text-foreground" aria-live="polite">
                             {t('passwordChanged')}
                         </div>
                     )}
@@ -93,7 +93,8 @@ export function ChangePassword() {
                             <button
                                 type="button"
                                 onClick={() => setShowCurrent(!showCurrent)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                                aria-label={showCurrent ? t('currentPassword') : t('currentPassword')}
                             >
                                 {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
@@ -114,7 +115,8 @@ export function ChangePassword() {
                             <button
                                 type="button"
                                 onClick={() => setShowNew(!showNew)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                                aria-label={showNew ? t('newPassword') : t('newPassword')}
                             >
                                 {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
@@ -135,7 +137,6 @@ export function ChangePassword() {
                     <Button
                         type="submit"
                         disabled={loading || !currentPassword || !newPassword || !confirmPassword}
-                        className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold"
                     >
                         {loading ? (
                             <>

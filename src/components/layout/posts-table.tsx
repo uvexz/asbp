@@ -56,6 +56,12 @@ interface PostsTableProps {
     };
 }
 
+function getTypeBadgeVariant(postType: PostType): 'default' | 'secondary' | 'outline' {
+    if (postType === 'post') return 'default';
+    if (postType === 'page') return 'secondary';
+    return 'outline';
+}
+
 export function PostsTable({ posts, currentType, searchQuery = '', totalResults, labels }: PostsTableProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -65,12 +71,6 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
         post: labels.post,
         page: labels.page,
         memo: labels.memo,
-    };
-
-    const postTypeColors: Record<PostType, string> = {
-        post: 'bg-blue-100 text-blue-800',
-        page: 'bg-purple-100 text-purple-800',
-        memo: 'bg-orange-100 text-orange-800',
     };
 
     const handleSearch = (e: React.FormEvent) => {
@@ -94,10 +94,9 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
 
     return (
         <div className="space-y-4">
-            {/* Search Bar */}
             <form onSubmit={handleSearch} className="flex gap-2">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="relative max-w-sm flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         type="text"
                         placeholder={labels.searchPlaceholder}
@@ -121,93 +120,33 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
                 </Button>
             </form>
 
-            {/* Results info */}
             {searchQuery && (
                 <p className="text-sm text-muted-foreground">
                     {labels.searchResults.replace('{query}', searchQuery).replace('{count}', String(totalResults ?? posts.length))}
                 </p>
             )}
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
-                {posts.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">{labels.noContent}</div>
-                ) : (
-                    posts.map((post) => {
-                        const postType = (post.postType || 'post') as PostType;
-                        const isMemo = postType === 'memo';
-                        return (
-                            <div key={post.id} className="rounded-lg border bg-white dark:bg-black p-4 space-y-3">
-                                <div className="flex items-start justify-between gap-2">
-                                    <h3 className="font-medium text-sm line-clamp-2 flex-1">
-                                        {isMemo ? post.content.slice(0, 80) + (post.content.length > 80 ? '...' : '') : post.title}
-                                    </h3>
-                                    <div className="flex items-center gap-1 flex-shrink-0">
-                                        <Link href={`/admin/posts/edit?id=${post.id}`}>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                                        </Link>
-                                        <DeleteButton
-                                            onDelete={async () => {
-                                                await deletePost(post.id);
-                                            }}
-                                            title={labels.deleteContentTitle}
-                                            description={labels.deleteContentDescription(isMemo ? post.content.slice(0, 20) : post.title)}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <Badge className={`${postTypeColors[postType]} shadow-none text-xs`}>
-                                        {postTypeLabels[postType]}
-                                    </Badge>
-                                    <Badge className="bg-[#4cdf20]/20 text-gray-900 shadow-none text-xs">
-                                        {post.published ? labels.published : labels.draft}
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground">
-                                        {formatDate(post.publishedAt || post.createdAt)}
-                                    </span>
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
-            </div>
-
-            {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border bg-white dark:bg-black">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{labels.titleOrContent}</TableHead>
-                            <TableHead>{labels.type}</TableHead>
-                            <TableHead>{labels.status}</TableHead>
-                            <TableHead>{labels.date}</TableHead>
-                            <TableHead className="text-right">{labels.actions}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
+            {posts.length === 0 ? (
+                <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-12 text-center text-sm text-muted-foreground">
+                    {labels.noContent}
+                </div>
+            ) : (
+                <>
+                    <div className="space-y-3 md:hidden">
                         {posts.map((post) => {
                             const postType = (post.postType || 'post') as PostType;
                             const isMemo = postType === 'memo';
                             return (
-                                <TableRow key={post.id}>
-                                    <TableCell className="font-medium max-w-xs truncate">
-                                        {isMemo ? post.content.slice(0, 50) + (post.content.length > 50 ? '...' : '') : post.title}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge className={`${postTypeColors[postType]} shadow-none`}>
-                                            {postTypeLabels[postType]}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge className="bg-[#4cdf20]/20 text-gray-900 hover:bg-[#4cdf20]/30 shadow-none">
-                                            {post.published ? labels.published : labels.draft}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{formatDate(post.publishedAt || post.createdAt)}</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
+                                <div key={post.id} className="space-y-3 rounded-xl border bg-card p-4 text-card-foreground">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <h3 className="line-clamp-2 flex-1 text-sm font-medium text-foreground">
+                                            {isMemo ? post.content.slice(0, 80) + (post.content.length > 80 ? '...' : '') : post.title}
+                                        </h3>
+                                        <div className="flex shrink-0 items-center gap-1">
                                             <Link href={`/admin/posts/edit?id=${post.id}`}>
-                                                <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon-sm" aria-label="Edit">
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
                                             </Link>
                                             <DeleteButton
                                                 onDelete={async () => {
@@ -217,18 +156,78 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
                                                 description={labels.deleteContentDescription(isMemo ? post.content.slice(0, 20) : post.title)}
                                             />
                                         </div>
-                                    </TableCell>
-                                </TableRow>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Badge variant={getTypeBadgeVariant(postType)} className="shadow-none text-xs">
+                                            {postTypeLabels[postType]}
+                                        </Badge>
+                                        <Badge variant={post.published ? 'default' : 'outline'} className="shadow-none text-xs">
+                                            {post.published ? labels.published : labels.draft}
+                                        </Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                            {formatDate(post.publishedAt || post.createdAt)}
+                                        </span>
+                                    </div>
+                                </div>
                             );
                         })}
-                        {posts.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={5} className="text-center h-24 text-gray-500">{labels.noContent}</TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                    </div>
+
+                    <div className="hidden rounded-xl border bg-card md:block">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{labels.titleOrContent}</TableHead>
+                                    <TableHead>{labels.type}</TableHead>
+                                    <TableHead>{labels.status}</TableHead>
+                                    <TableHead>{labels.date}</TableHead>
+                                    <TableHead className="text-right">{labels.actions}</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {posts.map((post) => {
+                                    const postType = (post.postType || 'post') as PostType;
+                                    const isMemo = postType === 'memo';
+                                    return (
+                                        <TableRow key={post.id}>
+                                            <TableCell className="max-w-xs truncate font-medium text-foreground">
+                                                {isMemo ? post.content.slice(0, 50) + (post.content.length > 50 ? '...' : '') : post.title}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={getTypeBadgeVariant(postType)} className="shadow-none">
+                                                    {postTypeLabels[postType]}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={post.published ? 'default' : 'outline'} className="shadow-none">
+                                                    {post.published ? labels.published : labels.draft}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">{formatDate(post.publishedAt || post.createdAt)}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Link href={`/admin/posts/edit?id=${post.id}`}>
+                                                        <Button variant="ghost" size="icon" aria-label="Edit">
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
+                                                    <DeleteButton
+                                                        onDelete={async () => {
+                                                            await deletePost(post.id);
+                                                        }}
+                                                        title={labels.deleteContentTitle}
+                                                        description={labels.deleteContentDescription(isMemo ? post.content.slice(0, 20) : post.title)}
+                                                    />
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </>
+            )}
         </div>
     );
 }

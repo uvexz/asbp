@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,9 +23,12 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { authClient } from '@/lib/auth-client';
-import { KeyRound, Loader2, Plus, Trash2, Smartphone, Monitor, Key } from 'lucide-react';
+import { KeyRound, Loader2, Plus, Trash2, Smartphone, Monitor, Key, Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/date-utils';
 
 interface Passkey {
     id: string;
@@ -46,21 +49,27 @@ export function PasskeyManager({ initialPasskeys }: PasskeyManagerProps) {
     const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
     const t = useTranslations('auth');
+    const tCommon = useTranslations('common');
     const router = useRouter();
+
+    useEffect(() => {
+        setPasskeys(initialPasskeys);
+    }, [initialPasskeys]);
 
     const handleAddPasskey = async () => {
         if (!passkeyName.trim()) return;
-        
+
         setLoading(true);
         try {
             await authClient.passkey.addPasskey({
                 name: passkeyName,
             });
             setPasskeyName('');
+            toast.success(t('passkeyAdded'));
             router.refresh();
         } catch (error) {
             console.error('Failed to add passkey:', error);
-            alert(t('passkeyError'));
+            toast.error(t('passkeyError'));
         } finally {
             setLoading(false);
         }
@@ -70,10 +79,12 @@ export function PasskeyManager({ initialPasskeys }: PasskeyManagerProps) {
         setDeleteLoading(id);
         try {
             await authClient.passkey.deletePasskey({ id });
-            setPasskeys(passkeys.filter(p => p.id !== id));
+            setPasskeys((current) => current.filter((passkey) => passkey.id !== id));
+            toast.success(t('passkeyDeleted'));
+            router.refresh();
         } catch (error) {
             console.error('Failed to delete passkey:', error);
-            alert(t('passkeyError'));
+            toast.error(t('passkeyError'));
         } finally {
             setDeleteLoading(null);
         }
@@ -93,9 +104,9 @@ export function PasskeyManager({ initialPasskeys }: PasskeyManagerProps) {
     const formatDeviceType = (deviceType: string) => {
         switch (deviceType.toLowerCase()) {
             case 'singledevice':
-                return 'Security Key';
+                return t('securityKey');
             case 'multidevice':
-                return 'Platform Authenticator';
+                return t('platformAuthenticator');
             default:
                 return deviceType;
         }
@@ -106,9 +117,10 @@ export function PasskeyManager({ initialPasskeys }: PasskeyManagerProps) {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Plus className="h-5 w-5" />
+                        <Plus className="h-5 w-5 text-muted-foreground" />
                         {t('addPasskey')}
                     </CardTitle>
+                    <CardDescription>{t('passkeysDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -121,9 +133,9 @@ export function PasskeyManager({ initialPasskeys }: PasskeyManagerProps) {
                         />
                     </div>
                     <Button
+                        type="button"
                         onClick={handleAddPasskey}
                         disabled={loading || !passkeyName.trim()}
-                        className="bg-[#4cdf20] text-gray-900 hover:bg-[#4cdf20]/90 font-bold"
                     >
                         {loading ? (
                             <>
@@ -147,35 +159,38 @@ export function PasskeyManager({ initialPasskeys }: PasskeyManagerProps) {
                 </CardHeader>
                 <CardContent>
                     {passkeys.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                            <KeyRound className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p className="font-medium">{t('noPasskeys')}</p>
-                            <p className="text-sm mt-1">{t('noPasskeysDesc')}</p>
+                        <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-10 text-center">
+                            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                                <KeyRound className="h-7 w-7" />
+                            </div>
+                            <p className="font-medium text-foreground">{t('noPasskeys')}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">{t('noPasskeysDesc')}</p>
                         </div>
                     ) : (
                         <div className="space-y-3">
                             {passkeys.map((passkey) => (
                                 <div
                                     key={passkey.id}
-                                    className="flex items-center justify-between p-4 border rounded-lg"
+                                    className="flex flex-col gap-4 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                    <div className="flex items-start gap-4">
+                                        <div className="rounded-lg bg-muted p-2 text-muted-foreground">
                                             {getDeviceIcon(passkey.deviceType)}
                                         </div>
-                                        <div>
-                                            <p className="font-medium">
-                                                {passkey.name || 'Unnamed Passkey'}
+                                        <div className="min-w-0 space-y-1">
+                                            <p className="font-medium text-foreground">
+                                                {passkey.name || t('unnamedPasskey')}
                                             </p>
-                                            <div className="flex items-center gap-3 text-sm text-gray-500">
+                                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                                                 <span>{formatDeviceType(passkey.deviceType)}</span>
                                                 {passkey.backedUp && (
-                                                    <span className="text-green-600">✓ {t('backedUp')}</span>
+                                                    <Badge variant="secondary" className="gap-1 shadow-none">
+                                                        <Check className="h-3 w-3" />
+                                                        {t('backedUp')}
+                                                    </Badge>
                                                 )}
                                                 {passkey.createdAt && (
-                                                    <span>
-                                                        {new Date(passkey.createdAt).toLocaleDateString()}
-                                                    </span>
+                                                    <span>{formatDate(passkey.createdAt)}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -185,7 +200,9 @@ export function PasskeyManager({ initialPasskeys }: PasskeyManagerProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                className="self-end text-destructive hover:bg-destructive/10 hover:text-destructive sm:self-auto"
+                                                aria-label={t('deletePasskey')}
+                                                title={t('deletePasskey')}
                                             >
                                                 {deleteLoading === passkey.id ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -202,10 +219,10 @@ export function PasskeyManager({ initialPasskeys }: PasskeyManagerProps) {
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
                                                 <AlertDialogAction
                                                     onClick={() => handleDeletePasskey(passkey.id)}
-                                                    className="bg-red-500 hover:bg-red-600"
+                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                                 >
                                                     {t('deletePasskey')}
                                                 </AlertDialogAction>

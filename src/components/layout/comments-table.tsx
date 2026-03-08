@@ -16,6 +16,7 @@ import { approveComment, deleteComment } from '@/app/actions/comments';
 import { formatDate } from '@/lib/date-utils';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface Comment {
     id: string;
@@ -47,91 +48,97 @@ interface CommentsTableProps {
     };
 }
 
+function getStatusBadgeVariant(status: string | null): 'default' | 'secondary' | 'outline' {
+    if (status === 'approved') return 'default';
+    if (status === 'pending') return 'secondary';
+    return 'outline';
+}
+
 export function CommentsTable({ comments, labels }: CommentsTableProps) {
     const [isPending, startTransition] = useTransition();
+    const router = useRouter();
 
     const handleApprove = (id: string, addToWhitelist: boolean = false) => {
         startTransition(async () => {
             await approveComment(id, addToWhitelist);
             toast.success(addToWhitelist ? labels.commentApprovedWhitelisted : labels.commentApproved);
+            router.refresh();
         });
     };
 
-    const getStatusBadgeClass = (status: string | null) => {
-        if (status === 'approved') return "bg-green-100 text-green-700 shadow-none";
-        if (status === 'pending') return "bg-yellow-100 text-yellow-700 shadow-none";
-        return "bg-gray-100 text-gray-700 shadow-none";
-    };
+    if (comments.length === 0) {
+        return (
+            <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-12 text-center text-sm text-muted-foreground">
+                {labels.noCommentsFound}
+            </div>
+        );
+    }
 
     return (
         <div>
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
-                {comments.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">{labels.noCommentsFound}</div>
-                ) : (
-                    comments.map((comment) => (
-                        <div key={comment.id} className="rounded-lg border bg-white dark:bg-black p-4 space-y-3">
-                            <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-medium text-sm">{comment.author || labels.guest}</span>
-                                        <Badge className={`${getStatusBadgeClass(comment.status)} text-xs`}>
-                                            {comment.status}
-                                        </Badge>
-                                    </div>
-                                    <p className="text-sm text-gray-500 line-clamp-2">{comment.content}</p>
+            <div className="space-y-3 md:hidden">
+                {comments.map((comment) => (
+                    <div key={comment.id} className="space-y-3 rounded-xl border bg-card p-4 text-card-foreground">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                                <div className="mb-1 flex items-center gap-2">
+                                    <span className="text-sm font-medium text-foreground">{comment.author || labels.guest}</span>
+                                    <Badge variant={getStatusBadgeVariant(comment.status)} className="capitalize shadow-none">
+                                        {comment.status ?? '-'}
+                                    </Badge>
                                 </div>
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                    {comment.status !== 'approved' && (
-                                        <>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-8 w-8 text-green-600 hover:bg-green-50"
-                                                onClick={() => handleApprove(comment.id, false)}
-                                                disabled={isPending}
-                                                title={labels.approveTitle}
-                                            >
-                                                <Check className="h-4 w-4" />
-                                            </Button>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-8 w-8 text-blue-600 hover:bg-blue-50"
-                                                onClick={() => handleApprove(comment.id, true)}
-                                                disabled={isPending}
-                                                title={labels.addToWhitelist}
-                                            >
-                                                <UserCheck className="h-4 w-4" />
-                                            </Button>
-                                        </>
-                                    )}
-                                    <DeleteButton
-                                        onDelete={async () => {
-                                            await deleteComment(comment.id);
-                                        }}
-                                        title={labels.deleteCommentTitle}
-                                        description={labels.deleteCommentDescription}
-                                    />
-                                </div>
+                                <p className="line-clamp-2 text-sm text-muted-foreground">{comment.content}</p>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>{comment.postTitle || labels.deletedPost}</span>
-                                <span>·</span>
-                                <span>{formatDate(comment.createdAt)}</span>
+                            <div className="flex shrink-0 items-center gap-1">
+                                {comment.status !== 'approved' && (
+                                    <>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon-sm"
+                                            onClick={() => handleApprove(comment.id, false)}
+                                            disabled={isPending}
+                                            title={labels.approveTitle}
+                                            aria-label={labels.approveTitle}
+                                        >
+                                            <Check className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="icon-sm"
+                                            onClick={() => handleApprove(comment.id, true)}
+                                            disabled={isPending}
+                                            title={labels.addToWhitelist}
+                                            aria-label={labels.addToWhitelist}
+                                        >
+                                            <UserCheck className="h-4 w-4" />
+                                        </Button>
+                                    </>
+                                )}
+                                <DeleteButton
+                                    onDelete={async () => {
+                                        await deleteComment(comment.id);
+                                    }}
+                                    title={labels.deleteCommentTitle}
+                                    description={labels.deleteCommentDescription}
+                                />
                             </div>
                         </div>
-                    ))
-                )}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{comment.postTitle || labels.deletedPost}</span>
+                            <span>·</span>
+                            <span>{formatDate(comment.createdAt)}</span>
+                        </div>
+                    </div>
+                ))}
             </div>
 
-            {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border bg-white dark:bg-black">
+            <div className="hidden rounded-xl border bg-card md:block">
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[100px]">{labels.status}</TableHead>
+                            <TableHead className="w-[110px]">{labels.status}</TableHead>
                             <TableHead>{labels.author}</TableHead>
                             <TableHead>{labels.comment}</TableHead>
                             <TableHead>{labels.posts}</TableHead>
@@ -143,35 +150,37 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                         {comments.map((comment) => (
                             <TableRow key={comment.id}>
                                 <TableCell>
-                                    <Badge className={`${getStatusBadgeClass(comment.status)} hover:opacity-80`}>
-                                        {comment.status}
+                                    <Badge variant={getStatusBadgeVariant(comment.status)} className="capitalize shadow-none">
+                                        {comment.status ?? '-'}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="font-medium">{comment.author || labels.guest}</TableCell>
-                                <TableCell className="max-w-xs truncate text-gray-500">{comment.content}</TableCell>
-                                <TableCell className="text-gray-500">{comment.postTitle || labels.deletedPost}</TableCell>
-                                <TableCell className="text-gray-500">{formatDate(comment.createdAt)}</TableCell>
+                                <TableCell className="font-medium text-foreground">{comment.author || labels.guest}</TableCell>
+                                <TableCell className="max-w-xs truncate text-muted-foreground">{comment.content}</TableCell>
+                                <TableCell className="text-muted-foreground">{comment.postTitle || labels.deletedPost}</TableCell>
+                                <TableCell className="text-muted-foreground">{formatDate(comment.createdAt)}</TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">
                                         {comment.status !== 'approved' && (
                                             <>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="text-green-600 hover:bg-green-50"
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="icon-sm"
                                                     onClick={() => handleApprove(comment.id, false)}
                                                     disabled={isPending}
                                                     title={labels.approveTitle}
+                                                    aria-label={labels.approveTitle}
                                                 >
                                                     <Check className="h-4 w-4" />
                                                 </Button>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="text-blue-600 hover:bg-blue-50"
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    size="icon-sm"
                                                     onClick={() => handleApprove(comment.id, true)}
                                                     disabled={isPending}
                                                     title={labels.addToWhitelist}
+                                                    aria-label={labels.addToWhitelist}
                                                 >
                                                     <UserCheck className="h-4 w-4" />
                                                 </Button>
@@ -188,11 +197,6 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {comments.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center h-24 text-gray-500">{labels.noCommentsFound}</TableCell>
-                            </TableRow>
-                        )}
                     </TableBody>
                 </Table>
             </div>

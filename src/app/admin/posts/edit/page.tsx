@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Save, ArrowLeft, Type, Link as LinkIcon, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
     InputGroup,
     InputGroupAddon,
@@ -158,15 +159,13 @@ export default async function AdminEditPostPage({ searchParams }: { searchParams
                         <div className="lg:w-80 flex-shrink-0 space-y-6">
                             <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4">
                                 <h3 className="font-semibold leading-none tracking-tight">{t('publishSettings')}</h3>
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        name="published"
+                                <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-3">
+                                    <Label htmlFor="published" className="cursor-pointer">{tCommon('publish')}</Label>
+                                    <Switch
                                         id="published"
+                                        name="published"
                                         defaultChecked={post?.published ?? true}
-                                        className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
                                     />
-                                    <Label htmlFor="published">{tCommon('publish')}</Label>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="publishedAt">{t('publishTime')}</Label>

@@ -38,14 +38,13 @@ const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
           {...props}
         />
         <div className={cn(
-          "h-5 w-9 rounded-full border-2 border-transparent transition-colors",
-          "bg-gray-200 dark:bg-gray-700",
+          "h-5 w-9 rounded-full border-2 border-transparent bg-input transition-colors",
           "peer-checked:bg-primary",
           "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
           "peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
         )}>
           <div className={cn(
-            "size-4 rounded-full bg-white shadow-sm transition-transform",
+            "size-4 rounded-full bg-background shadow-sm transition-transform",
             isChecked ? "translate-x-4" : "translate-x-0"
           )} />
         </div>

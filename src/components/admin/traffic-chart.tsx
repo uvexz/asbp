@@ -32,36 +32,44 @@ function formatTime(seconds: number): string {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-      <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">{label}</div>
+    <div className="rounded-lg border bg-muted/30 p-3 text-center">
+      <div className="text-2xl font-bold tracking-tight text-foreground">{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
 
-function SimpleBarChart({ data, label }: { data: { x: string; y: number }[]; label: string }) {
+function SimpleBarChart({
+  data,
+  label,
+  barClassName,
+}: {
+  data: { x: string; y: number }[];
+  label: string;
+  barClassName: string;
+}) {
   if (!data || data.length === 0) return null;
 
-  const maxValue = Math.max(...data.map(d => d.y), 1);
+  const maxValue = Math.max(...data.map((d) => d.y), 1);
   const chartHeight = 120;
 
   return (
-    <div className="space-y-2">
-      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</div>
-      <div className="flex items-end gap-1 h-[120px]">
+    <div className="space-y-3">
+      <div className="text-sm font-medium text-foreground">{label}</div>
+      <div className="flex h-[140px] items-end gap-2 rounded-lg border bg-muted/20 p-3">
         {data.map((item, index) => {
           const height = (item.y / maxValue) * chartHeight;
           const date = new Date(item.x);
           const dayLabel = date.toLocaleDateString(undefined, { weekday: 'short' });
-          
+
           return (
-            <div key={index} className="flex-1 flex flex-col items-center gap-1">
-              <div 
-                className="w-full bg-blue-500 dark:bg-blue-400 rounded-t transition-all hover:bg-blue-600 dark:hover:bg-blue-300"
+            <div key={index} className="flex flex-1 flex-col items-center gap-2">
+              <div
+                className={`w-full rounded-sm transition-opacity hover:opacity-90 ${barClassName}`}
                 style={{ height: `${Math.max(height, 2)}px` }}
                 title={`${item.y} on ${date.toLocaleDateString()}`}
               />
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate w-full text-center">
+              <span className="w-full truncate text-center text-[10px] text-muted-foreground">
                 {dayLabel}
               </span>
             </div>
@@ -79,28 +87,27 @@ export function TrafficChart({ data, stats, activeVisitors, isConfigured }: Traf
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="w-full h-80 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-md border border-dashed border-gray-300 dark:border-gray-700">
-            <p className="text-gray-500 dark:text-gray-400 font-medium">{t('umamiNotConfigured')}</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('umamiNotConfiguredDesc')}</p>
+          <div className="flex h-80 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 px-6 text-center">
+            <p className="font-medium text-foreground">{t('umamiNotConfigured')}</p>
+            <p className="mt-1 max-w-md text-sm text-muted-foreground">{t('umamiNotConfiguredDesc')}</p>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const bounceRate = stats && stats.visits > 0 
-    ? Math.round((stats.bounces / stats.visits) * 100) 
+  const bounceRate = stats && stats.visits > 0
+    ? Math.round((stats.bounces / stats.visits) * 100)
     : 0;
-  
-  const avgTime = stats && stats.visits > 0 
-    ? stats.totaltime / stats.visits / 1000 
+
+  const avgTime = stats && stats.visits > 0
+    ? stats.totaltime / stats.visits / 1000
     : 0;
 
   return (
     <Card>
-      <CardContent className="p-6 space-y-6">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <CardContent className="space-y-6 p-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <StatCard label={t('activeVisitors')} value={activeVisitors} />
           <StatCard label={t('pageviews')} value={stats?.pageviews.toLocaleString() ?? '-'} />
           <StatCard label={t('visitors')} value={stats?.visitors.toLocaleString() ?? '-'} />
@@ -109,11 +116,10 @@ export function TrafficChart({ data, stats, activeVisitors, isConfigured }: Traf
           <StatCard label={t('avgTime')} value={formatTime(avgTime)} />
         </div>
 
-        {/* Charts */}
         {data && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SimpleBarChart data={data.pageviews} label={t('pageviews')} />
-            <SimpleBarChart data={data.sessions} label={t('visitors')} />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <SimpleBarChart data={data.pageviews} label={t('pageviews')} barClassName="bg-chart-1" />
+            <SimpleBarChart data={data.sessions} label={t('visitors')} barClassName="bg-chart-2" />
           </div>
         )}
       </CardContent>
