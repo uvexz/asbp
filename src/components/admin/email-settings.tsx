@@ -10,17 +10,21 @@ import {
   InputGroupText,
 } from '@/components/ui/input-group';
 import { Mail, Key } from 'lucide-react';
+import { SecretFieldControls } from '@/components/admin/secret-field-controls';
 
 interface EmailSettingsProps {
   defaultEnabled: boolean;
   defaultApiKey: string;
   defaultFromEmail: string;
+  hasStoredApiKey: boolean;
   translations: {
     emailService: string;
     emailServiceDesc: string;
     resendApiKey: string;
     resendFromEmail: string;
     resendFromEmailDesc: string;
+    storedSecretHint: string;
+    clearStoredSecret: string;
   };
 }
 
@@ -28,11 +32,13 @@ export function EmailSettings({
   defaultEnabled,
   defaultApiKey,
   defaultFromEmail,
+  hasStoredApiKey,
   translations: t,
 }: EmailSettingsProps) {
   const [enabled, setEnabled] = useState(defaultEnabled);
   const [apiKey, setApiKey] = useState(defaultApiKey);
   const [fromEmail, setFromEmail] = useState(defaultFromEmail);
+  const [clearApiKey, setClearApiKey] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -61,18 +67,33 @@ export function EmailSettings({
 
       {enabled && (
         <div className="space-y-3 pl-4 border-l-2 border-muted">
-          <InputGroup>
-            <InputGroupAddon>
-              <InputGroupText><Key className="size-4" /></InputGroupText>
-            </InputGroupAddon>
-            <InputGroupInput
-              id="resendApiKey"
-              type="password"
-              placeholder="re_..."
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+          <div>
+            <InputGroup>
+              <InputGroupAddon>
+                <InputGroupText><Key className="size-4" /></InputGroupText>
+              </InputGroupAddon>
+              <InputGroupInput
+                id="resendApiKey"
+                type="password"
+                placeholder="re_..."
+                value={apiKey}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  if (e.target.value) {
+                    setClearApiKey(false);
+                  }
+                }}
+              />
+            </InputGroup>
+            <SecretFieldControls
+              hasStoredValue={hasStoredApiKey}
+              clearName="clearResendApiKey"
+              clearChecked={clearApiKey}
+              onClearChange={setClearApiKey}
+              storedHint={t.storedSecretHint}
+              clearLabel={t.clearStoredSecret}
             />
-          </InputGroup>
+          </div>
           <InputGroup>
             <InputGroupAddon>
               <InputGroupText><Mail className="size-4" /></InputGroupText>

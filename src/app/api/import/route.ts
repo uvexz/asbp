@@ -4,6 +4,7 @@ import { posts, comments, tags, postsTags, media, navItems, settings } from '@/d
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { eq } from 'drizzle-orm';
+import { revalidateImportedContent } from '@/lib/import-revalidation';
 
 // Helper to convert date strings to Date objects
 function parseDate(value: string | Date | null | undefined): Date | null {
@@ -204,6 +205,14 @@ export async function POST(request: Request) {
       }).where(eq(settings.id, 1));
       results.settings = true;
     }
+
+    await revalidateImportedContent({
+      posts: importData.data.posts,
+      comments: importData.data.comments,
+      tags: importData.data.tags,
+      navItemsImported: (importData.data.navItems?.length || 0) > 0,
+      settingsImported: results.settings,
+    });
 
     return NextResponse.json({ success: true, results });
   } catch (error) {

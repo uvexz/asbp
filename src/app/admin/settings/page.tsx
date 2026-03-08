@@ -104,6 +104,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                             defaultAccessKey={settings.s3AccessKey || ''}
                             defaultSecretKey={settings.s3SecretKey || ''}
                             defaultCdnUrl={settings.s3CdnUrl || ''}
+                            hasStoredAccessKey={settings.hasS3AccessKey}
+                            hasStoredSecretKey={settings.hasS3SecretKey}
                             translations={{
                                 mediaStorage: t('mediaStorage'),
                                 mediaStorageDesc: t('mediaStorageDesc') || '',
@@ -114,6 +116,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                                 secretKey: t('secretKey'),
                                 cdnUrl: t('cdnUrl'),
                                 cdnUrlDesc: t('cdnUrlDesc'),
+                                storedSecretHint: t('storedSecretHint'),
+                                clearStoredSecret: t('clearStoredSecret'),
                             }}
                         />
                     </section>
@@ -122,15 +126,18 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                     <section className="space-y-4">
                         <h2 className="text-lg font-semibold">{t('emailService')}</h2>
                         <EmailSettings
-                            defaultEnabled={!!settings.resendApiKey}
+                            defaultEnabled={settings.hasResendApiKey}
                             defaultApiKey={settings.resendApiKey || ''}
                             defaultFromEmail={settings.resendFromEmail || ''}
+                            hasStoredApiKey={settings.hasResendApiKey}
                             translations={{
                                 emailService: t('emailService'),
                                 emailServiceDesc: t('emailServiceDesc') || '',
                                 resendApiKey: t('resendApiKey'),
                                 resendFromEmail: t('resendFromEmail'),
                                 resendFromEmailDesc: t('resendFromEmailDesc'),
+                                storedSecretHint: t('storedSecretHint'),
+                                clearStoredSecret: t('clearStoredSecret'),
                             }}
                         />
                     </section>
@@ -139,16 +146,19 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                     <section className="space-y-4">
                         <h2 className="text-lg font-semibold">{t('aiSpamDetection')}</h2>
                         <AiSettings
-                            defaultEnabled={!!(settings.aiBaseUrl && settings.aiApiKey)}
+                            defaultEnabled={!!(settings.aiBaseUrl && settings.hasAiApiKey)}
                             defaultBaseUrl={settings.aiBaseUrl || ''}
                             defaultApiKey={settings.aiApiKey || ''}
                             defaultModel={settings.aiModel || ''}
+                            hasStoredApiKey={settings.hasAiApiKey}
                             translations={{
                                 aiSpamDetection: t('aiSpamDetection'),
                                 aiSpamDetectionDesc: t('aiSpamDetectionDesc'),
                                 aiBaseUrl: t('aiBaseUrl'),
                                 aiApiKey: t('aiApiKey'),
                                 aiModel: t('aiModel'),
+                                storedSecretHint: t('storedSecretHint'),
+                                clearStoredSecret: t('clearStoredSecret'),
                             }}
                         />
                     </section>
@@ -168,6 +178,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                             defaultApiKey={settings.umamiApiKey || ''}
                             defaultApiUserId={settings.umamiApiUserId || ''}
                             defaultApiSecret={settings.umamiApiSecret || ''}
+                            hasStoredApiKey={settings.hasUmamiApiKey}
+                            hasStoredApiSecret={settings.hasUmamiApiSecret}
                             translations={{
                                 umamiEnabled: t('umamiEnabled'),
                                 umamiCloud: t('umamiCloud'),
@@ -180,6 +192,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                                 umamiApiUserId: t('umamiApiUserId'),
                                 umamiApiSecret: t('umamiApiSecret'),
                                 umamiApiSecretDesc: t('umamiApiSecretDesc'),
+                                storedSecretHint: t('storedSecretHint'),
+                                clearStoredSecret: t('clearStoredSecret'),
                             }}
                         />
                     </section>

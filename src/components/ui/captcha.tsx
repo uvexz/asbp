@@ -1,69 +1,61 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
+import { getCommentCaptchaChallenge } from '@/app/actions/comments';
 
 interface CaptchaProps {
   onVerify: (isValid: boolean) => void;
+  onChange?: (payload: { token: string; response: string }) => void;
   className?: string;
 }
 
-function generateQuestion(): { a: number; b: number; op: '+' | '-'; answer: number } {
-  const ops = ['+', '-'] as const;
-  const op = ops[Math.floor(Math.random() * ops.length)];
-  let a: number, b: number, answer: number;
-
-  if (op === '+') {
-    a = Math.floor(Math.random() * 10) + 1;
-    b = Math.floor(Math.random() * 10) + 1;
-    answer = a + b;
-  } else {
-    a = Math.floor(Math.random() * 10) + 5;
-    b = Math.floor(Math.random() * a);
-    answer = a - b;
-  }
-
-  return { a, b, op, answer };
-}
-
-export function Captcha({ onVerify, className }: CaptchaProps) {
-  const [question, setQuestion] = useState<ReturnType<typeof generateQuestion> | null>(null);
+export function Captcha({ onVerify, onChange, className }: CaptchaProps) {
+  const [prompt, setPrompt] = useState('');
+  const [token, setToken] = useState('');
   const [userAnswer, setUserAnswer] = useState('');
   const [isVerified, setIsVerified] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const refresh = useCallback(() => {
-    setQuestion(generateQuestion());
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
     setUserAnswer('');
     setIsVerified(false);
     onVerify(false);
-  }, [onVerify]);
+    onChange?.({ token: '', response: '' });
+
+    try {
+      const challenge = await getCommentCaptchaChallenge();
+      setPrompt(challenge.prompt);
+      setToken(challenge.token);
+      onChange?.({ token: challenge.token, response: '' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [onChange, onVerify]);
 
   useEffect(() => {
-    setTimeout(refresh, 0);
+    refresh();
   }, [refresh]);
 
   const handleChange = (value: string) => {
     setUserAnswer(value);
-
-    if (question && value.trim() !== '') {
-      const numAnswer = parseInt(value, 10);
-      const valid = !isNaN(numAnswer) && numAnswer === question.answer;
-      setIsVerified(valid);
-      onVerify(valid);
-    } else {
-      setIsVerified(false);
-      onVerify(false);
-    }
+    const valid = value.trim() !== '';
+    setIsVerified(valid);
+    onVerify(valid);
+    onChange?.({ token, response: value });
   };
 
-  if (!question) return null;
+  if (!prompt && isLoading) {
+    return <div className={cn('text-sm text-muted-foreground', className)}>…</div>;
+  }
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <span className="text-sm text-muted-foreground whitespace-nowrap">
-        {question.a} {question.op} {question.b} =
+        {prompt}
       </span>
       <input
         type="number"
@@ -75,13 +67,17 @@ export function Captcha({ onVerify, className }: CaptchaProps) {
           isVerified ? 'border-green-500 bg-green-50 dark:bg-green-950/30' : 'border-input'
         )}
         placeholder="?"
+        disabled={isLoading}
       />
+      <input type="hidden" name="captchaToken" value={token} />
+      <input type="hidden" name="captchaResponse" value={userAnswer} />
       <Button
         type="button"
         variant="ghost"
         size="icon"
         className="h-8 w-8"
-        onClick={refresh}
+        onClick={() => void refresh()}
+        disabled={isLoading}
       >
         <RefreshCw className="h-3.5 w-3.5" />
       </Button>

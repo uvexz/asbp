@@ -35,6 +35,7 @@ interface PostsTableProps {
     posts: Post[];
     currentType: PostType;
     searchQuery?: string;
+    totalResults?: number;
     labels: {
         titleOrContent: string;
         type: string;
@@ -52,7 +53,7 @@ interface PostsTableProps {
     };
 }
 
-export function PostsTable({ posts, currentType, searchQuery = '', labels }: PostsTableProps) {
+export function PostsTable({ posts, currentType, searchQuery = '', totalResults, labels }: PostsTableProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [search, setSearch] = useState(searchQuery);
@@ -120,7 +121,7 @@ export function PostsTable({ posts, currentType, searchQuery = '', labels }: Pos
             {/* Results info */}
             {searchQuery && (
                 <p className="text-sm text-muted-foreground">
-                    搜索 &quot;{searchQuery}&quot; 找到 {posts.length} 条结果
+                    搜索 &quot;{searchQuery}&quot; 找到 {totalResults ?? posts.length} 条结果
                 </p>
             )}
 

@@ -10,18 +10,22 @@ import {
   InputGroupText,
 } from '@/components/ui/input-group';
 import { Bot, Server, Key, Cpu } from 'lucide-react';
+import { SecretFieldControls } from '@/components/admin/secret-field-controls';
 
 interface AiSettingsProps {
   defaultEnabled: boolean;
   defaultBaseUrl: string;
   defaultApiKey: string;
   defaultModel: string;
+  hasStoredApiKey: boolean;
   translations: {
     aiSpamDetection: string;
     aiSpamDetectionDesc: string;
     aiBaseUrl: string;
     aiApiKey: string;
     aiModel: string;
+    storedSecretHint: string;
+    clearStoredSecret: string;
   };
 }
 
@@ -30,12 +34,14 @@ export function AiSettings({
   defaultBaseUrl,
   defaultApiKey,
   defaultModel,
+  hasStoredApiKey,
   translations: t,
 }: AiSettingsProps) {
   const [enabled, setEnabled] = useState(defaultEnabled);
   const [baseUrl, setBaseUrl] = useState(defaultBaseUrl);
   const [apiKey, setApiKey] = useState(defaultApiKey);
   const [model, setModel] = useState(defaultModel);
+  const [clearApiKey, setClearApiKey] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -75,18 +81,33 @@ export function AiSettings({
             />
           </InputGroup>
           <div className="grid grid-cols-2 gap-3">
-            <InputGroup>
-              <InputGroupAddon>
-                <InputGroupText><Key className="size-4" /></InputGroupText>
-              </InputGroupAddon>
-              <InputGroupInput
-                id="aiApiKey"
-                type="password"
-                placeholder="sk-..."
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+            <div>
+              <InputGroup>
+                <InputGroupAddon>
+                  <InputGroupText><Key className="size-4" /></InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="aiApiKey"
+                  type="password"
+                  placeholder="sk-..."
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    if (e.target.value) {
+                      setClearApiKey(false);
+                    }
+                  }}
+                />
+              </InputGroup>
+              <SecretFieldControls
+                hasStoredValue={hasStoredApiKey}
+                clearName="clearAiApiKey"
+                clearChecked={clearApiKey}
+                onClearChange={setClearApiKey}
+                storedHint={t.storedSecretHint}
+                clearLabel={t.clearStoredSecret}
               />
-            </InputGroup>
+            </div>
             <InputGroup>
               <InputGroupAddon>
                 <InputGroupText><Cpu className="size-4" /></InputGroupText>

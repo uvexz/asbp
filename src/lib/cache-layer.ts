@@ -191,14 +191,22 @@ export async function getCachedTags() {
 // Single Post Cache
 // ============================================
 
+export function isPubliclyVisiblePost(
+  post: { published: boolean | null; postType: string | null } | null | undefined,
+) {
+  return !!post && post.published === true && (post.postType === 'post' || post.postType === 'page');
+}
+
 async function fetchPostBySlug(slug: string) {
-  return db.query.posts.findFirst({
+  const post = await db.query.posts.findFirst({
     where: eq(posts.slug, slug),
     with: {
       author: true,
       tags: { with: { tag: true } },
     },
   });
+
+  return isPubliclyVisiblePost(post) ? post : null;
 }
 
 export async function getCachedPostBySlug(slug: string) {
@@ -215,7 +223,7 @@ export async function getCachedPostBySlug(slug: string) {
 
   return unstable_cache(
     () => fetchPostBySlug(slug),
-    [`post-${slug}`],
+    [`post-v2-${slug}`],
     { tags: [CACHE_TAGS.POST(slug)], revalidate: DEFAULT_REVALIDATE }
   )();
 }

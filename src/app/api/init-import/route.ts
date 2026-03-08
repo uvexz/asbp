@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { posts, comments, tags, postsTags, media, navItems, settings, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
+import { revalidateImportedContent } from '@/lib/import-revalidation';
 
 // Helper to convert date strings to Date objects
 function parseDate(value: string | Date | null | undefined): Date | null {
@@ -256,6 +257,14 @@ export async function POST(request: Request) {
           siteDescription: settingsData.siteDescription || '',
           allowRegistration: false,
         },
+      });
+
+      await revalidateImportedContent({
+        posts: importData.data.posts,
+        comments: importData.data.comments,
+        tags: importData.data.tags,
+        navItemsImported: (importData.data.navItems?.length || 0) > 0,
+        settingsImported: true,
       });
 
       return NextResponse.json({ success: true });

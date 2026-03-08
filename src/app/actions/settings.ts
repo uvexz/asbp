@@ -7,8 +7,8 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { encrypt } from '@/lib/crypto';
 import { getCachedSettings, invalidateSettingsCache } from '@/lib/cache-layer';
+import { resolveSecretFieldValue } from '@/lib/settings-secrets';
 
 /**
  * Get settings with caching
@@ -22,7 +22,6 @@ export async function getSettings() {
  * Get settings without cache (for admin forms that need fresh data)
  */
 export async function getSettingsUncached() {
-    const { decrypt } = await import('@/lib/crypto');
     const data = await db.select().from(settings).where(eq(settings.id, 1)).limit(1);
 
     if (data.length === 0) {
@@ -49,21 +48,33 @@ export async function getSettingsUncached() {
             umamiApiKey: '',
             umamiApiUserId: '',
             umamiApiSecret: '',
+            hasS3AccessKey: false,
+            hasS3SecretKey: false,
+            hasResendApiKey: false,
+            hasAiApiKey: false,
+            hasUmamiApiKey: false,
+            hasUmamiApiSecret: false,
         };
     }
 
     const row = data[0];
 
-    // Decrypt sensitive fields for display
+    // Keep secret values server-side; the admin UI only needs to know whether one is already stored.
     return {
         ...row,
         faviconUrl: row.faviconUrl || '',
-        s3SecretKey: row.s3SecretKey ? decrypt(row.s3SecretKey) : '',
-        s3AccessKey: row.s3AccessKey ? decrypt(row.s3AccessKey) : '',
-        resendApiKey: row.resendApiKey ? decrypt(row.resendApiKey) : '',
-        aiApiKey: row.aiApiKey ? decrypt(row.aiApiKey) : '',
-        umamiApiKey: row.umamiApiKey ? decrypt(row.umamiApiKey) : '',
-        umamiApiSecret: row.umamiApiSecret ? decrypt(row.umamiApiSecret) : '',
+        s3SecretKey: '',
+        s3AccessKey: '',
+        resendApiKey: '',
+        aiApiKey: '',
+        umamiApiKey: '',
+        umamiApiSecret: '',
+        hasS3AccessKey: !!row.s3AccessKey,
+        hasS3SecretKey: !!row.s3SecretKey,
+        hasResendApiKey: !!row.resendApiKey,
+        hasAiApiKey: !!row.aiApiKey,
+        hasUmamiApiKey: !!row.umamiApiKey,
+        hasUmamiApiSecret: !!row.umamiApiSecret,
     };
 }
 
@@ -84,6 +95,8 @@ export async function updateSettings(formData: FormData) {
         throw new Error('Unauthorized');
     }
 
+    const [currentSettings] = await db.select().from(settings).where(eq(settings.id, 1)).limit(1);
+
     const siteTitle = (formData.get('siteTitle') as string) || '';
     const siteDescription = (formData.get('siteDescription') as string) || '';
     const allowRegistration = formData.get('allowRegistration') === 'on';
@@ -103,21 +116,36 @@ export async function updateSettings(formData: FormData) {
     const umamiWebsiteId = (formData.get('umamiWebsiteId') as string) || null;
     const umamiApiUserId = (formData.get('umamiApiUserId') as string) || null;
 
-    // Get raw values for sensitive fields
-    const s3AccessKeyRaw = (formData.get('s3AccessKey') as string) || null;
-    const s3SecretKeyRaw = (formData.get('s3SecretKey') as string) || null;
-    const resendApiKeyRaw = (formData.get('resendApiKey') as string) || null;
-    const aiApiKeyRaw = (formData.get('aiApiKey') as string) || null;
-    const umamiApiKeyRaw = (formData.get('umamiApiKey') as string) || null;
-    const umamiApiSecretRaw = (formData.get('umamiApiSecret') as string) || null;
-
-    // Encrypt sensitive fields before storing
-    const s3AccessKey = s3AccessKeyRaw ? encrypt(s3AccessKeyRaw) : null;
-    const s3SecretKey = s3SecretKeyRaw ? encrypt(s3SecretKeyRaw) : null;
-    const resendApiKey = resendApiKeyRaw ? encrypt(resendApiKeyRaw) : null;
-    const aiApiKey = aiApiKeyRaw ? encrypt(aiApiKeyRaw) : null;
-    const umamiApiKey = umamiApiKeyRaw ? encrypt(umamiApiKeyRaw) : null;
-    const umamiApiSecret = umamiApiSecretRaw ? encrypt(umamiApiSecretRaw) : null;
+    const s3AccessKey = resolveSecretFieldValue({
+        currentValue: currentSettings?.s3AccessKey,
+        submittedValue: formData.get('s3AccessKey'),
+        clearRequested: formData.get('clearS3AccessKey') === 'on',
+    });
+    const s3SecretKey = resolveSecretFieldValue({
+        currentValue: currentSettings?.s3SecretKey,
+        submittedValue: formData.get('s3SecretKey'),
+        clearRequested: formData.get('clearS3SecretKey') === 'on',
+    });
+    const resendApiKey = resolveSecretFieldValue({
+        currentValue: currentSettings?.resendApiKey,
+        submittedValue: formData.get('resendApiKey'),
+        clearRequested: formData.get('clearResendApiKey') === 'on',
+    });
+    const aiApiKey = resolveSecretFieldValue({
+        currentValue: currentSettings?.aiApiKey,
+        submittedValue: formData.get('aiApiKey'),
+        clearRequested: formData.get('clearAiApiKey') === 'on',
+    });
+    const umamiApiKey = resolveSecretFieldValue({
+        currentValue: currentSettings?.umamiApiKey,
+        submittedValue: formData.get('umamiApiKey'),
+        clearRequested: formData.get('clearUmamiApiKey') === 'on',
+    });
+    const umamiApiSecret = resolveSecretFieldValue({
+        currentValue: currentSettings?.umamiApiSecret,
+        submittedValue: formData.get('umamiApiSecret'),
+        clearRequested: formData.get('clearUmamiApiSecret') === 'on',
+    });
 
     try {
         await db.insert(settings).values({

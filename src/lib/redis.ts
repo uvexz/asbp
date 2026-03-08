@@ -42,7 +42,7 @@ export const REDIS_KEYS = {
   SETTINGS: 'cache:settings',
   NAVIGATION: 'cache:navigation',
   TAGS: 'cache:tags',
-  POST: (slug: string) => `cache:post:${slug}`,
+  POST: (slug: string) => `cache:post:v2:${slug}`,
   POSTS_LIST: (page: number, pageSize: number) => `cache:posts:${page}:${pageSize}`,
   MEMOS_LIST: (page: number, pageSize: number) => `cache:memos:${page}:${pageSize}`,
   COMMENTS: (postId: string) => `cache:comments:${postId}`,

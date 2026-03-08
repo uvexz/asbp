@@ -9,10 +9,15 @@ import { headers } from 'next/headers';
 import { commentSchema } from '@/lib/validations';
 import { isAdminAuthorized } from '@/lib/server-utils';
 import { getCachedPostComments, invalidateCommentsCache } from '@/lib/cache-layer';
+import { createMathCaptchaChallenge, verifyMathCaptchaToken } from '@/lib/crypto';
 
 export type CommentActionResult =
     | { success: true; autoApproved?: boolean }
     | { success: false; error: string };
+
+export async function getCommentCaptchaChallenge() {
+    return createMathCaptchaChallenge();
+}
 
 async function requireAdmin() {
     const session = await auth.api.getSession({
@@ -98,6 +103,8 @@ export async function createComment(postId: string, formData: FormData, parentId
     const guestName = formData.get('guestName') as string;
     const guestEmail = formData.get('guestEmail') as string;
     const guestWebsite = formData.get('guestWebsite') as string;
+    const captchaToken = formData.get('captchaToken');
+    const captchaResponse = formData.get('captchaResponse');
 
     // Check if user is logged in
     const session = await auth.api.getSession({
@@ -122,6 +129,15 @@ export async function createComment(postId: string, formData: FormData, parentId
         newCommentId = result[0]?.id;
         invalidateCommentsCache(postId);
     } else {
+        const hasValidCaptcha =
+            typeof captchaToken === 'string' &&
+            typeof captchaResponse === 'string' &&
+            verifyMathCaptchaToken(captchaToken, captchaResponse);
+
+        if (!hasValidCaptcha) {
+            return { success: false, error: 'captcha_invalid' };
+        }
+
         // Guest user - validate guest fields
         const validationResult = commentSchema.safeParse({ content, guestName, guestEmail, guestWebsite });
 

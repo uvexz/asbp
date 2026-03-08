@@ -6,7 +6,6 @@ import Link from "next/link";
 import { getPostComments } from "@/app/actions/comments";
 import { CommentSection } from "@/components/layout/comment-section";
 import { formatDate } from "@/lib/date-utils";
-import { getTranslations } from "next-intl/server";
 import { getSettings } from "@/app/actions/settings";
 import type { Metadata } from "next";
 import { Calendar, CircleUser, Tag } from "lucide-react";
@@ -72,7 +71,6 @@ export default async function ArticleDetailPage({
 }) {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
-  const t = await getTranslations("blog");
 
   if (!post) {
     notFound();

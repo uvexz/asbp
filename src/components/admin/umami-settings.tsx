@@ -10,6 +10,7 @@ import {
   InputGroupText,
 } from '@/components/ui/input-group';
 import { Cloud, Server, Key, Hash, User } from 'lucide-react';
+import { SecretFieldControls } from '@/components/admin/secret-field-controls';
 
 interface UmamiSettingsProps {
   defaultEnabled: boolean;
@@ -19,6 +20,8 @@ interface UmamiSettingsProps {
   defaultApiKey: string;
   defaultApiUserId: string;
   defaultApiSecret: string;
+  hasStoredApiKey: boolean;
+  hasStoredApiSecret: boolean;
   translations: {
     umamiEnabled: string;
     umamiCloud: string;
@@ -31,6 +34,8 @@ interface UmamiSettingsProps {
     umamiApiUserId: string;
     umamiApiSecret: string;
     umamiApiSecretDesc: string;
+    storedSecretHint: string;
+    clearStoredSecret: string;
   };
 }
 
@@ -42,10 +47,14 @@ export function UmamiSettings({
   defaultApiKey,
   defaultApiUserId,
   defaultApiSecret,
+  hasStoredApiKey,
+  hasStoredApiSecret,
   translations: t,
 }: UmamiSettingsProps) {
   const [enabled, setEnabled] = useState(defaultEnabled);
   const [isCloud, setIsCloud] = useState(defaultCloud);
+  const [clearApiKey, setClearApiKey] = useState(false);
+  const [clearApiSecret, setClearApiSecret] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -132,9 +141,22 @@ export function UmamiSettings({
                       type="password"
                       placeholder={t.umamiApiSecret}
                       defaultValue={defaultApiSecret}
+                      onChange={(event) => {
+                        if (event.target.value) {
+                          setClearApiSecret(false);
+                        }
+                      }}
                     />
                   </InputGroup>
                   <p className="text-xs text-muted-foreground mt-1 ml-1">{t.umamiApiSecretDesc}</p>
+                  <SecretFieldControls
+                    hasStoredValue={hasStoredApiSecret}
+                    clearName="clearUmamiApiSecret"
+                    clearChecked={clearApiSecret}
+                    onClearChange={setClearApiSecret}
+                    storedHint={t.storedSecretHint}
+                    clearLabel={t.clearStoredSecret}
+                  />
                 </div>
               </>
             )}
@@ -152,9 +174,22 @@ export function UmamiSettings({
                     type="password"
                     placeholder={t.umamiApiKey}
                     defaultValue={defaultApiKey}
+                    onChange={(event) => {
+                      if (event.target.value) {
+                        setClearApiKey(false);
+                      }
+                    }}
                   />
                 </InputGroup>
                 <p className="text-xs text-muted-foreground mt-1 ml-1">{t.umamiApiKeyDesc}</p>
+                <SecretFieldControls
+                  hasStoredValue={hasStoredApiKey}
+                  clearName="clearUmamiApiKey"
+                  clearChecked={clearApiKey}
+                  onClearChange={setClearApiKey}
+                  storedHint={t.storedSecretHint}
+                  clearLabel={t.clearStoredSecret}
+                />
               </div>
             )}
           </div>

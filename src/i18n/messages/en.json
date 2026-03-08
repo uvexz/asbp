@@ -255,6 +255,8 @@
     "resendFromEmailDesc": "Email address for sending comment notifications",
     "saveChanges": "Save Changes",
     "settingsSaved": "Settings saved successfully!",
+    "storedSecretHint": "A saved secret already exists. Leave this blank to keep it unchanged.",
+    "clearStoredSecret": "Clear saved secret",
     "aiSpamDetection": "AI Spam Detection",
     "aiSpamDetectionDesc": "Configure OpenAI compatible API for automatic spam detection. Without configuration, all guest comments require manual approval.",
     "aiBaseUrl": "API Base URL",

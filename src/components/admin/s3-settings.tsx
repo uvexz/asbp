@@ -10,6 +10,7 @@ import {
   InputGroupText,
 } from '@/components/ui/input-group';
 import { Database, Server, Folder, Key, Link, Globe, User } from 'lucide-react';
+import { SecretFieldControls } from '@/components/admin/secret-field-controls';
 
 interface S3SettingsProps {
   defaultEnabled: boolean;
@@ -19,6 +20,8 @@ interface S3SettingsProps {
   defaultAccessKey: string;
   defaultSecretKey: string;
   defaultCdnUrl: string;
+  hasStoredAccessKey: boolean;
+  hasStoredSecretKey: boolean;
   translations: {
     mediaStorage: string;
     mediaStorageDesc: string;
@@ -29,6 +32,8 @@ interface S3SettingsProps {
     secretKey: string;
     cdnUrl: string;
     cdnUrlDesc: string;
+    storedSecretHint: string;
+    clearStoredSecret: string;
   };
 }
 
@@ -40,6 +45,8 @@ export function S3Settings({
   defaultAccessKey,
   defaultSecretKey,
   defaultCdnUrl,
+  hasStoredAccessKey,
+  hasStoredSecretKey,
   translations: t,
 }: S3SettingsProps) {
   const [enabled, setEnabled] = useState(defaultEnabled);
@@ -49,6 +56,8 @@ export function S3Settings({
   const [accessKey, setAccessKey] = useState(defaultAccessKey);
   const [secretKey, setSecretKey] = useState(defaultSecretKey);
   const [cdnUrl, setCdnUrl] = useState(defaultCdnUrl);
+  const [clearAccessKey, setClearAccessKey] = useState(false);
+  const [clearSecretKey, setClearSecretKey] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -117,28 +126,59 @@ export function S3Settings({
             </InputGroup>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <InputGroup>
-              <InputGroupAddon>
-                <InputGroupText><User className="size-4" /></InputGroupText>
-              </InputGroupAddon>
-              <InputGroupInput
-                id="s3AccessKey"
-                value={accessKey}
-                onChange={(e) => setAccessKey(e.target.value)}
+            <div>
+              <InputGroup>
+                <InputGroupAddon>
+                  <InputGroupText><User className="size-4" /></InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="s3AccessKey"
+                  placeholder={t.accessKey}
+                  value={accessKey}
+                  onChange={(e) => {
+                    setAccessKey(e.target.value);
+                    if (e.target.value) {
+                      setClearAccessKey(false);
+                    }
+                  }}
+                />
+              </InputGroup>
+              <SecretFieldControls
+                hasStoredValue={hasStoredAccessKey}
+                clearName="clearS3AccessKey"
+                clearChecked={clearAccessKey}
+                onClearChange={setClearAccessKey}
+                storedHint={t.storedSecretHint}
+                clearLabel={t.clearStoredSecret}
               />
-            </InputGroup>
-            <InputGroup>
-              <InputGroupAddon>
-                <InputGroupText><Key className="size-4" /></InputGroupText>
-              </InputGroupAddon>
-              <InputGroupInput
-                id="s3SecretKey"
-                type="password"
-                placeholder={t.secretKey}
-                value={secretKey}
-                onChange={(e) => setSecretKey(e.target.value)}
+            </div>
+            <div>
+              <InputGroup>
+                <InputGroupAddon>
+                  <InputGroupText><Key className="size-4" /></InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="s3SecretKey"
+                  type="password"
+                  placeholder={t.secretKey}
+                  value={secretKey}
+                  onChange={(e) => {
+                    setSecretKey(e.target.value);
+                    if (e.target.value) {
+                      setClearSecretKey(false);
+                    }
+                  }}
+                />
+              </InputGroup>
+              <SecretFieldControls
+                hasStoredValue={hasStoredSecretKey}
+                clearName="clearS3SecretKey"
+                clearChecked={clearSecretKey}
+                onClearChange={setClearSecretKey}
+                storedHint={t.storedSecretHint}
+                clearLabel={t.clearStoredSecret}
               />
-            </InputGroup>
+            </div>
           </div>
           <InputGroup>
             <InputGroupAddon>

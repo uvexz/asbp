@@ -206,6 +206,7 @@ function CommentForm({
     const [guestEmail, setGuestEmail] = useState('');
     const [content, setContent] = useState('');
     const [captchaValid, setCaptchaValid] = useState(false);
+    const [captchaResetKey, setCaptchaResetKey] = useState(0);
     const t = useTranslations('blog');
     const tAuth = useTranslations('auth');
 
@@ -221,21 +222,27 @@ function CommentForm({
     const canSubmit = content.trim() && (user || captchaValid);
 
     async function handleSubmit(formData: FormData) {
-        // 访客需要验证码
         if (needsCaptcha && !captchaValid) {
-            setResult({ success: false, error: t('captchaRequired') });
+            setResult({ success: false, error: 'captcha_invalid' });
             return;
         }
 
         startTransition(async () => {
             const response = await createComment(postId, formData, replyTo?.id);
             setResult(response);
-            
+
             if (response.success) {
                 setContent('');
                 setGuestEmail('');
                 setCaptchaValid(false);
+                setCaptchaResetKey((value) => value + 1);
                 onSuccess?.();
+                return;
+            }
+
+            if (needsCaptcha) {
+                setCaptchaValid(false);
+                setCaptchaResetKey((value) => value + 1);
             }
         });
     }
@@ -264,7 +271,11 @@ function CommentForm({
             
             {result && !result.success && (
                 <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md text-red-800 dark:text-red-200 text-sm">
-                    {result.error === 'spam_rejected' ? t('spamRejected') : result.error}
+                    {result.error === 'spam_rejected'
+                        ? t('spamRejected')
+                        : result.error === 'captcha_invalid'
+                            ? t('captchaRequired')
+                            : result.error}
                 </div>
             )}
 
@@ -311,7 +322,7 @@ function CommentForm({
                 {needsCaptcha && (
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">{t('captchaLabel')}:</span>
-                        <Captcha onVerify={setCaptchaValid} />
+                        <Captcha key={captchaResetKey} onVerify={setCaptchaValid} />
                     </div>
                 )}
                 

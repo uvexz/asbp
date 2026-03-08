@@ -1,14 +1,14 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { tags, postsTags } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { tags, posts, postsTags } from '@/db/schema';
+import { eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { tagSchema } from '@/lib/validations';
 import { generateSlug } from '@/lib/server-utils';
-import { getCachedTags, getCachedPostsByTag, invalidateTagsCache } from '@/lib/cache-layer';
+import { getCachedTags, getCachedPostsByTag, invalidatePostCache, invalidatePostsListCache, invalidateTagsCache } from '@/lib/cache-layer';
 
 export type TagActionResult =
   | { success: true }
@@ -211,6 +211,22 @@ export async function getPostTags(postId: string) {
 export async function updatePostTags(postId: string, tagIds: string[]): Promise<TagActionResult> {
   await requireAdmin();
 
+  const [existingAssociations, postRecord] = await Promise.all([
+    db.query.postsTags.findMany({
+      where: eq(postsTags.postId, postId),
+      columns: { tagId: true },
+      with: {
+        tag: {
+          columns: { slug: true },
+        },
+      },
+    }),
+    db.query.posts.findFirst({
+      where: eq(posts.id, postId),
+      columns: { slug: true },
+    }),
+  ]);
+
   // Delete existing associations
   await db.delete(postsTags).where(eq(postsTags.postId, postId));
 
@@ -222,6 +238,30 @@ export async function updatePostTags(postId: string, tagIds: string[]): Promise<
         tagId,
       }))
     );
+  }
+
+  const newTags = tagIds.length > 0
+    ? await db.query.tags.findMany({
+        where: inArray(tags.id, tagIds),
+        columns: { slug: true },
+      })
+    : [];
+
+  invalidatePostsListCache();
+  invalidateTagsCache();
+
+  if (postRecord?.slug) {
+    invalidatePostCache(postRecord.slug);
+    revalidatePath(`/${postRecord.slug}`);
+  }
+
+  const affectedTagSlugs = new Set([
+    ...existingAssociations.map((association) => association.tag.slug),
+    ...newTags.map((tag) => tag.slug),
+  ]);
+
+  for (const slug of affectedTagSlugs) {
+    revalidatePath(`/tag/${slug}`);
   }
 
   revalidatePath('/admin/posts');

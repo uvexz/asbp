@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { posts } from '@/db/schema';
-import { desc, eq, count, and } from 'drizzle-orm';
+import { desc, eq, count, and, ilike, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
@@ -20,30 +20,43 @@ export type ActionResult<T = void> =
   | { success: true; data?: T }
   | { success: false; error: string };
 
-export async function getPosts(page: number = 1, pageSize: number = 20, search?: string) {
+export async function getPosts(
+    page: number = 1,
+    pageSize: number = 20,
+    search?: string,
+    postType?: 'post' | 'page' | 'memo'
+) {
     const validPage = Math.max(1, page);
     const validPageSize = Math.max(1, Math.min(100, pageSize));
     const offset = (validPage - 1) * validPageSize;
 
-    // Build where condition for search
-    const { ilike, or } = await import('drizzle-orm');
-    const searchCondition = search?.trim()
+    const trimmedSearch = search?.trim();
+
+    const searchCondition = trimmedSearch
         ? or(
-            ilike(posts.title, `%${search.trim()}%`),
-            ilike(posts.content, `%${search.trim()}%`)
-          )
+            ilike(posts.title, `%${trimmedSearch}%`),
+            ilike(posts.content, `%${trimmedSearch}%`)
+        )
         : undefined;
+
+    const typeCondition = postType
+        ? eq(posts.postType, postType)
+        : undefined;
+
+    const whereCondition = searchCondition && typeCondition
+        ? and(searchCondition, typeCondition)
+        : searchCondition || typeCondition;
 
     const [totalResult] = await db
         .select({ count: count() })
         .from(posts)
-        .where(searchCondition);
+        .where(whereCondition);
 
     const total = totalResult?.count ?? 0;
     const totalPages = Math.ceil(total / validPageSize);
 
     const data = await db.query.posts.findMany({
-        where: searchCondition,
+        where: whereCondition,
         orderBy: [desc(posts.createdAt)],
         limit: validPageSize,
         offset: offset,

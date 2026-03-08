@@ -12,15 +12,10 @@ type PostType = 'post' | 'page' | 'memo';
 export default async function AdminPostsPage({ searchParams }: { searchParams: Promise<{ type?: string; page?: string; q?: string }> }) {
     const { type, page, q: searchQuery } = await searchParams;
     const currentPage = parseInt(page || '1', 10);
-    const { posts: allPosts, totalPages } = await getPosts(currentPage, 10, searchQuery);
+    const currentType = (type || 'post') as PostType;
+    const { posts, total, totalPages } = await getPosts(currentPage, 10, searchQuery, currentType);
     const t = await getTranslations('admin');
     const tCommon = await getTranslations('common');
-
-    // Default to 'post' type if not specified
-    const currentType = (type || 'post') as PostType;
-
-    // Filter by type
-    const posts = allPosts.filter(p => (p.postType || 'post') === currentType);
 
     return (
         <div className="flex flex-col min-h-full">
@@ -71,6 +66,7 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
                     posts={posts}
                     currentType={currentType}
                     searchQuery={searchQuery}
+                    totalResults={total}
                     labels={{
                         titleOrContent: t('titleOrContent'),
                         type: tCommon('type'),
