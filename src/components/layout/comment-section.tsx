@@ -80,13 +80,12 @@ function CommentItem({
   locale: string;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const isUserComment = comment.user;
-  const authorName = isUserComment ? comment.user.name : (comment.guestName || t('anonymous'));
-  const authorImage = isUserComment
+  const authorName = comment.user ? comment.user.name : (comment.guestName || t('anonymous'));
+  const authorImage = comment.user
     ? comment.user.image
     : (comment.guestEmail ? getGravatarUrl(comment.guestEmail) : null);
-  const authorBio = isUserComment ? comment.user.bio : null;
-  const authorWebsite = isUserComment ? comment.user.website : comment.guestWebsite;
+  const authorBio = comment.user ? comment.user.bio : null;
+  const authorWebsite = comment.user ? comment.user.website : comment.guestWebsite;
 
   const handleDelete = async () => {
     if (!confirm(t('confirmDeleteComment'))) return;
