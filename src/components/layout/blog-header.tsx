@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { MobileNav, type NavItemData } from "./mobile-nav";
 import { getTranslations } from "next-intl/server";
+import { MobileNav, type NavItemData } from "./mobile-nav";
 import { SearchDialogProvider, SearchTrigger } from "./search-dialog";
 
 export type { NavItemData };
@@ -24,20 +24,20 @@ export async function BlogHeader({
 
   return (
     <SearchDialogProvider>
-      <header className="flex items-center justify-between gap-6 border-b border-border/60 py-6 md:py-10">
+      <header className="flex items-center justify-between gap-4 border-b border-border/40 py-5 md:py-7">
         <Link
           href="/"
-          className="min-w-0 truncate text-lg font-semibold tracking-tight text-foreground transition-colors hover:text-foreground/70"
+          className="min-w-0 truncate text-base font-medium tracking-tight text-foreground transition-colors hover:text-foreground/70 md:text-[1.05rem]"
         >
           {siteTitle}
         </Link>
 
-        <div className="hidden items-center gap-6 sm:flex">
-          <nav className="flex items-center gap-5 text-sm text-muted-foreground">
-            <Link href="/" className="transition-colors hover:text-foreground">
+        <div className="hidden items-center gap-5 sm:flex">
+          <nav className="flex items-center gap-4 text-sm text-muted-foreground">
+            <Link href="/" className="whitespace-nowrap transition-colors hover:text-foreground">
               {t("home")}
             </Link>
-            <Link href="/memo" className="transition-colors hover:text-foreground">
+            <Link href="/memo" className="whitespace-nowrap transition-colors hover:text-foreground">
               {t("memos")}
             </Link>
             {navItems.map((item) => (
@@ -46,13 +46,16 @@ export async function BlogHeader({
                 href={item.url}
                 target={item.openInNewTab ? "_blank" : undefined}
                 rel={item.openInNewTab ? "noopener noreferrer" : undefined}
-                className="transition-colors hover:text-foreground"
+                className="whitespace-nowrap transition-colors hover:text-foreground"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
-          <SearchTrigger variant="default" />
+          <SearchTrigger
+            variant="icon"
+            className="h-9 w-9 rounded-full border border-border/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          />
         </div>
 
         <MobileNav navItems={navItems} translations={mobileTranslations} />

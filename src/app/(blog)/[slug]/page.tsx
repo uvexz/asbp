@@ -1,16 +1,15 @@
-import { Badge } from "@/components/ui/badge";
-import { getPostBySlug } from "@/app/actions/posts";
-import { MarkdownContent } from "@/components/ui/markdown-content";
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getPostComments } from "@/app/actions/comments";
-import { CommentSection } from "@/components/layout/comment-section";
-import { formatLocalizedDate } from "@/lib/date-utils";
-import { getSettings } from "@/app/actions/settings";
-import { getLocale } from "next-intl/server";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { Fragment, cache } from "react";
+import { getPostBySlug } from "@/app/actions/posts";
+import { getPostComments } from "@/app/actions/comments";
+import { getSettings } from "@/app/actions/settings";
+import { CommentSection } from "@/components/layout/comment-section";
 import { ArticleJsonLd } from "@/components/seo/json-ld";
-import { cache } from "react";
+import { MarkdownContent } from "@/components/ui/markdown-content";
+import { formatLocalizedDate } from "@/lib/date-utils";
+import { getLocale } from "next-intl/server";
 
 const loadPost = cache(async (slug: string) => getPostBySlug(slug));
 const loadSettings = cache(async () => getSettings());
@@ -100,28 +99,27 @@ export default async function ArticleDetailPage({
         siteName={settings.siteTitle || "My Blog"}
         tags={post.tags.map((pt) => pt.tag.name)}
       />
-      <div className="space-y-14 py-4 md:py-8">
-        <article className="space-y-8">
-          <header className="space-y-4 border-b border-border/60 pb-8">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                {post.author.name} · {formatLocalizedDate(post.publishedAt || post.createdAt, locale)}
-              </p>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                {post.title}
-              </h1>
-            </div>
+      <div className="space-y-12 py-2 md:py-4">
+        <article className="space-y-7">
+          <header className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {post.author.name} · {formatLocalizedDate(post.publishedAt || post.createdAt, locale)}
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+              {post.title}
+            </h1>
             {post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {post.tags.map((postTag) => (
-                  <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
-                    <Badge
-                      variant="secondary"
-                      className="rounded-full border border-border/60 bg-transparent px-2.5 py-0.5 text-xs font-normal text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/90">
+                {post.tags.map((postTag, index) => (
+                  <Fragment key={postTag.tag.id}>
+                    {index > 0 && <span aria-hidden="true">/</span>}
+                    <Link
+                      href={`/tag/${postTag.tag.slug}`}
+                      className="transition-colors hover:text-foreground"
                     >
                       {postTag.tag.name}
-                    </Badge>
-                  </Link>
+                    </Link>
+                  </Fragment>
                 ))}
               </div>
             )}

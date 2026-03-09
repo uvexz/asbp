@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { getPublishedPosts } from "@/app/actions/posts";
-import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
 import { formatLocalizedDate } from "@/lib/date-utils";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -21,42 +21,46 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const { posts, totalPages } = await getPublishedPosts(currentPage, pageSize);
 
   return (
-    <div className="space-y-10">
-      <div className="space-y-10">
-        {posts.map((post) => (
-          <article key={post.id} className="space-y-3 border-b border-border/60 pb-10">
-            <div className="space-y-2">
-              <Link
-                href={`/${post.slug}`}
-                className="block text-2xl font-semibold tracking-tight text-foreground transition-colors hover:text-foreground/70"
-              >
-                {post.title}
-              </Link>
-              <div className="flex flex-wrap items-center gap-4">
-                <p className="text-sm text-muted-foreground">
-                  {formatLocalizedDate(post.publishedAt || post.createdAt, locale)}
-                </p>
-                {post.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {post.tags.map((postTag) => (
-                      <Link key={postTag.tag.id} href={`/tag/${postTag.tag.slug}`}>
-                        <Badge
-                          variant="secondary"
-                          className="rounded-full border border-border/60 bg-transparent px-2.5 py-0.5 text-xs font-normal text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        >
-                          {postTag.tag.name}
-                        </Badge>
-                      </Link>
-                    ))}
-                  </div>
-                )}
+    <div className="space-y-8">
+      {posts.length > 0 ? (
+        <div className="divide-y divide-border/40">
+          {posts.map((post) => (
+            <article key={post.id} className="py-7 first:pt-0 last:pb-0">
+              <div className="space-y-2.5">
+                <Link
+                  href={`/${post.slug}`}
+                  className="block text-2xl font-medium tracking-tight text-foreground transition-colors hover:text-foreground/70"
+                >
+                  {post.title}
+                </Link>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                  <p>{formatLocalizedDate(post.publishedAt || post.createdAt, locale)}</p>
+                  {post.tags.length > 0 && (
+                    <>
+                      <span aria-hidden="true" className="h-1 w-1 rounded-full bg-border/80" />
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/90">
+                        {post.tags.map((postTag, index) => (
+                          <Fragment key={postTag.tag.id}>
+                            {index > 0 && <span aria-hidden="true">/</span>}
+                            <Link
+                              href={`/tag/${postTag.tag.slug}`}
+                              className="transition-colors hover:text-foreground"
+                            >
+                              {postTag.tag.name}
+                            </Link>
+                          </Fragment>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-
-            </div>
-          </article>
-        ))}
-        {posts.length === 0 && <p className="text-muted-foreground">{t("noPosts")}</p>}
-      </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="text-muted-foreground">{t("noPosts")}</p>
+      )}
 
       <Pagination
         currentPage={currentPage}

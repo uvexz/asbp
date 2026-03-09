@@ -35,31 +35,41 @@ export function MobileNav({ navItems = [], translations }: MobileNavProps) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <div className="flex items-center gap-1 sm:hidden">
-        <SearchTrigger variant="icon" />
+      <div className="flex items-center rounded-full border border-border/50 bg-background/80 p-1 sm:hidden">
+        <SearchTrigger
+          variant="icon"
+          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+        />
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label={translations.menu}>
-            <Menu className="h-5 w-5" />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={translations.menu}
+            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+          >
+            <Menu className="h-4 w-4" />
             <span className="sr-only">{translations.menu}</span>
           </Button>
         </SheetTrigger>
       </div>
-      <SheetContent side="right" className="w-[280px] px-4">
-        <SheetHeader className="px-0">
-          <SheetTitle>{translations.menu}</SheetTitle>
+      <SheetContent side="right" className="w-[280px] border-l border-border/60 px-5">
+        <SheetHeader className="px-0 pt-2">
+          <SheetTitle className="text-sm font-medium tracking-tight text-foreground">
+            {translations.menu}
+          </SheetTitle>
         </SheetHeader>
-        <nav className="mt-6 flex flex-col gap-1 px-0 text-sm">
+        <nav className="mt-6 flex flex-col gap-1.5 px-0 text-sm text-muted-foreground">
           <Link
             href="/"
             onClick={() => setOpen(false)}
-            className="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-muted"
+            className="rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/60 hover:text-foreground"
           >
             {translations.home}
           </Link>
           <Link
             href="/memo"
             onClick={() => setOpen(false)}
-            className="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-muted"
+            className="rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/60 hover:text-foreground"
           >
             {translations.memos}
           </Link>
@@ -70,7 +80,7 @@ export function MobileNav({ navItems = [], translations }: MobileNavProps) {
               target={item.openInNewTab ? "_blank" : undefined}
               rel={item.openInNewTab ? "noopener noreferrer" : undefined}
               onClick={() => setOpen(false)}
-              className="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-muted"
+              className="rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               {item.label}
             </Link>

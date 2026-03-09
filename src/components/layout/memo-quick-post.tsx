@@ -1,20 +1,26 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Plus, X, Loader2, Eye, Edit, ImagePlus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { createQuickMemo } from '@/app/actions/posts';
-import { uploadMedia } from '@/app/actions/media';
+import { useRef, useState } from 'react';
+import { Edit, Eye, ImagePlus, Loader2, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
+import { createQuickMemo } from '@/app/actions/posts';
+import { uploadMedia } from '@/app/actions/media';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface MemoQuickPostProps {
   className?: string;
@@ -78,16 +84,17 @@ export function MemoQuickPost({ className, hasS3 = false }: MemoQuickPostProps) 
       }
 
       if (markdownLines.length > 0) {
-        setContent(prev => prev + (prev ? '\n' : '') + markdownLines.join('\n'));
+        setContent((prev) => prev + (prev ? '\n' : '') + markdownLines.join('\n'));
       }
 
       if (errors.length > 0) {
         const successCount = markdownLines.length;
         const failCount = errors.length;
         const reason = errors[0];
-        const summary = successCount > 0
-          ? tCommon('uploadPartial', { successCount, failCount })
-          : tCommon('uploadFailedCount', { failCount });
+        const summary =
+          successCount > 0
+            ? tCommon('uploadPartial', { successCount, failCount })
+            : tCommon('uploadFailedCount', { failCount });
         setError(reason ? `${summary} ${tCommon('uploadReason', { reason })}` : summary);
       }
     } catch {
@@ -101,148 +108,143 @@ export function MemoQuickPost({ className, hasS3 = false }: MemoQuickPostProps) 
   };
 
   return (
-    <div className={className}>
-      <TooltipProvider delayDuration={100}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={() => setIsOpen(true)}
-              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-neutral-200 hover:bg-neutral-300 transition-colors"
-            >
-              <Plus className="h-3 w-3 text-neutral-600" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{t('quickMemo')}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) {
+          setError(null);
+        }
+      }}
+    >
+      <div className={className}>
+        <TooltipProvider delayDuration={100}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={t('quickMemo')}
+                onClick={() => setIsOpen(true)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{t('quickMemo')}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
 
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={() => setIsOpen(false)}
-          />
+      <DialogContent className="max-w-xl gap-0 p-0" closeLabel={tCommon('close')}>
+        <DialogHeader className="border-b px-5 py-4">
+          <DialogTitle className="text-base font-medium tracking-tight">{t('quickMemo')}</DialogTitle>
+        </DialogHeader>
 
-          {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="font-semibold text-lg">{t('quickMemo')}</h3>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="p-1 hover:bg-neutral-100 rounded"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="p-4 space-y-4">
-                {/* Toolbar */}
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1">
-                    <Button
-                      type="button"
-                      variant={isPreview ? 'ghost' : 'secondary'}
-                      size="sm"
-                      onClick={() => setIsPreview(false)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      {tCommon('edit')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={isPreview ? 'secondary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setIsPreview(true)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      {tCommon('preview')}
-                    </Button>
-                  </div>
-                  {hasS3 && (
-                    <div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        multiple
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                      >
-                        {isUploading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <ImagePlus className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Content */}
-                {isPreview ? (
-                  <div className="prose prose-neutral prose-sm max-w-none p-3 border rounded-md bg-gray-50 min-h-[120px] overflow-auto">
-                    {content ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-                    ) : (
-                      <p className="text-muted-foreground italic">{tCommon('noContent')}</p>
-                    )}
-                  </div>
-                ) : (
-                  <Textarea
-                    placeholder={t('writeSomething')}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    className="min-h-[120px] resize-none font-mono text-sm"
-                    autoFocus
-                  />
-                )}
-
-                {error && (
-                  <p className="text-sm text-red-500">{error}</p>
-                )}
-
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsOpen(false)}
-                    disabled={isSubmitting}
-                  >
-                    {tCommon('cancel')}
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={!content.trim() || isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {tCommon('publishing')}
-                      </>
-                    ) : (
-                      tCommon('publish')
-                    )}
-                  </Button>
-                </div>
-              </div>
+        <div className="space-y-4 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant={isPreview ? 'ghost' : 'secondary'}
+                size="sm"
+                onClick={() => setIsPreview(false)}
+              >
+                <Edit className="h-4 w-4" />
+                {tCommon('edit')}
+              </Button>
+              <Button
+                type="button"
+                variant={isPreview ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setIsPreview(true)}
+              >
+                <Eye className="h-4 w-4" />
+                {tCommon('preview')}
+              </Button>
             </div>
+
+            {hasS3 && (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  multiple
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  aria-label={tCommon('upload')}
+                  className="shrink-0"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">{tCommon('upload')}</span>
+                </Button>
+              </div>
+            )}
           </div>
-        </>
-      )}
-    </div>
+
+          {isPreview ? (
+            <div className="prose prose-neutral dark:prose-invert prose-sm max-w-none min-h-[160px] overflow-auto rounded-lg border border-border/60 bg-muted/20 p-4">
+              {content ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              ) : (
+                <p className="text-muted-foreground italic">{tCommon('noContent')}</p>
+              )}
+            </div>
+          ) : (
+            <Textarea
+              placeholder={t('writeSomething')}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="min-h-[160px] resize-none border-border/60 bg-muted/20 text-sm leading-6 shadow-none"
+              autoFocus
+            />
+          )}
+
+          {error ? (
+            <p className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={isSubmitting}
+            >
+              {tCommon('cancel')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!content.trim() || isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {tCommon('publishing')}
+                </>
+              ) : (
+                tCommon('publish')
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

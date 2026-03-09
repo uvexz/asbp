@@ -1,31 +1,37 @@
-import { getTranslations } from 'next-intl/server';
-import { Github, Rss, Settings } from 'lucide-react';
-import { FooterIconLink } from './footer-icon-link';
+import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 interface BlogFooterProps {
-    siteTitle: string;
+  siteTitle: string;
 }
 
 export async function BlogFooter({ siteTitle }: BlogFooterProps) {
-    const currentYear = new Date().getFullYear();
-    const t = await getTranslations('blog');
+  const currentYear = new Date().getFullYear();
+  const t = await getTranslations("blog");
 
-    return (
-        <footer className="px-4 sm:px-6 py-8">
-            <div className="flex items-center justify-center gap-2">
-                <p className="text-muted-foreground text-sm">© {currentYear} {siteTitle}. {t('allRightsReserved')}</p>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                    <FooterIconLink href="https://github.com/uvexz/asbp" label="GitHub" external>
-                        <Github className="h-3.5 w-3.5" />
-                    </FooterIconLink>
-                    <FooterIconLink href="/feed.xml" label="RSS Feed">
-                        <Rss className="h-3.5 w-3.5" />
-                    </FooterIconLink>
-                    <FooterIconLink href="/admin" label="Admin">
-                        <Settings className="h-3.5 w-3.5" />
-                    </FooterIconLink>
-                </div>
-            </div>
-        </footer>
-    );
+  return (
+    <footer className="border-t border-border/40 py-8">
+      <div className="flex flex-col gap-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-muted-foreground/80">
+          © {currentYear} {siteTitle}. {t("allRightsReserved")}
+        </p>
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Link
+            href="https://github.com/uvexz/asbp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-foreground"
+          >
+            GitHub
+          </Link>
+          <Link href="/feed.xml" className="transition-colors hover:text-foreground">
+            RSS
+          </Link>
+          <Link href="/admin" className="transition-colors hover:text-foreground">
+            Admin
+          </Link>
+        </nav>
+      </div>
+    </footer>
+  );
 }
