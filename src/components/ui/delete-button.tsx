@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Trash2, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Loader2, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -15,7 +17,6 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
 
 interface DeleteButtonProps {
     onDelete: () => Promise<void>;
@@ -23,6 +24,8 @@ interface DeleteButtonProps {
     description?: string;
     variant?: 'icon' | 'button';
     buttonText?: string;
+    className?: string;
+    ariaLabel?: string;
 }
 
 export function DeleteButton({
@@ -31,6 +34,8 @@ export function DeleteButton({
     description,
     variant = 'icon',
     buttonText,
+    className,
+    ariaLabel,
 }: DeleteButtonProps) {
     const [open, setOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -52,12 +57,17 @@ export function DeleteButton({
         <AlertDialog open={open} onOpenChange={setOpen}>
             <AlertDialogTrigger asChild>
                 {variant === 'icon' ? (
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn('text-destructive hover:bg-destructive/10 hover:text-destructive', className)}
+                        aria-label={ariaLabel || buttonText || tCommon('delete')}
+                    >
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 ) : (
-                    <Button variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4 mr-2" />
+                    <Button variant="destructive" size="sm" className={className}>
+                        <Trash2 className="mr-2 h-4 w-4" />
                         {buttonText || tCommon('delete')}
                     </Button>
                 )}
@@ -74,7 +84,7 @@ export function DeleteButton({
                         disabled={isPending}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                        {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         {buttonText || tCommon('delete')}
                     </AlertDialogAction>
                 </AlertDialogFooter>

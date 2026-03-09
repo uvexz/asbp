@@ -2,8 +2,12 @@
 
 import Link from 'next/link';
 import { Edit, Search, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
+import { deletePost } from '@/app/actions/posts';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DeleteButton } from '@/components/ui/delete-button';
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -12,12 +16,9 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
-import { DeleteButton } from '@/components/ui/delete-button';
-import { deletePost } from '@/app/actions/posts';
+} from '@/components/ui/table';
 import { formatDate } from '@/lib/date-utils';
-import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { cn } from '@/lib/utils';
 
 type PostType = 'post' | 'page' | 'memo';
 
@@ -53,6 +54,8 @@ interface PostsTableProps {
         searchResults: string;
         deleteContentTitle: string;
         deleteContentDescription: (title: string) => string;
+        edit: string;
+        clearSearch: string;
     };
 }
 
@@ -60,6 +63,20 @@ function getTypeBadgeVariant(postType: PostType): 'default' | 'secondary' | 'out
     if (postType === 'post') return 'default';
     if (postType === 'page') return 'secondary';
     return 'outline';
+}
+
+function normalizeText(value: string) {
+    return value.replace(/\s+/g, ' ').trim();
+}
+
+function getDisplayText(post: Post, postType: PostType) {
+    const source = postType === 'memo' ? post.content : post.title;
+    return normalizeText(source);
+}
+
+function truncateText(value: string, maxLength: number) {
+    if (value.length <= maxLength) return value;
+    return `${value.slice(0, maxLength)}...`;
 }
 
 export function PostsTable({ posts, currentType, searchQuery = '', totalResults, labels }: PostsTableProps) {
@@ -93,130 +110,174 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
     };
 
     return (
-        <div className="space-y-4">
-            <form onSubmit={handleSearch} className="flex gap-2">
-                <div className="relative max-w-sm flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        type="text"
-                        placeholder={labels.searchPlaceholder}
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9 pr-9"
-                        disabled={isPending}
-                    />
-                    {search && (
-                        <button
-                            type="button"
-                            onClick={clearSearch}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    )}
-                </div>
-                <Button type="submit" variant="secondary" disabled={isPending}>
-                    {labels.search}
-                </Button>
-            </form>
-
-            {searchQuery && (
-                <p className="text-sm text-muted-foreground">
-                    {labels.searchResults.replace('{query}', searchQuery).replace('{count}', String(totalResults ?? posts.length))}
-                </p>
-            )}
+        <section className="overflow-hidden rounded-2xl border bg-card">
+            <div className="border-b px-4 py-4 sm:px-5">
+                <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="relative flex-1">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            type="text"
+                            aria-label={labels.search}
+                            placeholder={labels.searchPlaceholder}
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="h-10 rounded-lg border-border/80 bg-background pl-9 pr-10 shadow-none"
+                            disabled={isPending}
+                        />
+                        {search ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={clearSearch}
+                                className="absolute right-1.5 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full text-muted-foreground hover:text-foreground"
+                                disabled={isPending}
+                                aria-label={labels.clearSearch}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        ) : null}
+                    </div>
+                    <Button type="submit" variant="secondary" disabled={isPending} className="w-full sm:w-auto">
+                        {labels.search}
+                    </Button>
+                </form>
+                {searchQuery ? (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                        {labels.searchResults.replace('{query}', searchQuery).replace('{count}', String(totalResults ?? posts.length))}
+                    </p>
+                ) : null}
+            </div>
 
             {posts.length === 0 ? (
-                <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-12 text-center text-sm text-muted-foreground">
-                    {labels.noContent}
+                <div className="px-4 py-14 sm:px-5">
+                    <div className="rounded-2xl border border-dashed bg-muted/20 px-6 py-12 text-center text-sm text-muted-foreground">
+                        {labels.noContent}
+                    </div>
                 </div>
             ) : (
                 <>
-                    <div className="space-y-3 md:hidden">
+                    <div className="divide-y md:hidden">
                         {posts.map((post) => {
                             const postType = (post.postType || 'post') as PostType;
                             const isMemo = postType === 'memo';
+                            const displayText = getDisplayText(post, postType) || postTypeLabels[postType];
+
                             return (
-                                <div key={post.id} className="space-y-3 rounded-xl border bg-card p-4 text-card-foreground">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <h3 className="line-clamp-2 flex-1 text-sm font-medium text-foreground">
-                                            {isMemo ? post.content.slice(0, 80) + (post.content.length > 80 ? '...' : '') : post.title}
-                                        </h3>
+                                <article key={post.id} className="space-y-4 px-4 py-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1 space-y-2">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <Badge variant={getTypeBadgeVariant(postType)} className="shadow-none text-[11px]">
+                                                    {postTypeLabels[postType]}
+                                                </Badge>
+                                                <Badge variant={post.published ? 'default' : 'outline'} className="shadow-none text-[11px]">
+                                                    {post.published ? labels.published : labels.draft}
+                                                </Badge>
+                                            </div>
+                                            <h3
+                                                className={cn(
+                                                    'min-w-0 break-words text-sm font-medium leading-6 text-foreground',
+                                                    isMemo ? 'line-clamp-4' : 'line-clamp-2'
+                                                )}
+                                            >
+                                                {displayText}
+                                            </h3>
+                                        </div>
                                         <div className="flex shrink-0 items-center gap-1">
-                                            <Link href={`/admin/posts/edit?id=${post.id}`}>
-                                                <Button variant="ghost" size="icon-sm" aria-label="Edit">
+                                            <Button
+                                                asChild
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-11 w-11 rounded-xl text-muted-foreground hover:text-foreground"
+                                            >
+                                                <Link href={`/admin/posts/edit?id=${post.id}`} aria-label={labels.edit}>
                                                     <Edit className="h-4 w-4" />
-                                                </Button>
-                                            </Link>
+                                                </Link>
+                                            </Button>
                                             <DeleteButton
                                                 onDelete={async () => {
                                                     await deletePost(post.id);
                                                 }}
                                                 title={labels.deleteContentTitle}
-                                                description={labels.deleteContentDescription(isMemo ? post.content.slice(0, 20) : post.title)}
+                                                description={labels.deleteContentDescription(truncateText(displayText, 20))}
+                                                ariaLabel={labels.deleteContentTitle}
+                                                className="h-11 w-11 rounded-xl"
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <Badge variant={getTypeBadgeVariant(postType)} className="shadow-none text-xs">
-                                            {postTypeLabels[postType]}
-                                        </Badge>
-                                        <Badge variant={post.published ? 'default' : 'outline'} className="shadow-none text-xs">
-                                            {post.published ? labels.published : labels.draft}
-                                        </Badge>
-                                        <span className="text-xs text-muted-foreground">
-                                            {formatDate(post.publishedAt || post.createdAt)}
-                                        </span>
+                                    <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                                        <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                                     </div>
-                                </div>
+                                </article>
                             );
                         })}
                     </div>
 
-                    <div className="hidden rounded-xl border bg-card md:block">
-                        <Table>
-                            <TableHeader>
+                    <div className="hidden md:block">
+                        <Table className="table-fixed">
+                            <TableHeader className="bg-muted/20">
                                 <TableRow>
-                                    <TableHead>{labels.titleOrContent}</TableHead>
-                                    <TableHead>{labels.type}</TableHead>
-                                    <TableHead>{labels.status}</TableHead>
-                                    <TableHead>{labels.date}</TableHead>
-                                    <TableHead className="text-right">{labels.actions}</TableHead>
+                                    <TableHead className="w-[46%]">{labels.titleOrContent}</TableHead>
+                                    <TableHead className="w-[110px]">{labels.type}</TableHead>
+                                    <TableHead className="w-[120px]">{labels.status}</TableHead>
+                                    <TableHead className="w-[150px]">{labels.date}</TableHead>
+                                    <TableHead className="w-[120px] text-right">{labels.actions}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {posts.map((post) => {
                                     const postType = (post.postType || 'post') as PostType;
                                     const isMemo = postType === 'memo';
+                                    const displayText = getDisplayText(post, postType) || postTypeLabels[postType];
+
                                     return (
                                         <TableRow key={post.id}>
-                                            <TableCell className="max-w-xs truncate font-medium text-foreground">
-                                                {isMemo ? post.content.slice(0, 50) + (post.content.length > 50 ? '...' : '') : post.title}
+                                            <TableCell className="py-4 align-top whitespace-normal">
+                                                <div className="min-w-0 max-w-xl">
+                                                    <p
+                                                        className={cn(
+                                                            'break-words font-medium leading-6 text-foreground',
+                                                            isMemo ? 'line-clamp-3 text-sm' : 'line-clamp-2'
+                                                        )}
+                                                    >
+                                                        {displayText}
+                                                    </p>
+                                                </div>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-4 align-top">
                                                 <Badge variant={getTypeBadgeVariant(postType)} className="shadow-none">
                                                     {postTypeLabels[postType]}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-4 align-top">
                                                 <Badge variant={post.published ? 'default' : 'outline'} className="shadow-none">
                                                     {post.published ? labels.published : labels.draft}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-muted-foreground">{formatDate(post.publishedAt || post.createdAt)}</TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Link href={`/admin/posts/edit?id=${post.id}`}>
-                                                        <Button variant="ghost" size="icon" aria-label="Edit">
+                                            <TableCell className="py-4 align-top text-muted-foreground">
+                                                {formatDate(post.publishedAt || post.createdAt)}
+                                            </TableCell>
+                                            <TableCell className="py-4 align-top text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Button
+                                                        asChild
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-9 w-9 rounded-md text-muted-foreground hover:text-foreground"
+                                                    >
+                                                        <Link href={`/admin/posts/edit?id=${post.id}`} aria-label={labels.edit}>
                                                             <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                    </Link>
+                                                        </Link>
+                                                    </Button>
                                                     <DeleteButton
                                                         onDelete={async () => {
                                                             await deletePost(post.id);
                                                         }}
                                                         title={labels.deleteContentTitle}
-                                                        description={labels.deleteContentDescription(isMemo ? post.content.slice(0, 20) : post.title)}
+                                                        description={labels.deleteContentDescription(truncateText(displayText, 20))}
+                                                        ariaLabel={labels.deleteContentTitle}
+                                                        className="h-9 w-9 rounded-md"
                                                     />
                                                 </div>
                                             </TableCell>
@@ -228,6 +289,6 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
                     </div>
                 </>
             )}
-        </div>
+        </section>
     );
 }

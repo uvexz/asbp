@@ -1,12 +1,21 @@
 'use client';
 
-import { useState, useEffect, useTransition, useRef, useCallback } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Upload, AlertTriangle, Trash2, Image as ImageIcon, FileText, Loader2, Copy, Check } from "lucide-react";
-import { getMedia, uploadMedia, deleteMedia, type Media } from "@/app/actions/media";
-import { getSettings } from "@/app/actions/settings";
 import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import {
+    AlertTriangle,
+    Check,
+    Copy,
+    FileText,
+    Image as ImageIcon,
+    Loader2,
+    Trash2,
+    Upload,
+} from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { deleteMedia, getMedia, type Media, uploadMedia } from '@/app/actions/media';
+import { getSettings } from '@/app/actions/settings';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -14,8 +23,9 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog";
-import { useTranslations } from 'next-intl';
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 export default function AdminMediaPage() {
     const [settings, setSettings] = useState<{ s3Bucket: string | null } | null>(null);
@@ -43,6 +53,8 @@ export default function AdminMediaPage() {
     }
 
     const loadData = useCallback(async () => {
+        setError(null);
+
         try {
             const settingsData = await getSettings();
             setSettings(settingsData);
@@ -58,7 +70,6 @@ export default function AdminMediaPage() {
         }
     }, [tCommon]);
 
-    // Load settings and media on mount
     useEffect(() => {
         loadData();
     }, [loadData]);
@@ -94,6 +105,7 @@ export default function AdminMediaPage() {
             } else {
                 setError(result.error);
             }
+
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -135,178 +147,203 @@ export default function AdminMediaPage() {
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     }
 
-    // Loading state
     if (isLoading) {
         return (
-            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">{t('loadingMedia')}</p>
+            <div className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center">
+                <div className="rounded-full border bg-card p-4 shadow-sm">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">{t('loadingMedia')}</p>
+                </div>
             </div>
         );
     }
 
-    // S3 not configured
     if (!settings?.s3Bucket) {
         return (
-            <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-                <div className="mb-4 rounded-full bg-muted p-4 text-muted-foreground">
-                    <AlertTriangle className="h-8 w-8" />
+            <div className="flex h-full flex-col px-4 py-6 sm:px-6">
+                <div className="flex flex-1 items-center justify-center">
+                    <section className="w-full max-w-xl rounded-2xl border bg-card px-6 py-8 text-center shadow-sm">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border bg-muted text-muted-foreground">
+                            <AlertTriangle className="h-6 w-6" />
+                        </div>
+                        <div className="mt-5 space-y-2">
+                            <h1 className="text-2xl font-bold text-foreground">{t('s3Required')}</h1>
+                            <p className="text-sm leading-6 text-muted-foreground">{t('s3RequiredDesc')}</p>
+                        </div>
+                        <Button asChild className="mt-6">
+                            <Link href="/admin/settings">{tCommon('goToSettings')}</Link>
+                        </Button>
+                    </section>
                 </div>
-                <h1 className="mb-2 text-2xl font-bold text-foreground">{t('s3Required')}</h1>
-                <p className="mb-6 max-w-md text-sm text-muted-foreground">{t('s3RequiredDesc')}</p>
-                <Button asChild>
-                    <Link href="/admin/settings">{tCommon('goToSettings')}</Link>
-                </Button>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-full">
-            <header className="flex flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-4xl font-black leading-tight tracking-[-0.033em] text-foreground">{t('mediaLibraryTitle')}</h1>
-                    <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('mediaLibraryDesc')}</p>
-                </div>
-                <div>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        className="hidden"
-                        onChange={handleFileChange}
-                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
-                    />
-                    <Button onClick={handleUploadClick} disabled={isPending}>
-                        {isPending ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Upload className="mr-2 h-4 w-4" />
-                        )}
-                        {t('uploadNewMedia')}
-                    </Button>
-                </div>
-            </header>
-
-            <main className="flex-1 px-4 pb-6 sm:px-6 overflow-auto">
-            {/* Messages */}
-            {error && (
-                <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive" role="alert" aria-live="polite">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <span>{error}</span>
-                        <Button type="button" variant="outline" size="sm" onClick={() => void loadData()} disabled={isPending}>
-                            {tCommon('retry')}
+        <div className="flex h-full flex-col">
+            <header className="flex flex-col gap-4 px-4 py-6 sm:px-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="max-w-2xl space-y-2">
+                        <h1 className="text-4xl font-black leading-tight tracking-[-0.033em] text-foreground">{t('mediaLibraryTitle')}</h1>
+                        <p className="text-sm leading-6 text-muted-foreground sm:text-base">{t('mediaLibraryDesc')}</p>
+                    </div>
+                    <div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            className="hidden"
+                            onChange={handleFileChange}
+                            accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                        />
+                        <Button onClick={handleUploadClick} disabled={isPending} size="sm">
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                            {t('uploadNewMedia')}
                         </Button>
                     </div>
                 </div>
-            )}
-            {successMessage && (
-                <div className="mb-4 rounded-lg border border-primary/20 bg-primary/10 p-4 text-sm text-foreground" aria-live="polite">
-                    {successMessage}
-                </div>
-            )}
+            </header>
 
-            {/* Media Grid */}
-            {mediaList.length === 0 ? (
-                <div className="flex flex-1 flex-col items-center justify-center text-center">
-                    <div className="mb-4 rounded-full bg-muted p-6 text-muted-foreground">
-                        <ImageIcon className="h-12 w-12" />
-                    </div>
-                    <h2 className="mb-2 text-xl font-semibold text-foreground">{t('noMediaFiles')}</h2>
-                    <p className="mb-6 max-w-md text-sm text-muted-foreground">{t('noMediaFilesDesc')}</p>
-                    <Button onClick={handleUploadClick} disabled={isPending}>
-                        <Upload className="mr-2 h-4 w-4" /> {t('uploadMedia')}
-                    </Button>
-                </div>
-            ) : (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
-                    {mediaList.map((media) => (
+            <main className="flex-1 overflow-auto px-4 pb-6 sm:px-6">
+                <div className="flex flex-col gap-5">
+                    {error ? (
                         <div
-                            key={media.id}
-                            className="group relative aspect-square overflow-hidden rounded-xl border bg-muted/40"
+                            className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-4 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between"
+                            role="alert"
+                            aria-live="polite"
                         >
-                            {isImageFile(media.mimeType) ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img 
-                                    src={media.url} 
-                                    alt={media.filename}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center text-muted-foreground">
-                                    <FileText className="mb-2 h-12 w-12" />
-                                    <span className="w-full truncate text-sm">
-                                        {media.filename}
-                                    </span>
-                                </div>
-                            )}
-                            
-                            {/* Overlay with info and actions */}
-                            <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-background/95 via-background/55 to-background/20 p-3 opacity-100 transition-opacity group-hover:opacity-100">
-                                <div className="flex justify-end gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-11 w-11 bg-background/70 text-foreground hover:bg-background hover:text-foreground"
-                                        onClick={() => copyToClipboard(media)}
-                                        disabled={isPending}
-                                        title={t('copyLink')}
-                                        aria-label={t('copyLink')}
-                                    >
-                                        {copiedId === media.id ? (
-                                            <Check className="h-5 w-5 text-primary" />
-                                        ) : (
-                                            <Copy className="h-5 w-5" />
-                                        )}
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-11 w-11 bg-background/70 text-foreground hover:bg-destructive/10 hover:text-destructive"
-                                        onClick={() => openDeleteDialog(media)}
-                                        disabled={isPending}
-                                        title={tCommon('delete')}
-                                        aria-label={tCommon('delete')}
-                                    >
-                                        <Trash2 className="h-5 w-5" />
-                                    </Button>
-                                </div>
-                                {isImageFile(media.mimeType) ? (
-                                    <button
-                                        type="button"
-                                        className="rounded text-left text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
-                                        onClick={() => setPreviewMedia(media)}
-                                    >
-                                        <p className="truncate text-sm font-medium">{media.filename}</p>
-                                        <p className="text-xs text-muted-foreground">{formatFileSize(media.size)}</p>
-                                    </button>
-                                ) : (
-                                    <div className="text-foreground">
-                                        <p className="truncate text-sm font-medium">{media.filename}</p>
-                                        <p className="text-xs text-muted-foreground">{formatFileSize(media.size)}</p>
-                                    </div>
-                                )}
-                            </div>
+                            <p className="leading-6">{error}</p>
+                            <Button type="button" variant="outline" size="sm" onClick={() => void loadData()} disabled={isPending}>
+                                {tCommon('retry')}
+                            </Button>
                         </div>
-                    ))}
-                </div>
-            )}
+                    ) : null}
 
-            {/* Image Preview Dialog */}
+                    {successMessage ? (
+                        <div className="rounded-2xl border border-primary/20 bg-primary/10 px-4 py-4 text-sm text-foreground" aria-live="polite">
+                            {successMessage}
+                        </div>
+                    ) : null}
+
+                    {mediaList.length === 0 ? (
+                        <section className="flex min-h-[26rem] flex-col items-center justify-center rounded-2xl border bg-card px-6 py-12 text-center shadow-sm">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full border bg-muted text-muted-foreground">
+                                <ImageIcon className="h-8 w-8" />
+                            </div>
+                            <div className="mt-5 max-w-md space-y-2">
+                                <h2 className="text-xl font-semibold text-foreground">{t('noMediaFiles')}</h2>
+                                <p className="text-sm leading-6 text-muted-foreground">{t('noMediaFilesDesc')}</p>
+                            </div>
+                            <Button onClick={handleUploadClick} disabled={isPending} className="mt-6">
+                                <Upload className="h-4 w-4" />
+                                {t('uploadMedia')}
+                            </Button>
+                        </section>
+                    ) : (
+                        <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+                            <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
+                                {mediaList.map((media) => {
+                                    const isImage = isImageFile(media.mimeType);
+                                    const isCopied = copiedId === media.id;
+
+                                    return (
+                                        <article
+                                            key={media.id}
+                                            className="group overflow-hidden rounded-2xl border bg-background transition-colors hover:border-border/80"
+                                        >
+                                            <div className="relative aspect-square overflow-hidden bg-muted/40">
+                                                {isImage ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img
+                                                        src={media.url}
+                                                        alt={media.filename}
+                                                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                                    />
+                                                ) : (
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center text-muted-foreground">
+                                                        <div className="flex h-12 w-12 items-center justify-center rounded-full border bg-background/80">
+                                                            <FileText className="h-6 w-6" />
+                                                        </div>
+                                                        <span className="line-clamp-2 break-all text-sm leading-5">{media.filename}</span>
+                                                    </div>
+                                                )}
+
+                                                <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-end gap-2 p-3 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary"
+                                                        size="icon"
+                                                        className="h-10 w-10 rounded-full border border-border/60 bg-background/90 shadow-sm backdrop-blur-sm"
+                                                        onClick={() => copyToClipboard(media)}
+                                                        disabled={isPending}
+                                                        title={t('copyLink')}
+                                                        aria-label={t('copyLink')}
+                                                    >
+                                                        {isCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary"
+                                                        size="icon"
+                                                        className="h-10 w-10 rounded-full border border-border/60 bg-background/90 text-destructive shadow-sm backdrop-blur-sm hover:bg-destructive/10 hover:text-destructive"
+                                                        onClick={() => openDeleteDialog(media)}
+                                                        disabled={isPending}
+                                                        title={tCommon('delete')}
+                                                        aria-label={tCommon('delete')}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+
+                                                {isImage ? (
+                                                    <button
+                                                        type="button"
+                                                        className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80 focus-visible:ring-inset"
+                                                        onClick={() => setPreviewMedia(media)}
+                                                        aria-label={tCommon('preview')}
+                                                    >
+                                                        <span className="sr-only">{tCommon('preview')}</span>
+                                                    </button>
+                                                ) : null}
+                                            </div>
+
+                                            <div className="space-y-1 border-t px-4 py-3">
+                                                <p className="truncate text-sm font-medium text-foreground">{media.filename}</p>
+                                                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                                                    <span className="truncate">{formatFileSize(media.size)}</span>
+                                                    <span className="truncate">{media.mimeType || '—'}</span>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    )}
+                </div>
+            </main>
+
             <Dialog open={!!previewMedia} onOpenChange={() => setPreviewMedia(null)}>
-                <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden [&>button]:hidden">
-                    <DialogHeader className="p-4 pb-0">
+                <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden p-0" closeLabel={tCommon('close')}>
+                    <DialogHeader className="border-b px-5 py-4">
                         <DialogTitle className="truncate pr-8">{previewMedia?.filename}</DialogTitle>
+                        <DialogDescription className="text-xs sm:text-sm">
+                            {previewMedia ? `${formatFileSize(previewMedia.size)} · ${previewMedia.mimeType || '—'}` : null}
+                        </DialogDescription>
                     </DialogHeader>
-                    <div className="p-4 pt-2 flex flex-col gap-3">
-                        {previewMedia && (
+                    <div className="flex flex-col gap-4 p-5">
+                        {previewMedia ? (
                             <>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={previewMedia.url}
-                                    alt={previewMedia.filename}
-                                    className="max-h-[60vh] w-auto mx-auto object-contain rounded-lg"
-                                />
-                                <div className="flex items-center gap-2">
+                                <div className="overflow-hidden rounded-xl border bg-muted/30 p-3">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={previewMedia.url}
+                                        alt={previewMedia.filename}
+                                        className="mx-auto max-h-[60vh] w-auto rounded-lg object-contain"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                                     <Input
                                         type="text"
                                         readOnly
@@ -316,29 +353,29 @@ export default function AdminMediaPage() {
                                     />
                                     <Button
                                         variant="outline"
-                                        size="sm"
                                         onClick={() => copyToClipboard(previewMedia)}
+                                        className={cn('sm:shrink-0', copiedId === previewMedia.id && 'text-primary')}
                                     >
-                                        {copiedId === previewMedia.id ? (
-                                            <Check className="mr-1 h-4 w-4 text-primary" />
-                                        ) : (
-                                            <Copy className="h-4 w-4 mr-1" />
-                                        )}
+                                        {copiedId === previewMedia.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                         {t('copyLink')}
                                     </Button>
                                 </div>
-                                <p className="text-sm text-muted-foreground">
-                                    {formatFileSize(previewMedia.size)} · {previewMedia.mimeType}
-                                </p>
                             </>
-                        )}
+                        ) : null}
                     </div>
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent>
+            <Dialog
+                open={deleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setMediaToDelete(null);
+                    }
+                }}
+            >
+                <DialogContent closeLabel={tCommon('close')}>
                     <DialogHeader>
                         <DialogTitle>{t('deleteMedia')}</DialogTitle>
                         <DialogDescription>
@@ -346,27 +383,16 @@ export default function AdminMediaPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setDeleteDialogOpen(false)}
-                            disabled={isPending}
-                        >
+                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isPending}>
                             {tCommon('cancel')}
                         </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDelete}
-                            disabled={isPending}
-                        >
-                            {isPending ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : null}
+                        <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                             {tCommon('delete')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            </main>
         </div>
     );
 }

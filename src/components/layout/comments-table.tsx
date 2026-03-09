@@ -1,8 +1,13 @@
 'use client';
 
 import { Check, UserCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
+import { toast } from 'sonner';
+import { approveComment, deleteComment } from '@/app/actions/comments';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DeleteButton } from '@/components/ui/delete-button';
 import {
     Table,
     TableBody,
@@ -10,13 +15,8 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
-import { DeleteButton } from '@/components/ui/delete-button';
-import { approveComment, deleteComment } from '@/app/actions/comments';
+} from '@/components/ui/table';
 import { formatDate } from '@/lib/date-utils';
-import { useTransition } from 'react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 
 interface Comment {
     id: string;
@@ -82,138 +82,165 @@ export function CommentsTable({ comments, labels }: CommentsTableProps) {
 
     if (comments.length === 0) {
         return (
-            <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-12 text-center text-sm text-muted-foreground">
-                {labels.noCommentsFound}
-            </div>
+            <section className="overflow-hidden rounded-2xl border bg-card px-4 py-14 sm:px-5">
+                <div className="rounded-2xl border border-dashed bg-muted/20 px-6 py-12 text-center text-sm text-muted-foreground">
+                    {labels.noCommentsFound}
+                </div>
+            </section>
         );
     }
 
     return (
-        <div>
-            <div className="space-y-3 md:hidden">
-                {comments.map((comment) => (
-                    <div key={comment.id} className="space-y-3 rounded-xl border bg-card p-4 text-card-foreground">
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                                <div className="mb-1 flex items-center gap-2">
-                                    <span className="text-sm font-medium text-foreground">{comment.author || labels.guest}</span>
-                                    <Badge variant={getStatusBadgeVariant(comment.status)} className="shadow-none">
-                                        {getStatusLabel(comment.status, labels.statusLabels)}
-                                    </Badge>
+        <section className="overflow-hidden rounded-2xl border bg-card">
+            <div className="divide-y md:hidden">
+                {comments.map((comment) => {
+                    const statusLabel = getStatusLabel(comment.status, labels.statusLabels);
+                    const postTitle = comment.postTitle || labels.deletedPost;
+
+                    return (
+                        <article key={comment.id} className="space-y-4 px-4 py-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Badge variant={getStatusBadgeVariant(comment.status)} className="shadow-none text-[11px]">
+                                            {statusLabel}
+                                        </Badge>
+                                        <span className="text-sm font-medium text-foreground">{comment.author || labels.guest}</span>
+                                    </div>
+                                    <p className="line-clamp-4 break-words text-sm leading-6 text-foreground">{comment.content}</p>
                                 </div>
-                                <p className="line-clamp-2 text-sm text-muted-foreground">{comment.content}</p>
+                                <div className="flex shrink-0 items-center gap-1">
+                                    {comment.status !== 'approved' ? (
+                                        <>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={() => handleApprove(comment.id, false)}
+                                                disabled={isPending}
+                                                title={labels.approveTitle}
+                                                aria-label={labels.approveTitle}
+                                                className="h-11 w-11 rounded-xl"
+                                            >
+                                                <Check className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="icon"
+                                                onClick={() => handleApprove(comment.id, true)}
+                                                disabled={isPending}
+                                                title={labels.addToWhitelist}
+                                                aria-label={labels.addToWhitelist}
+                                                className="h-11 w-11 rounded-xl"
+                                            >
+                                                <UserCheck className="h-4 w-4" />
+                                            </Button>
+                                        </>
+                                    ) : null}
+                                    <DeleteButton
+                                        onDelete={async () => {
+                                            await deleteComment(comment.id);
+                                        }}
+                                        title={labels.deleteCommentTitle}
+                                        description={labels.deleteCommentDescription}
+                                        ariaLabel={labels.deleteCommentTitle}
+                                        className="h-11 w-11 rounded-xl"
+                                    />
+                                </div>
                             </div>
-                            <div className="flex shrink-0 items-center gap-1">
-                                {comment.status !== 'approved' && (
-                                    <>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon-sm"
-                                            onClick={() => handleApprove(comment.id, false)}
-                                            disabled={isPending}
-                                            title={labels.approveTitle}
-                                            aria-label={labels.approveTitle}
-                                        >
-                                            <Check className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            size="icon-sm"
-                                            onClick={() => handleApprove(comment.id, true)}
-                                            disabled={isPending}
-                                            title={labels.addToWhitelist}
-                                            aria-label={labels.addToWhitelist}
-                                        >
-                                            <UserCheck className="h-4 w-4" />
-                                        </Button>
-                                    </>
-                                )}
-                                <DeleteButton
-                                    onDelete={async () => {
-                                        await deleteComment(comment.id);
-                                    }}
-                                    title={labels.deleteCommentTitle}
-                                    description={labels.deleteCommentDescription}
-                                />
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                                <p className="line-clamp-2 break-words">{postTitle}</p>
+                                <p>{formatDate(comment.createdAt)}</p>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{comment.postTitle || labels.deletedPost}</span>
-                            <span>·</span>
-                            <span>{formatDate(comment.createdAt)}</span>
-                        </div>
-                    </div>
-                ))}
+                        </article>
+                    );
+                })}
             </div>
 
-            <div className="hidden rounded-xl border bg-card md:block">
-                <Table>
-                    <TableHeader>
+            <div className="hidden md:block">
+                <Table className="table-fixed">
+                    <TableHeader className="bg-muted/20">
                         <TableRow>
-                            <TableHead className="w-[110px]">{labels.status}</TableHead>
-                            <TableHead>{labels.author}</TableHead>
+                            <TableHead className="w-[130px]">{labels.status}</TableHead>
+                            <TableHead className="w-[180px]">{labels.author}</TableHead>
                             <TableHead>{labels.comment}</TableHead>
-                            <TableHead>{labels.posts}</TableHead>
-                            <TableHead>{labels.date}</TableHead>
-                            <TableHead className="text-right">{labels.actions}</TableHead>
+                            <TableHead className="w-[200px]">{labels.posts}</TableHead>
+                            <TableHead className="w-[140px]">{labels.date}</TableHead>
+                            <TableHead className="w-[150px] text-right">{labels.actions}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {comments.map((comment) => (
-                            <TableRow key={comment.id}>
-                                <TableCell>
-                                    <Badge variant={getStatusBadgeVariant(comment.status)} className="shadow-none">
-                                        {getStatusLabel(comment.status, labels.statusLabels)}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="font-medium text-foreground">{comment.author || labels.guest}</TableCell>
-                                <TableCell className="max-w-xs truncate text-muted-foreground">{comment.content}</TableCell>
-                                <TableCell className="text-muted-foreground">{comment.postTitle || labels.deletedPost}</TableCell>
-                                <TableCell className="text-muted-foreground">{formatDate(comment.createdAt)}</TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        {comment.status !== 'approved' && (
-                                            <>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon-sm"
-                                                    onClick={() => handleApprove(comment.id, false)}
-                                                    disabled={isPending}
-                                                    title={labels.approveTitle}
-                                                    aria-label={labels.approveTitle}
-                                                >
-                                                    <Check className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant="secondary"
-                                                    size="icon-sm"
-                                                    onClick={() => handleApprove(comment.id, true)}
-                                                    disabled={isPending}
-                                                    title={labels.addToWhitelist}
-                                                    aria-label={labels.addToWhitelist}
-                                                >
-                                                    <UserCheck className="h-4 w-4" />
-                                                </Button>
-                                            </>
-                                        )}
-                                        <DeleteButton
-                                            onDelete={async () => {
-                                                await deleteComment(comment.id);
-                                            }}
-                                            title={labels.deleteCommentTitle}
-                                            description={labels.deleteCommentDescription}
-                                        />
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {comments.map((comment) => {
+                            const statusLabel = getStatusLabel(comment.status, labels.statusLabels);
+                            const postTitle = comment.postTitle || labels.deletedPost;
+
+                            return (
+                                <TableRow key={comment.id}>
+                                    <TableCell className="py-4 align-top">
+                                        <Badge variant={getStatusBadgeVariant(comment.status)} className="shadow-none">
+                                            {statusLabel}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="py-4 align-top whitespace-normal">
+                                        <div className="break-words font-medium text-foreground">{comment.author || labels.guest}</div>
+                                    </TableCell>
+                                    <TableCell className="py-4 align-top whitespace-normal">
+                                        <p className="line-clamp-3 break-words text-sm leading-6 text-foreground">{comment.content}</p>
+                                    </TableCell>
+                                    <TableCell className="py-4 align-top whitespace-normal text-sm text-muted-foreground">
+                                        <p className="line-clamp-2 break-words">{postTitle}</p>
+                                    </TableCell>
+                                    <TableCell className="py-4 align-top text-muted-foreground">
+                                        {formatDate(comment.createdAt)}
+                                    </TableCell>
+                                    <TableCell className="py-4 align-top text-right">
+                                        <div className="flex items-center justify-end gap-1">
+                                            {comment.status !== 'approved' ? (
+                                                <>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => handleApprove(comment.id, false)}
+                                                        disabled={isPending}
+                                                        title={labels.approveTitle}
+                                                        aria-label={labels.approveTitle}
+                                                        className="h-9 w-9 rounded-md"
+                                                    >
+                                                        <Check className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary"
+                                                        size="icon"
+                                                        onClick={() => handleApprove(comment.id, true)}
+                                                        disabled={isPending}
+                                                        title={labels.addToWhitelist}
+                                                        aria-label={labels.addToWhitelist}
+                                                        className="h-9 w-9 rounded-md"
+                                                    >
+                                                        <UserCheck className="h-4 w-4" />
+                                                    </Button>
+                                                </>
+                                            ) : null}
+                                            <DeleteButton
+                                                onDelete={async () => {
+                                                    await deleteComment(comment.id);
+                                                }}
+                                                title={labels.deleteCommentTitle}
+                                                description={labels.deleteCommentDescription}
+                                                ariaLabel={labels.deleteCommentTitle}
+                                                className="h-9 w-9 rounded-md"
+                                            />
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </div>
-        </div>
+        </section>
     );
 }
