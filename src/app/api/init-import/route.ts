@@ -150,22 +150,24 @@ export async function POST(request: Request) {
 
         // Import tags first
         if (importData.data.tags?.length) {
-          for (const tag of importData.data.tags) {
-            try {
-              await db.insert(tags).values({
+          try {
+            await db.insert(tags).values(
+              importData.data.tags.map((tag) => ({
                 id: tag.id,
                 name: tag.name,
                 slug: tag.slug,
-              }).onConflictDoNothing();
-            } catch { /* skip */ }
+              }))
+            ).onConflictDoNothing();
+          } catch (error) {
+            console.error('Failed to bulk import tags:', error);
           }
         }
 
         // Import posts (update authorId to new user)
         if (importData.data.posts?.length) {
-          for (const post of importData.data.posts) {
-            try {
-              await db.insert(posts).values({
+          try {
+            await db.insert(posts).values(
+              importData.data.posts.map((post) => ({
                 id: post.id,
                 title: post.title,
                 slug: post.slug,
@@ -176,30 +178,32 @@ export async function POST(request: Request) {
                 publishedAt: parseDate(post.publishedAt),
                 createdAt: parseDate(post.createdAt) || new Date(),
                 updatedAt: parseDate(post.updatedAt) || new Date(),
-              }).onConflictDoNothing();
-            } catch (error) {
-              console.error('Failed to import post:', post.slug, error);
-            }
+              }))
+            ).onConflictDoNothing();
+          } catch (error) {
+            console.error('Failed to bulk import posts:', error);
           }
         }
 
         // Import posts-tags relations
         if (importData.data.postsTags?.length) {
-          for (const pt of importData.data.postsTags) {
-            try {
-              await db.insert(postsTags).values({
+          try {
+            await db.insert(postsTags).values(
+              importData.data.postsTags.map((pt) => ({
                 postId: pt.postId,
                 tagId: pt.tagId,
-              }).onConflictDoNothing();
-            } catch { /* skip */ }
+              }))
+            ).onConflictDoNothing();
+          } catch (error) {
+            console.error('Failed to bulk import posts-tags:', error);
           }
         }
 
         // Import comments
         if (importData.data.comments?.length) {
-          for (const comment of importData.data.comments) {
-            try {
-              await db.insert(comments).values({
+          try {
+            await db.insert(comments).values(
+              importData.data.comments.map((comment) => ({
                 id: comment.id,
                 content: comment.content,
                 postId: comment.postId,
@@ -210,40 +214,46 @@ export async function POST(request: Request) {
                 guestWebsite: comment.guestWebsite,
                 status: comment.status,
                 createdAt: parseDate(comment.createdAt) || new Date(),
-              }).onConflictDoNothing();
-            } catch { /* skip */ }
+              }))
+            ).onConflictDoNothing();
+          } catch (error) {
+            console.error('Failed to bulk import comments:', error);
           }
         }
 
         // Import navigation items
         if (importData.data.navItems?.length) {
-          for (const nav of importData.data.navItems) {
-            try {
-              await db.insert(navItems).values({
+          try {
+            await db.insert(navItems).values(
+              importData.data.navItems.map((nav) => ({
                 id: nav.id,
                 label: nav.label,
                 url: nav.url,
                 openInNewTab: nav.openInNewTab ?? false,
                 sortOrder: nav.sortOrder,
                 createdAt: parseDate(nav.createdAt) || new Date(),
-              }).onConflictDoNothing();
-            } catch { /* skip */ }
+              }))
+            ).onConflictDoNothing();
+          } catch (error) {
+            console.error('Failed to bulk import nav items:', error);
           }
         }
 
         // Import media records
         if (importData.data.media?.length) {
-          for (const m of importData.data.media) {
-            try {
-              await db.insert(media).values({
+          try {
+            await db.insert(media).values(
+              importData.data.media.map((m) => ({
                 id: m.id,
                 url: m.url,
                 filename: m.filename,
                 mimeType: m.mimeType,
                 size: m.size,
                 createdAt: parseDate(m.createdAt) || new Date(),
-              }).onConflictDoNothing();
-            } catch { /* skip */ }
+              }))
+            ).onConflictDoNothing();
+          } catch (error) {
+            console.error('Failed to bulk import media:', error);
           }
         }
 
