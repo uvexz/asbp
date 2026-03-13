@@ -50,4 +50,27 @@ describe('math captcha helpers', () => {
   it('rejects malformed tokens', () => {
     expect(verifyMathCaptchaToken('not-a-token', '1')).toBe(false);
   });
+
+  it('generates questions within expected ranges', () => {
+    for (let i = 0; i < 100; i++) {
+      const challenge = createMathCaptchaChallenge();
+      const payload = JSON.parse(decrypt(challenge.token)) as {
+        a: number;
+        b: number;
+        op: string;
+      };
+
+      if (payload.op === '+') {
+        expect(payload.a).toBeGreaterThanOrEqual(1);
+        expect(payload.a).toBeLessThanOrEqual(10);
+        expect(payload.b).toBeGreaterThanOrEqual(1);
+        expect(payload.b).toBeLessThanOrEqual(10);
+      } else {
+        expect(payload.a).toBeGreaterThanOrEqual(5);
+        expect(payload.a).toBeLessThanOrEqual(14);
+        expect(payload.b).toBeGreaterThanOrEqual(0);
+        expect(payload.b).toBeLessThan(payload.a);
+      }
+    }
+  });
 });
