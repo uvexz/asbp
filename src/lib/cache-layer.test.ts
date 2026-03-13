@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { isPubliclyVisiblePost, invalidatePostsListCache, chunkKeys } from './cache-layer';
 
 const {
   revalidateTagMock,
@@ -16,7 +17,13 @@ vi.mock('next/cache', () => ({
 }));
 
 vi.mock('./db', () => ({
-  db: {},
+  db: {
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+  },
 }));
 
 vi.mock('./crypto', () => ({
@@ -64,35 +71,25 @@ describe('cache-layer helpers', () => {
     vi.clearAllMocks();
   });
 
-  it('returns true for published posts', async () => {
-    const { isPubliclyVisiblePost } = await import('./cache-layer');
-
+  it('returns true for published posts', () => {
     expect(isPubliclyVisiblePost({ published: true, postType: 'post' })).toBe(true);
   });
 
-  it('returns true for published pages', async () => {
-    const { isPubliclyVisiblePost } = await import('./cache-layer');
-
+  it('returns true for published pages', () => {
     expect(isPubliclyVisiblePost({ published: true, postType: 'page' })).toBe(true);
   });
 
-  it('returns false for unpublished records', async () => {
-    const { isPubliclyVisiblePost } = await import('./cache-layer');
-
+  it('returns false for unpublished records', () => {
     expect(isPubliclyVisiblePost({ published: false, postType: 'post' })).toBe(false);
     expect(isPubliclyVisiblePost({ published: null, postType: 'page' })).toBe(false);
   });
 
-  it('returns false for unsupported public post types', async () => {
-    const { isPubliclyVisiblePost } = await import('./cache-layer');
-
+  it('returns false for unsupported public post types', () => {
     expect(isPubliclyVisiblePost({ published: true, postType: 'memo' })).toBe(false);
     expect(isPubliclyVisiblePost({ published: true, postType: null })).toBe(false);
   });
 
-  it('returns false for missing posts', async () => {
-    const { isPubliclyVisiblePost } = await import('./cache-layer');
-
+  it('returns false for missing posts', () => {
     expect(isPubliclyVisiblePost(null)).toBe(false);
     expect(isPubliclyVisiblePost(undefined)).toBe(false);
   });
@@ -113,8 +110,6 @@ describe('cache-layer helpers', () => {
       del: delMock,
     });
 
-    const { invalidatePostsListCache } = await import('./cache-layer');
-
     invalidatePostsListCache();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -125,5 +120,42 @@ describe('cache-layer helpers', () => {
     expect(delMock).toHaveBeenCalledWith('cache:posts:1:10', 'cache:posts:2:10', 'cache:posts:3:10');
     expect(delMock).toHaveBeenCalledWith('cache:sitemap:posts');
     expect(revalidateTagMock).toHaveBeenCalledWith('posts-list', 'default');
+  });
+
+  describe('chunkKeys', () => {
+    it('returns empty array when input is empty', () => {
+      expect(chunkKeys([], 2)).toEqual([]);
+    });
+
+    it('returns the same array as a single chunk if chunkSize is larger than array length', () => {
+      const keys = ['a', 'b', 'c'];
+      expect(chunkKeys(keys, 5)).toEqual([['a', 'b', 'c']]);
+    });
+
+    it('returns the same array as a single chunk if chunkSize equals array length', () => {
+      const keys = ['a', 'b', 'c'];
+      expect(chunkKeys(keys, 3)).toEqual([['a', 'b', 'c']]);
+    });
+
+    it('chunks array correctly when chunkSize is 1', () => {
+      const keys = ['a', 'b', 'c'];
+      expect(chunkKeys(keys, 1)).toEqual([['a'], ['b'], ['c']]);
+    });
+
+    it('chunks array correctly when it is divisible by chunkSize', () => {
+      const keys = ['a', 'b', 'c', 'd'];
+      expect(chunkKeys(keys, 2)).toEqual([['a', 'b'], ['c', 'd']]);
+    });
+
+    it('chunks array correctly when it is NOT divisible by chunkSize', () => {
+      const keys = ['a', 'b', 'c', 'd', 'e'];
+      expect(chunkKeys(keys, 2)).toEqual([['a', 'b'], ['c', 'd'], ['e']]);
+    });
+
+    it('returns the whole array as a single chunk if chunkSize is 0 or negative', () => {
+      const keys = ['a', 'b', 'c'];
+      expect(chunkKeys(keys, 0)).toEqual([['a', 'b', 'c']]);
+      expect(chunkKeys(keys, -1)).toEqual([['a', 'b', 'c']]);
+    });
   });
 });
