@@ -3,7 +3,7 @@
  * Uses environment variable ENCRYPTION_KEY (32 bytes hex) or generates from DATABASE_URL
  */
 
-import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes, createHash, randomInt } from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
@@ -132,16 +132,16 @@ export function isEncrypted(value: string): boolean {
 }
 
 function generateCaptchaQuestion(): Omit<CaptchaPayload, 'expiresAt' | 'nonce'> {
-  const op: CaptchaOperation = Math.random() > 0.5 ? '+' : '-';
+  const op: CaptchaOperation = randomInt(2) === 0 ? '+' : '-';
 
   if (op === '+') {
-    const a = Math.floor(Math.random() * 10) + 1;
-    const b = Math.floor(Math.random() * 10) + 1;
+    const a = randomInt(1, 11);
+    const b = randomInt(1, 11);
     return { a, b, op, answer: a + b };
   }
 
-  const a = Math.floor(Math.random() * 10) + 5;
-  const b = Math.floor(Math.random() * a);
+  const a = randomInt(5, 15);
+  const b = randomInt(a);
   return { a, b, op, answer: a - b };
 }
 
