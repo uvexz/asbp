@@ -53,7 +53,7 @@ interface PostsTableProps {
         searchPlaceholder: string;
         searchResults: string;
         deleteContentTitle: string;
-        deleteContentDescription: (title: string) => string;
+        deleteContentDescription: string;
         edit: string;
         clearSearch: string;
     };
@@ -200,7 +200,7 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
                                                     await deletePost(post.id);
                                                 }}
                                                 title={labels.deleteContentTitle}
-                                                description={labels.deleteContentDescription(truncateText(displayText, 20))}
+                                                description={labels.deleteContentDescription.replace('{title}', truncateText(displayText, 20))}
                                                 ariaLabel={labels.deleteContentTitle}
                                                 className="h-11 w-11 rounded-xl"
                                             />
@@ -275,7 +275,7 @@ export function PostsTable({ posts, currentType, searchQuery = '', totalResults,
                                                             await deletePost(post.id);
                                                         }}
                                                         title={labels.deleteContentTitle}
-                                                        description={labels.deleteContentDescription(truncateText(displayText, 20))}
+                                                        description={labels.deleteContentDescription.replace('{title}', truncateText(displayText, 20))}
                                                         ariaLabel={labels.deleteContentTitle}
                                                         className="h-9 w-9 rounded-md"
                                                     />
