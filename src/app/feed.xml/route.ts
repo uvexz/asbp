@@ -77,6 +77,7 @@ export async function GET() {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=300, s-maxage=300',
+      'Access-Control-Allow-Origin': '*',
     },
   });
 }

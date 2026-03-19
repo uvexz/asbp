@@ -69,6 +69,7 @@ describe('GET /feed.xml', () => {
       title: 'Hello World',
     }));
     expect(response.headers.get('Content-Type')).toBe('application/xml; charset=utf-8');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 
   it('maps zh locale to zh-CN feed metadata', async () => {
