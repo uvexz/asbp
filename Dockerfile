@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install dependencies using bun
 RUN npm i -g bun
-COPY package*.json bun.lock ./
+COPY package*.json ./
 RUN bun install --frozen-lockfile
 
 # Copy the rest of the source code and build
