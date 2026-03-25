@@ -109,6 +109,30 @@ bunx vitest --run src/lib/validations.property.test.ts
 
 ## 部署
 
+### Docker 部署 (推荐)
+
+项目提供了 `docker-compose.yml`，可以一键启动应用和数据库：
+
+1. **环境准备**：
+   确保已安装 Docker 和 Docker Compose。
+
+2. **启动服务**：
+   ```bash
+   docker-compose up -d
+   ```
+   默认使用 `ghcr.io/uvexz/asbp:main` 镜像。如果需要使用本地代码构建，请修改 `docker-compose.yml` 中的 `image` 为 `build: .`。
+
+3. **初始化数据库**：
+   首次启动后需要运行一次数据库初始化：
+   ```bash
+   docker-compose exec app npm run db:push
+   ```
+
+4. **访问**：
+   访问 `http://localhost:3000` 即可开始使用。
+
+### 常规部署
+
 部署到 Vercel、Render 或其他支持 Next.js 的平台时，请确保：
 
 1. 配置 PostgreSQL 数据库
